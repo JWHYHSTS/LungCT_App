@@ -1,0 +1,683 @@
+{
+ "screen": "Chi tiết bệnh nhân",
+ "size": [
+  390,
+  844
+ ],
+ "background": "#FAF8F2",
+ "note": "Toạ độ/kích thước theo pt (iPhone 390×844). Khung gốc dùng toạ độ tuyệt đối cho StatusBar/TopBar/content/TabBar; bên trong content là Auto Layout (layout=row|column ≈ flexDirection).",
+ "children": [
+  {
+   "name": "StatusBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    32,
+    0,
+    32
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 54,
+   "children": [
+    {
+     "text": "9:41",
+     "style": "labelM",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    },
+    {
+     "text": "5G  100%",
+     "style": "labelS",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    }
+   ]
+  },
+  {
+   "name": "TopBar",
+   "type": "frame",
+   "layout": "row",
+   "gap": 4,
+   "padding": [
+    0,
+    4,
+    0,
+    4
+   ],
+   "alignItems": "center",
+   "width": 390,
+   "height": 56,
+   "children": [
+    {
+     "name": "back",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "onPress": "BACK",
+     "children": [
+      {
+       "icon": "back",
+       "size": 28
+      }
+     ]
+    },
+    {
+     "text": "Chi tiết bệnh nhân",
+     "style": "titleS",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary",
+     "width": "fill"
+    },
+    {
+     "name": "action/edit",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "children": [
+      {
+       "icon": "edit",
+       "size": 26
+      }
+     ]
+    },
+    {
+     "name": "action/more",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "children": [
+      {
+       "icon": "more",
+       "size": 26
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "content",
+   "type": "frame",
+   "layout": "column",
+   "gap": 12,
+   "padding": [
+    8,
+    16,
+    24,
+    16
+   ],
+   "width": 390,
+   "height": 636,
+   "clip": true,
+   "children": [
+    {
+     "name": "PatientCard",
+     "type": "frame",
+     "layout": "column",
+     "gap": 12,
+     "padding": [
+      16,
+      16,
+      16,
+      16
+     ],
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "children": [
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 12,
+       "alignItems": "center",
+       "widthMode": "fill",
+       "children": [
+        {
+         "icon": "patients",
+         "size": 44
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "column",
+         "gap": 2,
+         "children": [
+          {
+           "text": "Nguyễn Văn An",
+           "style": "titleM",
+           "color": "#22231F → colors.bg.inverse | colors.text.primary"
+          },
+          {
+           "text": "BN-000123 · 58 tuổi · Nam",
+           "style": "bodyS",
+           "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 12,
+       "justify": "space-between",
+       "widthMode": "fill",
+       "children": [
+        {
+         "text": "Điện thoại",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+        },
+        {
+         "text": "09•• ••• 123",
+         "style": "bodyM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 12,
+       "justify": "space-between",
+       "widthMode": "fill",
+       "children": [
+        {
+         "text": "Triệu chứng",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+        },
+        {
+         "text": "Ho kéo dài, đau ngực nhẹ",
+         "style": "bodyM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 12,
+       "justify": "space-between",
+       "widthMode": "fill",
+       "children": [
+        {
+         "text": "Tiền sử",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+        },
+        {
+         "text": "Hút thuốc 20 năm",
+         "style": "bodyM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "Badge/Đã đồng bộ",
+       "type": "frame",
+       "layout": "row",
+       "gap": 4,
+       "padding": [
+        3,
+        8,
+        3,
+        8
+       ],
+       "alignItems": "center",
+       "bg": "#EAF2E3 → colors.status.success.bg | colors.ai.normal.bg",
+       "radius": 999,
+       "children": [
+        {
+         "icon": "success",
+         "size": 14
+        },
+        {
+         "text": "Đã đồng bộ",
+         "style": "labelS",
+         "color": "#4E6E3A → colors.status.success.fg | colors.ai.normal.fg"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Button/Tạo ca mới",
+     "type": "frame",
+     "layout": "row",
+     "gap": 8,
+     "padding": [
+      13,
+      20,
+      13,
+      20
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "widthMode": "fill",
+     "bg": "#2F6F67 → colors.text.link | colors.border.focus",
+     "radius": 12,
+     "onPress": "→ Chi tiết ca",
+     "children": [
+      {
+       "icon": "case-add",
+       "size": 20
+      },
+      {
+       "text": "Tạo ca mới",
+       "style": "labelL",
+       "color": "#FFFFFF → colors.bg.surface | colors.text.onBrand"
+      }
+     ]
+    },
+    {
+     "name": "Section/Các ca (2)",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "space-between",
+     "widthMode": "fill",
+     "children": [
+      {
+       "text": "Các ca (2)",
+       "style": "titleS",
+       "color": "#22231F → colors.bg.inverse | colors.text.primary"
+      }
+     ]
+    },
+    {
+     "name": "Row/CA-2026-000045",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "padding": [
+      12,
+      16,
+      12,
+      16
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "onPress": "→ Chi tiết ca",
+     "children": [
+      {
+       "icon": "cases",
+       "size": 32
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "column",
+       "gap": 2,
+       "grow": 1,
+       "children": [
+        {
+         "text": "CA-2026-000045",
+         "style": "labelL",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        },
+        {
+         "text": "Chụp 20/10/2026 · 3 ảnh",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+         "width": "fill"
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "children": [
+          {
+           "name": "Badge/Nháp",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#FCF5DC → colors.status.warning.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "draft",
+             "size": 14
+            },
+            {
+             "text": "Nháp",
+             "style": "labelS",
+             "color": "#7A5B12 → colors.status.warning.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "icon": "chevron-right",
+       "size": 18
+      }
+     ]
+    },
+    {
+     "name": "Row/CA-2026-000031",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "padding": [
+      12,
+      16,
+      12,
+      16
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "children": [
+      {
+       "icon": "cases",
+       "size": 32
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "column",
+       "gap": 2,
+       "grow": 1,
+       "children": [
+        {
+         "text": "CA-2026-000031",
+         "style": "labelL",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        },
+        {
+         "text": "Chụp 05/09/2026 · 2 ảnh",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+         "width": "fill"
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "children": [
+          {
+           "name": "Badge/Hoàn tất",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#EAF2E3 → colors.status.success.bg | colors.ai.normal.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "success",
+             "size": 14
+            },
+            {
+             "text": "Hoàn tất",
+             "style": "labelS",
+             "color": "#4E6E3A → colors.status.success.fg | colors.ai.normal.fg"
+            }
+           ]
+          },
+          {
+           "name": "AILabel/Benign",
+           "type": "frame",
+           "layout": "row",
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "bg": "#E3EEF5 → colors.status.info.bg | colors.ai.benign.bg",
+           "radius": 6,
+           "children": [
+            {
+             "text": "Lành tính",
+             "style": "labelS",
+             "color": "#2A4B61 → colors.ai.benign.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "icon": "chevron-right",
+       "size": 18
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "TabBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    8,
+    0,
+    8
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 64,
+   "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+   "border": {
+    "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+    "width": "top 1"
+   },
+   "children": [
+    {
+     "name": "tab/home",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Trang chủ",
+     "children": [
+      {
+       "icon": "home",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Trang chủ",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "tab/patients",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "bg": "#EEF7F5 → colors.bg.brandSubtle",
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Bệnh nhân",
+     "children": [
+      {
+       "icon": "patients",
+       "size": 24
+      },
+      {
+       "text": "Bệnh nhân",
+       "style": "labelS",
+       "color": "#2F6F67 → colors.text.link | colors.border.focus"
+      }
+     ]
+    },
+    {
+     "name": "tab/cases",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Ca bệnh",
+     "children": [
+      {
+       "icon": "cases",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Ca bệnh",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "tab/stats",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Thống kê",
+     "children": [
+      {
+       "icon": "statistics",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Thống kê",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "tab/me",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Tôi",
+     "children": [
+      {
+       "icon": "profile",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Tôi",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "HomeIndicator",
+   "type": "frame",
+   "width": 390,
+   "height": 34,
+   "position": {
+    "x": 0,
+    "y": 810
+   },
+   "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+   "children": [
+    {
+     "name": "RECTANGLE",
+     "type": "rect",
+     "width": 134,
+     "height": 5,
+     "position": {
+      "x": 128,
+      "y": 20
+     },
+     "bg": "#22231F → colors.bg.inverse | colors.text.primary",
+     "radius": 3
+    }
+   ]
+  }
+ ]
+}

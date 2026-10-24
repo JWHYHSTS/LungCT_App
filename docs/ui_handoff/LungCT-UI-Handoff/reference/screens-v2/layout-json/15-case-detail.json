@@ -1,0 +1,721 @@
+{
+ "screen": "Chi tiết ca",
+ "size": [
+  390,
+  844
+ ],
+ "background": "#FAF8F2",
+ "note": "Toạ độ/kích thước theo pt (iPhone 390×844). Khung gốc dùng toạ độ tuyệt đối cho StatusBar/TopBar/content/TabBar; bên trong content là Auto Layout (layout=row|column ≈ flexDirection).",
+ "children": [
+  {
+   "name": "StatusBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    32,
+    0,
+    32
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 54,
+   "children": [
+    {
+     "text": "9:41",
+     "style": "labelM",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    },
+    {
+     "text": "5G  100%",
+     "style": "labelS",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    }
+   ]
+  },
+  {
+   "name": "TopBar",
+   "type": "frame",
+   "layout": "row",
+   "gap": 4,
+   "padding": [
+    0,
+    4,
+    0,
+    4
+   ],
+   "alignItems": "center",
+   "width": 390,
+   "height": 56,
+   "children": [
+    {
+     "name": "back",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "onPress": "BACK",
+     "children": [
+      {
+       "icon": "back",
+       "size": 28
+      }
+     ]
+    },
+    {
+     "text": "Chi tiết ca",
+     "style": "titleS",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary",
+     "width": "fill"
+    },
+    {
+     "name": "action/sync",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "children": [
+      {
+       "icon": "sync",
+       "size": 26
+      }
+     ]
+    },
+    {
+     "name": "action/more",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "children": [
+      {
+       "icon": "more",
+       "size": 26
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "content",
+   "type": "frame",
+   "layout": "column",
+   "gap": 12,
+   "padding": [
+    8,
+    16,
+    24,
+    16
+   ],
+   "width": 390,
+   "height": 700,
+   "clip": true,
+   "children": [
+    {
+     "name": "CaseHeader",
+     "type": "frame",
+     "layout": "column",
+     "gap": 8,
+     "padding": [
+      16,
+      16,
+      16,
+      16
+     ],
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "children": [
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 12,
+       "alignItems": "center",
+       "widthMode": "fill",
+       "children": [
+        {
+         "icon": "cases",
+         "size": 32
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "column",
+         "gap": 2,
+         "children": [
+          {
+           "text": "CA-2026-000045",
+           "style": "titleS",
+           "color": "#22231F → colors.bg.inverse | colors.text.primary"
+          },
+          {
+           "text": "Nguyễn Văn An · BN-000123 · chụp 20/10/2026",
+           "style": "bodyS",
+           "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 4,
+       "children": [
+        {
+         "name": "Badge/Nháp",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "padding": [
+          3,
+          8,
+          3,
+          8
+         ],
+         "alignItems": "center",
+         "bg": "#FCF5DC → colors.status.warning.bg",
+         "radius": 999,
+         "children": [
+          {
+           "icon": "draft",
+           "size": 14
+          },
+          {
+           "text": "Nháp",
+           "style": "labelS",
+           "color": "#7A5B12 → colors.status.warning.fg"
+          }
+         ]
+        },
+        {
+         "name": "Badge/Trên thiết bị",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "padding": [
+          3,
+          8,
+          3,
+          8
+         ],
+         "alignItems": "center",
+         "bg": "#E3EEF5 → colors.status.info.bg | colors.ai.benign.bg",
+         "radius": 999,
+         "children": [
+          {
+           "icon": "on-device",
+           "size": 14
+          },
+          {
+           "text": "Trên thiết bị",
+           "style": "labelS",
+           "color": "#3E6E8E → colors.status.info.fg"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "row",
+     "gap": 8,
+     "widthMode": "fill",
+     "children": [
+      {
+       "name": "Button/Thêm ảnh",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "padding": [
+        13,
+        20,
+        13,
+        20
+       ],
+       "alignItems": "center",
+       "justify": "center",
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#2F6F67 → colors.text.link | colors.border.focus",
+        "width": 1
+       },
+       "radius": 12,
+       "children": [
+        {
+         "icon": "image-upload",
+         "size": 20
+        },
+        {
+         "text": "Thêm ảnh",
+         "style": "labelL",
+         "color": "#2F6F67 → colors.text.link | colors.border.focus"
+        }
+       ]
+      },
+      {
+       "name": "Button/Phân tích",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "padding": [
+        13,
+        20,
+        13,
+        20
+       ],
+       "alignItems": "center",
+       "justify": "center",
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#2F6F67 → colors.text.link | colors.border.focus",
+        "width": 1
+       },
+       "radius": 12,
+       "children": [
+        {
+         "icon": "ai-analysis",
+         "size": 20
+        },
+        {
+         "text": "Phân tích",
+         "style": "labelL",
+         "color": "#2F6F67 → colors.text.link | colors.border.focus"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ImageGrid",
+     "type": "frame",
+     "layout": "row",
+     "gap": 6,
+     "widthMode": "fill",
+     "children": [
+      {
+       "name": "Tile/Ảnh 1",
+       "type": "frame",
+       "layout": "column",
+       "gap": 6,
+       "padding": [
+        0,
+        0,
+        8,
+        0
+       ],
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 12,
+       "clip": true,
+       "onPress": "→ Kết quả ảnh AI",
+       "children": [
+        {
+         "image": "CT (giả lập)",
+         "size": [
+          110,
+          110
+         ]
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "column",
+         "gap": 4,
+         "padding": [
+          0,
+          8,
+          0,
+          8
+         ],
+         "children": [
+          {
+           "text": "Ảnh 1",
+           "style": "labelM",
+           "color": "#22231F → colors.bg.inverse | colors.text.primary"
+          },
+          {
+           "name": "Badge/Đạt",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#EAF2E3 → colors.status.success.bg | colors.ai.normal.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "success",
+             "size": 14
+            },
+            {
+             "text": "Đạt",
+             "style": "labelS",
+             "color": "#4E6E3A → colors.status.success.fg | colors.ai.normal.fg"
+            }
+           ]
+          },
+          {
+           "name": "AILabel/Malignant",
+           "type": "frame",
+           "layout": "row",
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "bg": "#F8E3E0 → colors.status.danger.bg | colors.ai.malignant.bg",
+           "radius": 6,
+           "children": [
+            {
+             "text": "Ác tính",
+             "style": "labelS",
+             "color": "#A8443A → colors.status.danger.fg | colors.ai.malignant.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Tile/Ảnh 2",
+       "type": "frame",
+       "layout": "column",
+       "gap": 6,
+       "padding": [
+        0,
+        0,
+        8,
+        0
+       ],
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 12,
+       "clip": true,
+       "children": [
+        {
+         "image": "CT (giả lập)",
+         "size": [
+          110,
+          110
+         ]
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "column",
+         "gap": 4,
+         "padding": [
+          0,
+          8,
+          0,
+          8
+         ],
+         "children": [
+          {
+           "text": "Ảnh 2",
+           "style": "labelM",
+           "color": "#22231F → colors.bg.inverse | colors.text.primary"
+          },
+          {
+           "name": "Badge/Thiếu CAM",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#FCF5DC → colors.status.warning.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "warning",
+             "size": 14
+            },
+            {
+             "text": "Thiếu CAM",
+             "style": "labelS",
+             "color": "#7A5B12 → colors.status.warning.fg"
+            }
+           ]
+          },
+          {
+           "name": "AILabel/Benign",
+           "type": "frame",
+           "layout": "row",
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "bg": "#E3EEF5 → colors.status.info.bg | colors.ai.benign.bg",
+           "radius": 6,
+           "children": [
+            {
+             "text": "Lành tính",
+             "style": "labelS",
+             "color": "#2A4B61 → colors.ai.benign.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Tile/Ảnh 3",
+       "type": "frame",
+       "layout": "column",
+       "gap": 6,
+       "padding": [
+        0,
+        0,
+        8,
+        0
+       ],
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#A8443A → colors.status.danger.fg | colors.ai.malignant.fg",
+        "width": 1
+       },
+       "radius": 12,
+       "clip": true,
+       "children": [
+        {
+         "image": "CT (giả lập)",
+         "size": [
+          110,
+          110
+         ]
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "column",
+         "gap": 4,
+         "padding": [
+          0,
+          8,
+          0,
+          8
+         ],
+         "children": [
+          {
+           "text": "Ảnh 3",
+           "style": "labelM",
+           "color": "#22231F → colors.bg.inverse | colors.text.primary"
+          },
+          {
+           "name": "Badge/Lỗi",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#F8E3E0 → colors.status.danger.bg | colors.ai.malignant.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "error",
+             "size": 14
+            },
+            {
+             "text": "Lỗi",
+             "style": "labelS",
+             "color": "#A8443A → colors.status.danger.fg | colors.ai.malignant.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Field/Nhận xét ca",
+     "type": "frame",
+     "layout": "column",
+     "gap": 6,
+     "widthMode": "fill",
+     "children": [
+      {
+       "text": "Nhận xét ca",
+       "style": "labelM",
+       "color": "#22231F → colors.bg.inverse | colors.text.primary"
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "padding": [
+        12,
+        14,
+        12,
+        14
+       ],
+       "alignItems": "center",
+       "widthMode": "fill",
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#8A8D84 → colors.border.control",
+        "width": 1
+       },
+       "radius": 12,
+       "children": [
+        {
+         "text": "Tổn thương dạng nốt thùy trên phải, cần đối chiếu lâm sàng.",
+         "style": "bodyM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        }
+       ]
+      },
+      {
+       "text": "Đã lưu lúc 10:42",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+       "width": "fill"
+      }
+     ]
+    },
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "row",
+     "gap": 8,
+     "widthMode": "fill",
+     "children": [
+      {
+       "name": "Button/Xuất PDF",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "padding": [
+        13,
+        20,
+        13,
+        20
+       ],
+       "alignItems": "center",
+       "justify": "center",
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#2F6F67 → colors.text.link | colors.border.focus",
+        "width": 1
+       },
+       "radius": 12,
+       "onPress": "→ Xuất PDF",
+       "children": [
+        {
+         "icon": "pdf-export",
+         "size": 20
+        },
+        {
+         "text": "Xuất PDF",
+         "style": "labelL",
+         "color": "#2F6F67 → colors.text.link | colors.border.focus"
+        }
+       ]
+      },
+      {
+       "name": "Button/Hoàn tất ca",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "padding": [
+        13,
+        20,
+        13,
+        20
+       ],
+       "alignItems": "center",
+       "justify": "center",
+       "grow": 1,
+       "bg": "#2F6F67 → colors.text.link | colors.border.focus",
+       "radius": 12,
+       "children": [
+        {
+         "icon": "case-complete",
+         "size": 20
+        },
+        {
+         "text": "Hoàn tất ca",
+         "style": "labelL",
+         "color": "#FFFFFF → colors.bg.surface | colors.text.onBrand"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "HomeIndicator",
+   "type": "frame",
+   "width": 390,
+   "height": 34,
+   "position": {
+    "x": 0,
+    "y": 810
+   },
+   "bg": "#FAF8F2 → colors.bg.app | colors.text.inverse",
+   "children": [
+    {
+     "name": "RECTANGLE",
+     "type": "rect",
+     "width": 134,
+     "height": 5,
+     "position": {
+      "x": 128,
+      "y": 20
+     },
+     "bg": "#22231F → colors.bg.inverse | colors.text.primary",
+     "radius": 3
+    }
+   ]
+  }
+ ]
+}

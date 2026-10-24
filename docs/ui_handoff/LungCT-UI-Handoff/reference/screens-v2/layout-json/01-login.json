@@ -1,0 +1,341 @@
+{
+ "screen": "Đăng nhập",
+ "size": [
+  390,
+  844
+ ],
+ "background": "#FAF8F2",
+ "note": "Toạ độ/kích thước theo pt (iPhone 390×844). Khung gốc dùng toạ độ tuyệt đối cho StatusBar/TopBar/content/TabBar; bên trong content là Auto Layout (layout=row|column ≈ flexDirection).",
+ "children": [
+  {
+   "name": "StatusBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    32,
+    0,
+    32
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 54,
+   "children": [
+    {
+     "text": "9:41",
+     "style": "labelM",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    },
+    {
+     "text": "5G  100%",
+     "style": "labelS",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    }
+   ]
+  },
+  {
+   "name": "content",
+   "type": "frame",
+   "layout": "column",
+   "gap": 12,
+   "padding": [
+    24,
+    16,
+    24,
+    16
+   ],
+   "width": 390,
+   "height": 756,
+   "clip": true,
+   "children": [
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "row",
+     "gap": 8,
+     "justify": "max",
+     "widthMode": "fill",
+     "children": [
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        6,
+        12,
+        6,
+        12
+       ],
+       "bg": "#EEF7F5 → colors.bg.brandSubtle",
+       "border": {
+        "color": "#2F6F67 → colors.text.link | colors.border.focus",
+        "width": 1
+       },
+       "radius": 999,
+       "children": [
+        {
+         "text": "VI",
+         "style": "labelS",
+         "color": "#2F6F67 → colors.text.link | colors.border.focus"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        6,
+        12,
+        6,
+        12
+       ],
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 999,
+       "children": [
+        {
+         "text": "EN",
+         "style": "labelS",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "row",
+     "gap": 10,
+     "alignItems": "center",
+     "widthMode": "fill",
+     "children": [
+      {
+       "icon": "lung",
+       "size": 44
+      },
+      {
+       "text": "LungCT",
+       "style": "titleL",
+       "color": "#22231F → colors.bg.inverse | colors.text.primary"
+      }
+     ]
+    },
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "column",
+     "gap": 4,
+     "widthMode": "fill",
+     "children": [
+      {
+       "text": "Đăng nhập",
+       "style": "display",
+       "color": "#22231F → colors.bg.inverse | colors.text.primary"
+      },
+      {
+       "text": "Dành cho bác sĩ và quản trị viên.",
+       "style": "bodyM",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "Badge/Đang trực tuyến",
+     "type": "frame",
+     "layout": "row",
+     "gap": 4,
+     "padding": [
+      3,
+      8,
+      3,
+      8
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#EAF2E3 → colors.status.success.bg | colors.ai.normal.bg",
+     "radius": 999,
+     "children": [
+      {
+       "icon": "success",
+       "size": 14
+      },
+      {
+       "text": "Đang trực tuyến",
+       "style": "labelS",
+       "color": "#4E6E3A → colors.status.success.fg | colors.ai.normal.fg"
+      }
+     ]
+    },
+    {
+     "name": "Field/Email *",
+     "type": "frame",
+     "layout": "column",
+     "gap": 6,
+     "widthMode": "fill",
+     "children": [
+      {
+       "text": "Email *",
+       "style": "labelM",
+       "color": "#22231F → colors.bg.inverse | colors.text.primary"
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "padding": [
+        12,
+        14,
+        12,
+        14
+       ],
+       "alignItems": "center",
+       "widthMode": "fill",
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#8A8D84 → colors.border.control",
+        "width": 1
+       },
+       "radius": 12,
+       "children": [
+        {
+         "text": "bs.an@example.com",
+         "style": "bodyM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Field/Mật khẩu *",
+     "type": "frame",
+     "layout": "column",
+     "gap": 6,
+     "widthMode": "fill",
+     "children": [
+      {
+       "text": "Mật khẩu *",
+       "style": "labelM",
+       "color": "#22231F → colors.bg.inverse | colors.text.primary"
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "padding": [
+        12,
+        14,
+        12,
+        14
+       ],
+       "alignItems": "center",
+       "widthMode": "fill",
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#2F6F67 → colors.text.link | colors.border.focus",
+        "width": 2
+       },
+       "radius": 12,
+       "children": [
+        {
+         "text": "••••••••••",
+         "style": "bodyM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        },
+        {
+         "icon": "eye",
+         "size": 20
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Button/Đăng nhập",
+     "type": "frame",
+     "layout": "row",
+     "gap": 8,
+     "padding": [
+      13,
+      20,
+      13,
+      20
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "widthMode": "fill",
+     "bg": "#2F6F67 → colors.text.link | colors.border.focus",
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Trang chủ",
+     "children": [
+      {
+       "text": "Đăng nhập",
+       "style": "labelL",
+       "color": "#FFFFFF → colors.bg.surface | colors.text.onBrand"
+      }
+     ]
+    },
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "row",
+     "justify": "space-between",
+     "widthMode": "fill",
+     "children": [
+      {
+       "text": "Quên mật khẩu?",
+       "style": "labelM",
+       "color": "#2F6F67 → colors.text.link | colors.border.focus"
+      },
+      {
+       "text": "Đăng ký tài khoản",
+       "style": "labelM",
+       "color": "#2F6F67 → colors.text.link | colors.border.focus"
+      }
+     ]
+    },
+    {
+     "text": "Lần đăng nhập đầu tiên trên thiết bị cần kết nối mạng. Sau đó có thể đăng nhập ngoại tuyến; mật khẩu không được lưu nguyên văn.",
+     "style": "caption",
+     "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+     "width": "fill"
+    }
+   ]
+  },
+  {
+   "name": "HomeIndicator",
+   "type": "frame",
+   "width": 390,
+   "height": 34,
+   "position": {
+    "x": 0,
+    "y": 810
+   },
+   "bg": "#FAF8F2 → colors.bg.app | colors.text.inverse",
+   "children": [
+    {
+     "name": "RECTANGLE",
+     "type": "rect",
+     "width": 134,
+     "height": 5,
+     "position": {
+      "x": 128,
+      "y": 20
+     },
+     "bg": "#22231F → colors.bg.inverse | colors.text.primary",
+     "radius": 3
+    }
+   ]
+  }
+ ]
+}

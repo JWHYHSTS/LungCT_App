@@ -158,11 +158,11 @@ Tài liệu này là **bộ quy tắc bắt buộc** dành cho tất cả trợ 
    - Không được sao chép số đo hay minh chứng từ báo cáo Android sang iOS và ngược lại.
    - Nếu một thay đổi chỉ tác động đến một hệ điều hành, phải cập nhật báo cáo của nền tảng còn lại ở phần giao tiếp kiến trúc hoặc tổng quan tương quan nếu phù hợp; không bịa đặt nội dung hình thức.
    - Nếu thiếu tệp báo cáo hoặc định dạng tệp không thể chỉnh sửa trực tiếp, phải thông báo rõ ràng cho người dùng phần chưa thể hoàn thành.
-6. **Kiểm tra và Git Commit**: Kiểm tra trạng thái git và thực hiện commit với thông điệp rõ ràng theo chuẩn Conventional Commits.
-7. **Báo cáo kết quả trên khung chat**:
-   - Tóm tắt những gì đã làm và lý do.
-   - Danh sách các tệp chính đã tạo / chỉnh sửa.
-   - Các mục cụ thể trong từng báo cáo đã được cập nhật.
-   - Kết quả kiểm thử thực tế và đường dẫn tệp minh chứng (`evidence/`).
-   - Mã băm commit hoặc lý do chưa commit được.
-   - Các vấn đề hoặc hạn chế còn tồn đọng cần giải quyết tiếp.
+6. **Kiểm tra trạng thái Git**: Kiểm tra `git status` và `git diff`, đảm bảo không stage nhầm tệp ngoài phạm vi, thông tin bảo mật hay file nhị phân lớn. Cung cấp nội dung thông điệp commit chuẩn xác để người dùng trực tiếp kiểm tra và commit bằng giao diện Antigravity; trợ lý AI không tự ý commit, amend hay push.
+7. **Báo cáo kết quả trên khung chat theo mẫu chuẩn 6 mục**:
+   - **Mục 1. Yêu cầu vừa thực hiện**: Mục tiêu và phạm vi lệnh.
+   - **Mục 2. Công việc đã làm**: Thay đổi cụ thể, lý do; danh sách tệp tạo/sửa (dùng đường dẫn tương đối trong đồ án); phân biệt phần mới làm với phần có sẵn.
+   - **Mục 3. Kiểm tra và kết quả**: Kiểm tra thực tế đã chạy và kết quả; phân biệt kiểm tra tĩnh, chạy trên máy tính và chạy trên điện thoại thật; chỉ báo đạt các mục đã thực nghiệm.
+   - **Mục 4. Tài liệu và hai báo cáo**: Nêu tài liệu và mục đã cập nhật; ghi nhận trung thực tình trạng báo cáo/đặc tả; cập nhật cả hai báo cáo khi có file đầu vào.
+   - **Mục 5. Git**: Tóm tắt thay đổi chờ commit; cung cấp nội dung commit phù hợp để người dùng commit qua giao diện Antigravity.
+   - **Mục 6. Vấn đề còn lại và bước tiếp theo**: Nêu rõ lỗi, phần còn thiếu hoặc bị chặn; đề xuất bước tiếp theo cụ thể.

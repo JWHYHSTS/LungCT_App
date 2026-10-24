@@ -1,0 +1,719 @@
+{
+ "screen": "Bác sĩ · Thống kê",
+ "size": [
+  390,
+  844
+ ],
+ "background": "#FAF8F2",
+ "note": "Toạ độ/kích thước theo pt (iPhone 390×844). Khung gốc dùng toạ độ tuyệt đối cho StatusBar/TopBar/content/TabBar; bên trong content là Auto Layout (layout=row|column ≈ flexDirection).",
+ "children": [
+  {
+   "name": "StatusBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    32,
+    0,
+    32
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 54,
+   "children": [
+    {
+     "text": "9:41",
+     "style": "labelM",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    },
+    {
+     "text": "5G  100%",
+     "style": "labelS",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    }
+   ]
+  },
+  {
+   "name": "TopBar",
+   "type": "frame",
+   "layout": "row",
+   "gap": 4,
+   "padding": [
+    0,
+    16,
+    0,
+    16
+   ],
+   "alignItems": "center",
+   "width": 390,
+   "height": 56,
+   "children": [
+    {
+     "text": "Thống kê",
+     "style": "titleL",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary",
+     "width": "fill"
+    },
+    {
+     "name": "action/sync",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "children": [
+      {
+       "icon": "sync",
+       "size": 26
+      }
+     ]
+    },
+    {
+     "name": "action/notifications",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "children": [
+      {
+       "icon": "notifications",
+       "size": 26
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "content",
+   "type": "frame",
+   "layout": "column",
+   "gap": 12,
+   "padding": [
+    8,
+    16,
+    24,
+    16
+   ],
+   "width": 390,
+   "height": 636,
+   "clip": true,
+   "children": [
+    {
+     "name": "Segmented",
+     "type": "frame",
+     "layout": "row",
+     "gap": 2,
+     "padding": [
+      2,
+      2,
+      2,
+      2
+     ],
+     "widthMode": "fill",
+     "bg": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+     "radius": 12,
+     "children": [
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        8,
+        0,
+        8,
+        0
+       ],
+       "alignItems": "center",
+       "justify": "center",
+       "grow": 1,
+       "radius": 8,
+       "children": [
+        {
+         "text": "7 ngày",
+         "style": "bodyM",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        8,
+        0,
+        8,
+        0
+       ],
+       "alignItems": "center",
+       "justify": "center",
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "radius": 8,
+       "children": [
+        {
+         "text": "30 ngày",
+         "style": "labelM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        8,
+        0,
+        8,
+        0
+       ],
+       "alignItems": "center",
+       "justify": "center",
+       "grow": 1,
+       "radius": 8,
+       "children": [
+        {
+         "text": "Tất cả",
+         "style": "bodyM",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "widthMode": "fill",
+     "children": [
+      {
+       "name": "StatCard/Bệnh nhân",
+       "type": "frame",
+       "layout": "column",
+       "gap": 4,
+       "padding": [
+        12,
+        16,
+        12,
+        16
+       ],
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 16,
+       "children": [
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 6,
+         "alignItems": "center",
+         "children": [
+          {
+           "icon": "patients",
+           "size": 18
+          },
+          {
+           "text": "Bệnh nhân",
+           "style": "labelS",
+           "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+          }
+         ]
+        },
+        {
+         "text": "18",
+         "style": "display",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "StatCard/Ca hoàn tất",
+       "type": "frame",
+       "layout": "column",
+       "gap": 4,
+       "padding": [
+        12,
+        16,
+        12,
+        16
+       ],
+       "grow": 1,
+       "bg": "#EEF7F5 → colors.bg.brandSubtle",
+       "radius": 16,
+       "children": [
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 6,
+         "alignItems": "center",
+         "children": [
+          {
+           "icon": "success",
+           "size": 18
+          },
+          {
+           "text": "Ca hoàn tất",
+           "style": "labelS",
+           "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+          }
+         ]
+        },
+        {
+         "text": "12",
+         "style": "display",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "FRAME",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "widthMode": "fill",
+     "children": [
+      {
+       "name": "StatCard/Ca nháp",
+       "type": "frame",
+       "layout": "column",
+       "gap": 4,
+       "padding": [
+        12,
+        16,
+        12,
+        16
+       ],
+       "grow": 1,
+       "bg": "#FCF5DC → colors.status.warning.bg",
+       "radius": 16,
+       "children": [
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 6,
+         "alignItems": "center",
+         "children": [
+          {
+           "icon": "draft",
+           "size": 18
+          },
+          {
+           "text": "Ca nháp",
+           "style": "labelS",
+           "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+          }
+         ]
+        },
+        {
+         "text": "3",
+         "style": "display",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "StatCard/Ảnh đã phân tích",
+       "type": "frame",
+       "layout": "column",
+       "gap": 4,
+       "padding": [
+        12,
+        16,
+        12,
+        16
+       ],
+       "grow": 1,
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 16,
+       "children": [
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 6,
+         "alignItems": "center",
+         "children": [
+          {
+           "icon": "cases",
+           "size": 18
+          },
+          {
+           "text": "Ảnh đã phân tích",
+           "style": "labelS",
+           "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+          }
+         ]
+        },
+        {
+         "text": "28",
+         "style": "display",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Chart/Số ảnh theo nhãn AI",
+     "type": "frame",
+     "layout": "column",
+     "gap": 12,
+     "padding": [
+      16,
+      16,
+      16,
+      16
+     ],
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "children": [
+      {
+       "text": "Số ảnh theo nhãn AI",
+       "style": "titleS",
+       "color": "#22231F → colors.bg.inverse | colors.text.primary"
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "alignItems": "center",
+       "widthMode": "fill",
+       "children": [
+        {
+         "text": "Lành tính",
+         "style": "bodyS",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        },
+        {
+         "name": "bar",
+         "type": "frame",
+         "width": 180,
+         "height": 12,
+         "grow": 1,
+         "bg": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+         "radius": 6,
+         "children": [
+          {
+           "name": "RECTANGLE",
+           "type": "rect",
+           "width": 116,
+           "height": 12,
+           "bg": "#2A4B61 → colors.ai.benign.fg",
+           "radius": 6
+          }
+         ]
+        },
+        {
+         "text": "9",
+         "style": "labelM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "alignItems": "center",
+       "widthMode": "fill",
+       "children": [
+        {
+         "text": "Ác tính",
+         "style": "bodyS",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        },
+        {
+         "name": "bar",
+         "type": "frame",
+         "width": 180,
+         "height": 12,
+         "grow": 1,
+         "bg": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+         "radius": 6,
+         "children": [
+          {
+           "name": "RECTANGLE",
+           "type": "rect",
+           "width": 64,
+           "height": 12,
+           "bg": "#A8443A → colors.status.danger.fg | colors.ai.malignant.fg",
+           "radius": 6
+          }
+         ]
+        },
+        {
+         "text": "5",
+         "style": "labelM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "gap": 8,
+       "alignItems": "center",
+       "widthMode": "fill",
+       "children": [
+        {
+         "text": "Bình thường",
+         "style": "bodyS",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        },
+        {
+         "name": "bar",
+         "type": "frame",
+         "width": 180,
+         "height": 12,
+         "grow": 1,
+         "bg": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+         "radius": 6,
+         "children": [
+          {
+           "name": "RECTANGLE",
+           "type": "rect",
+           "width": 180,
+           "height": 12,
+           "bg": "#4E6E3A → colors.status.success.fg | colors.ai.normal.fg",
+           "radius": 6
+          }
+         ]
+        },
+        {
+         "text": "14",
+         "style": "labelM",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "text": "Chỉ đếm số lượng; không hiển thị độ chính xác mô hình. Không tính mock, ảnh bị thay, mục trong thùng rác.",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+       "width": "fill"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "TabBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    8,
+    0,
+    8
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 64,
+   "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+   "border": {
+    "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+    "width": "top 1"
+   },
+   "children": [
+    {
+     "name": "tab/home",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Trang chủ",
+     "children": [
+      {
+       "icon": "home",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Trang chủ",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "tab/patients",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Bệnh nhân",
+     "children": [
+      {
+       "icon": "patients",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Bệnh nhân",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "tab/cases",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Ca bệnh",
+     "children": [
+      {
+       "icon": "cases",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Ca bệnh",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "tab/stats",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "bg": "#EEF7F5 → colors.bg.brandSubtle",
+     "radius": 12,
+     "children": [
+      {
+       "icon": "statistics",
+       "size": 24
+      },
+      {
+       "text": "Thống kê",
+       "style": "labelS",
+       "color": "#2F6F67 → colors.text.link | colors.border.focus"
+      }
+     ]
+    },
+    {
+     "name": "tab/me",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 72,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Bác sĩ · Tôi",
+     "children": [
+      {
+       "icon": "profile",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Tôi",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "HomeIndicator",
+   "type": "frame",
+   "width": 390,
+   "height": 34,
+   "position": {
+    "x": 0,
+    "y": 810
+   },
+   "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+   "children": [
+    {
+     "name": "RECTANGLE",
+     "type": "rect",
+     "width": 134,
+     "height": 5,
+     "position": {
+      "x": 128,
+      "y": 20
+     },
+     "bg": "#22231F → colors.bg.inverse | colors.text.primary",
+     "radius": 3
+    }
+   ]
+  }
+ ]
+}

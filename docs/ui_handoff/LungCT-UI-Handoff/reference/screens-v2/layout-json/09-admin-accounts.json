@@ -1,0 +1,714 @@
+{
+ "screen": "Quản trị · Quản lý tài khoản",
+ "size": [
+  390,
+  844
+ ],
+ "background": "#FAF8F2",
+ "note": "Toạ độ/kích thước theo pt (iPhone 390×844). Khung gốc dùng toạ độ tuyệt đối cho StatusBar/TopBar/content/TabBar; bên trong content là Auto Layout (layout=row|column ≈ flexDirection).",
+ "children": [
+  {
+   "name": "StatusBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    32,
+    0,
+    32
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 54,
+   "children": [
+    {
+     "text": "9:41",
+     "style": "labelM",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    },
+    {
+     "text": "5G  100%",
+     "style": "labelS",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary"
+    }
+   ]
+  },
+  {
+   "name": "TopBar",
+   "type": "frame",
+   "layout": "row",
+   "gap": 4,
+   "padding": [
+    0,
+    16,
+    0,
+    16
+   ],
+   "alignItems": "center",
+   "width": 390,
+   "height": 56,
+   "children": [
+    {
+     "text": "Quản lý tài khoản",
+     "style": "titleL",
+     "color": "#22231F → colors.bg.inverse | colors.text.primary",
+     "width": "fill"
+    },
+    {
+     "name": "action/notifications",
+     "type": "frame",
+     "layout": "row",
+     "alignItems": "center",
+     "justify": "center",
+     "width": 44,
+     "height": 44,
+     "children": [
+      {
+       "icon": "notifications",
+       "size": 26
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "content",
+   "type": "frame",
+   "layout": "column",
+   "gap": 12,
+   "padding": [
+    8,
+    16,
+    24,
+    16
+   ],
+   "width": 390,
+   "height": 636,
+   "clip": true,
+   "children": [
+    {
+     "name": "Search",
+     "type": "frame",
+     "layout": "row",
+     "gap": 8,
+     "padding": [
+      11,
+      14,
+      11,
+      14
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "border": {
+      "color": "#8A8D84 → colors.border.control",
+      "width": 1
+     },
+     "radius": 12,
+     "children": [
+      {
+       "icon": "search",
+       "size": 20
+      },
+      {
+       "text": "Tìm theo họ tên, email",
+       "style": "bodyM",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "Chips",
+     "type": "frame",
+     "layout": "row",
+     "gap": 8,
+     "wrap": true,
+     "widthMode": "fill",
+     "children": [
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        6,
+        12,
+        6,
+        12
+       ],
+       "bg": "#EEF7F5 → colors.bg.brandSubtle",
+       "border": {
+        "color": "#2F6F67 → colors.text.link | colors.border.focus",
+        "width": 1
+       },
+       "radius": 999,
+       "children": [
+        {
+         "text": "Chờ duyệt (2)",
+         "style": "labelS",
+         "color": "#2F6F67 → colors.text.link | colors.border.focus"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        6,
+        12,
+        6,
+        12
+       ],
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 999,
+       "children": [
+        {
+         "text": "Hoạt động",
+         "style": "labelS",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        6,
+        12,
+        6,
+        12
+       ],
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 999,
+       "children": [
+        {
+         "text": "Đã khóa",
+         "style": "labelS",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "row",
+       "padding": [
+        6,
+        12,
+        6,
+        12
+       ],
+       "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+       "border": {
+        "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+        "width": 1
+       },
+       "radius": 999,
+       "children": [
+        {
+         "text": "Tất cả",
+         "style": "labelS",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Row/BS. Phạm Thu Hà",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "padding": [
+      12,
+      16,
+      12,
+      16
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "onPress": "→ Quản trị · Chi tiết tài khoản",
+     "children": [
+      {
+       "icon": "profile",
+       "size": 32
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "column",
+       "gap": 2,
+       "grow": 1,
+       "children": [
+        {
+         "text": "BS. Phạm Thu Hà",
+         "style": "labelL",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        },
+        {
+         "text": "ha.pham@example.com · BV Thực hành A",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+         "width": "fill"
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "children": [
+          {
+           "name": "Badge/Chờ duyệt",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#FBEADB → colors.status.pending.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "pending",
+             "size": 14
+            },
+            {
+             "text": "Chờ duyệt",
+             "style": "labelS",
+             "color": "#8A4A17 → colors.status.pending.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "icon": "chevron-right",
+       "size": 18
+      }
+     ]
+    },
+    {
+     "name": "Row/BS. Võ Quốc Huy",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "padding": [
+      12,
+      16,
+      12,
+      16
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "children": [
+      {
+       "icon": "profile",
+       "size": 32
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "column",
+       "gap": 2,
+       "grow": 1,
+       "children": [
+        {
+         "text": "BS. Võ Quốc Huy",
+         "style": "labelL",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        },
+        {
+         "text": "huy.vo@example.com · BV Thực hành B",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+         "width": "fill"
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "children": [
+          {
+           "name": "Badge/Chờ duyệt",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#FBEADB → colors.status.pending.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "pending",
+             "size": 14
+            },
+            {
+             "text": "Chờ duyệt",
+             "style": "labelS",
+             "color": "#8A4A17 → colors.status.pending.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "icon": "chevron-right",
+       "size": 18
+      }
+     ]
+    },
+    {
+     "name": "Row/BS. Đặng Lan Anh",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "padding": [
+      12,
+      16,
+      12,
+      16
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "children": [
+      {
+       "icon": "profile",
+       "size": 32
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "column",
+       "gap": 2,
+       "grow": 1,
+       "children": [
+        {
+         "text": "BS. Đặng Lan Anh",
+         "style": "labelL",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        },
+        {
+         "text": "lan.dang@example.com · BV Thực hành A",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+         "width": "fill"
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "children": [
+          {
+           "name": "Badge/Hoạt động",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#EAF2E3 → colors.status.success.bg | colors.ai.normal.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "success",
+             "size": 14
+            },
+            {
+             "text": "Hoạt động",
+             "style": "labelS",
+             "color": "#4E6E3A → colors.status.success.fg | colors.ai.normal.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "icon": "chevron-right",
+       "size": 18
+      }
+     ]
+    },
+    {
+     "name": "Row/BS. Mai Văn Khoa",
+     "type": "frame",
+     "layout": "row",
+     "gap": 12,
+     "padding": [
+      12,
+      16,
+      12,
+      16
+     ],
+     "alignItems": "center",
+     "widthMode": "fill",
+     "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+     "radius": 16,
+     "children": [
+      {
+       "icon": "profile",
+       "size": 32
+      },
+      {
+       "name": "FRAME",
+       "type": "frame",
+       "layout": "column",
+       "gap": 2,
+       "grow": 1,
+       "children": [
+        {
+         "text": "BS. Mai Văn Khoa",
+         "style": "labelL",
+         "color": "#22231F → colors.bg.inverse | colors.text.primary",
+         "width": "fill"
+        },
+        {
+         "text": "khoa.mai@example.com · BV Thực hành C",
+         "style": "bodyS",
+         "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+         "width": "fill"
+        },
+        {
+         "name": "FRAME",
+         "type": "frame",
+         "layout": "row",
+         "gap": 4,
+         "children": [
+          {
+           "name": "Badge/Đã khóa",
+           "type": "frame",
+           "layout": "row",
+           "gap": 4,
+           "padding": [
+            3,
+            8,
+            3,
+            8
+           ],
+           "alignItems": "center",
+           "bg": "#F8E3E0 → colors.status.danger.bg | colors.ai.malignant.bg",
+           "radius": 999,
+           "children": [
+            {
+             "icon": "lock",
+             "size": 14
+            },
+            {
+             "text": "Đã khóa",
+             "style": "labelS",
+             "color": "#A8443A → colors.status.danger.fg | colors.ai.malignant.fg"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "icon": "chevron-right",
+       "size": 18
+      }
+     ]
+    },
+    {
+     "name": "PrivacyNote",
+     "type": "frame",
+     "layout": "column",
+     "gap": 12,
+     "padding": [
+      16,
+      16,
+      16,
+      16
+     ],
+     "widthMode": "fill",
+     "bg": "#F2EFE7 → colors.bg.surfaceAlt | colors.status.neutral.bg",
+     "radius": 16,
+     "children": [
+      {
+       "text": "Quản trị viên duyệt hoặc khóa tài khoản; không xem hồ sơ bệnh nhân, ca hay ảnh CT.",
+       "style": "bodyS",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary",
+       "width": "fill"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "TabBar",
+   "type": "frame",
+   "layout": "row",
+   "padding": [
+    0,
+    8,
+    0,
+    8
+   ],
+   "alignItems": "center",
+   "justify": "space-between",
+   "width": 390,
+   "height": 64,
+   "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+   "border": {
+    "color": "#E4E0D6 → colors.bg.sunken | colors.border.default",
+    "width": "top 1"
+   },
+   "children": [
+    {
+     "name": "tab/accounts",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 110,
+     "height": 56,
+     "bg": "#EEF7F5 → colors.bg.brandSubtle",
+     "radius": 12,
+     "children": [
+      {
+       "icon": "account-approval",
+       "size": 24
+      },
+      {
+       "text": "Tài khoản",
+       "style": "labelS",
+       "color": "#2F6F67 → colors.text.link | colors.border.focus"
+      }
+     ]
+    },
+    {
+     "name": "tab/stats",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 110,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Quản trị · Thống kê tổng hợp",
+     "children": [
+      {
+       "icon": "statistics",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Thống kê",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    },
+    {
+     "name": "tab/me",
+     "type": "frame",
+     "layout": "column",
+     "gap": 2,
+     "padding": [
+      4,
+      0,
+      4,
+      0
+     ],
+     "alignItems": "center",
+     "justify": "center",
+     "width": 110,
+     "height": 56,
+     "radius": 12,
+     "onPress": "→ Quản trị · Tôi",
+     "children": [
+      {
+       "icon": "profile",
+       "size": 24,
+       "opacity": 0.75
+      },
+      {
+       "text": "Tôi",
+       "style": "caption",
+       "color": "#6B6E66 → colors.text.secondary | colors.text.tertiary"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "HomeIndicator",
+   "type": "frame",
+   "width": 390,
+   "height": 34,
+   "position": {
+    "x": 0,
+    "y": 810
+   },
+   "bg": "#FFFFFF → colors.bg.surface | colors.text.onBrand",
+   "children": [
+    {
+     "name": "RECTANGLE",
+     "type": "rect",
+     "width": 134,
+     "height": 5,
+     "position": {
+      "x": 128,
+      "y": 20
+     },
+     "bg": "#22231F → colors.bg.inverse | colors.text.primary",
+     "radius": 3
+    }
+   ]
+  }
+ ]
+}

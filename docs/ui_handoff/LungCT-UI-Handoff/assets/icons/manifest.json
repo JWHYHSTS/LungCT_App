@@ -1,0 +1,484 @@
+{
+ "name": "LungCT-Icons",
+ "version": "1.1",
+ "generated": "2026-10-24",
+ "style": {
+  "viewBox": "0 0 64 64",
+  "stroke": "#4D5048",
+  "strokeWidth": 2,
+  "linecap": "round",
+  "linejoin": "round",
+  "fills": "pastel (palette của bộ gốc)"
+ },
+ "count": {
+  "total": 64,
+  "original": 48,
+  "added": 16
+ },
+ "icons": [
+  {
+   "name": "account-approval",
+   "origin": "original",
+   "svg": "svg/account-approval.svg",
+   "png32": "png-32px/account-approval.png",
+   "png64": "png-64px/account-approval.png"
+  },
+  {
+   "name": "ai-analysis",
+   "origin": "original",
+   "svg": "svg/ai-analysis.svg",
+   "png32": "png-32px/ai-analysis.png",
+   "png64": "png-64px/ai-analysis.png"
+  },
+  {
+   "name": "back",
+   "origin": "added",
+   "svg": "svg/back.svg",
+   "png32": "png-32px/back.png",
+   "png64": "png-64px/back.png",
+   "reason": "Quay lại (TopBar Stack)"
+  },
+  {
+   "name": "calendar",
+   "origin": "added",
+   "svg": "svg/calendar.svg",
+   "png32": "png-32px/calendar.png",
+   "png64": "png-64px/calendar.png",
+   "reason": "Chọn ngày sinh (SCR-P02)"
+  },
+  {
+   "name": "camera",
+   "origin": "original",
+   "svg": "svg/camera.svg",
+   "png32": "png-32px/camera.png",
+   "png64": "png-64px/camera.png"
+  },
+  {
+   "name": "cancel",
+   "origin": "added",
+   "svg": "svg/cancel.svg",
+   "png32": "png-32px/cancel.png",
+   "png64": "png-64px/cancel.png",
+   "reason": "Hủy phân tích / Hủy trong menu"
+  },
+  {
+   "name": "case-add",
+   "origin": "original",
+   "svg": "svg/case-add.svg",
+   "png32": "png-32px/case-add.png",
+   "png64": "png-64px/case-add.png"
+  },
+  {
+   "name": "case-complete",
+   "origin": "original",
+   "svg": "svg/case-complete.svg",
+   "png32": "png-32px/case-complete.png",
+   "png64": "png-64px/case-complete.png"
+  },
+  {
+   "name": "cases",
+   "origin": "original",
+   "svg": "svg/cases.svg",
+   "png32": "png-32px/cases.png",
+   "png64": "png-64px/cases.png"
+  },
+  {
+   "name": "chevron-right",
+   "origin": "added",
+   "svg": "svg/chevron-right.svg",
+   "png32": "png-32px/chevron-right.png",
+   "png64": "png-64px/chevron-right.png",
+   "reason": "Mũi tên dòng danh sách; ảnh kế tiếp (SCR-R01)"
+  },
+  {
+   "name": "close",
+   "origin": "added",
+   "svg": "svg/close.svg",
+   "png32": "png-32px/close.png",
+   "png64": "png-64px/close.png",
+   "reason": "Đóng (TopBar Modal)"
+  },
+  {
+   "name": "conflict",
+   "origin": "added",
+   "svg": "svg/conflict.svg",
+   "png32": "png-32px/conflict.png",
+   "png64": "png-64px/conflict.png",
+   "reason": "Xung đột đồng bộ (SCR-Y01)"
+  },
+  {
+   "name": "ct-image",
+   "origin": "original",
+   "svg": "svg/ct-image.svg",
+   "png32": "png-32px/ct-image.png",
+   "png64": "png-64px/ct-image.png"
+  },
+  {
+   "name": "ct-stack",
+   "origin": "original",
+   "svg": "svg/ct-stack.svg",
+   "png32": "png-32px/ct-stack.png",
+   "png64": "png-64px/ct-stack.png"
+  },
+  {
+   "name": "download",
+   "origin": "original",
+   "svg": "svg/download.svg",
+   "png32": "png-32px/download.png",
+   "png64": "png-64px/download.png"
+  },
+  {
+   "name": "draft",
+   "origin": "original",
+   "svg": "svg/draft.svg",
+   "png32": "png-32px/draft.png",
+   "png64": "png-64px/draft.png"
+  },
+  {
+   "name": "edit",
+   "origin": "original",
+   "svg": "svg/edit.svg",
+   "png32": "png-32px/edit.png",
+   "png64": "png-64px/edit.png"
+  },
+  {
+   "name": "error",
+   "origin": "original",
+   "svg": "svg/error.svg",
+   "png32": "png-32px/error.png",
+   "png64": "png-64px/error.png"
+  },
+  {
+   "name": "eye",
+   "origin": "added",
+   "svg": "svg/eye.svg",
+   "png32": "png-32px/eye.png",
+   "png64": "png-64px/eye.png",
+   "reason": "Hiện mật khẩu; Xem PDF"
+  },
+  {
+   "name": "eye-off",
+   "origin": "added",
+   "svg": "svg/eye-off.svg",
+   "png32": "png-32px/eye-off.png",
+   "png64": "png-64px/eye-off.png",
+   "reason": "Ẩn mật khẩu"
+  },
+  {
+   "name": "filter",
+   "origin": "original",
+   "svg": "svg/filter.svg",
+   "png32": "png-32px/filter.png",
+   "png64": "png-64px/filter.png"
+  },
+  {
+   "name": "grad-cam",
+   "origin": "original",
+   "svg": "svg/grad-cam.svg",
+   "png32": "png-32px/grad-cam.png",
+   "png64": "png-64px/grad-cam.png"
+  },
+  {
+   "name": "home",
+   "origin": "original",
+   "svg": "svg/home.svg",
+   "png32": "png-32px/home.png",
+   "png64": "png-64px/home.png"
+  },
+  {
+   "name": "image-compare",
+   "origin": "original",
+   "svg": "svg/image-compare.svg",
+   "png32": "png-32px/image-compare.png",
+   "png64": "png-64px/image-compare.png"
+  },
+  {
+   "name": "image-replace",
+   "origin": "original",
+   "svg": "svg/image-replace.svg",
+   "png32": "png-32px/image-replace.png",
+   "png64": "png-64px/image-replace.png"
+  },
+  {
+   "name": "image-upload",
+   "origin": "original",
+   "svg": "svg/image-upload.svg",
+   "png32": "png-32px/image-upload.png",
+   "png64": "png-64px/image-upload.png"
+  },
+  {
+   "name": "info",
+   "origin": "added",
+   "svg": "svg/info.svg",
+   "png32": "png-32px/info.png",
+   "png64": "png-64px/info.png",
+   "reason": "Banner/Hộp thoại thông tin"
+  },
+  {
+   "name": "language",
+   "origin": "added",
+   "svg": "svg/language.svg",
+   "png32": "png-32px/language.png",
+   "png64": "png-64px/language.png",
+   "reason": "Ngôn ngữ (SCR-U02)"
+  },
+  {
+   "name": "lock",
+   "origin": "original",
+   "svg": "svg/lock.svg",
+   "png32": "png-32px/lock.png",
+   "png64": "png-64px/lock.png"
+  },
+  {
+   "name": "logout",
+   "origin": "original",
+   "svg": "svg/logout.svg",
+   "png32": "png-32px/logout.png",
+   "png64": "png-64px/logout.png"
+  },
+  {
+   "name": "lung",
+   "origin": "original",
+   "svg": "svg/lung.svg",
+   "png32": "png-32px/lung.png",
+   "png64": "png-64px/lung.png"
+  },
+  {
+   "name": "medical-notes",
+   "origin": "original",
+   "svg": "svg/medical-notes.svg",
+   "png32": "png-32px/medical-notes.png",
+   "png64": "png-64px/medical-notes.png"
+  },
+  {
+   "name": "more",
+   "origin": "original",
+   "svg": "svg/more.svg",
+   "png32": "png-32px/more.png",
+   "png64": "png-64px/more.png"
+  },
+  {
+   "name": "notifications",
+   "origin": "original",
+   "svg": "svg/notifications.svg",
+   "png32": "png-32px/notifications.png",
+   "png64": "png-64px/notifications.png"
+  },
+  {
+   "name": "offline",
+   "origin": "original",
+   "svg": "svg/offline.svg",
+   "png32": "png-32px/offline.png",
+   "png64": "png-64px/offline.png"
+  },
+  {
+   "name": "on-device",
+   "origin": "original",
+   "svg": "svg/on-device.svg",
+   "png32": "png-32px/on-device.png",
+   "png64": "png-64px/on-device.png"
+  },
+  {
+   "name": "opacity",
+   "origin": "original",
+   "svg": "svg/opacity.svg",
+   "png32": "png-32px/opacity.png",
+   "png64": "png-64px/opacity.png"
+  },
+  {
+   "name": "partial",
+   "origin": "added",
+   "svg": "svg/partial.svg",
+   "png32": "png-32px/partial.png",
+   "png64": "png-64px/partial.png",
+   "reason": "Kết quả một phần (ca)"
+  },
+  {
+   "name": "patient-add",
+   "origin": "original",
+   "svg": "svg/patient-add.svg",
+   "png32": "png-32px/patient-add.png",
+   "png64": "png-64px/patient-add.png"
+  },
+  {
+   "name": "patients",
+   "origin": "original",
+   "svg": "svg/patients.svg",
+   "png32": "png-32px/patients.png",
+   "png64": "png-64px/patients.png"
+  },
+  {
+   "name": "pdf-export",
+   "origin": "original",
+   "svg": "svg/pdf-export.svg",
+   "png32": "png-32px/pdf-export.png",
+   "png64": "png-64px/pdf-export.png"
+  },
+  {
+   "name": "pending",
+   "origin": "added",
+   "svg": "svg/pending.svg",
+   "png32": "png-32px/pending.png",
+   "png64": "png-64px/pending.png",
+   "reason": "Trạng thái Chờ duyệt / Chờ phân tích"
+  },
+  {
+   "name": "privacy",
+   "origin": "added",
+   "svg": "svg/privacy.svg",
+   "png32": "png-32px/privacy.png",
+   "png64": "png-64px/privacy.png",
+   "reason": "Quyền riêng tư (SCR-U02, M02)"
+  },
+  {
+   "name": "processing",
+   "origin": "original",
+   "svg": "svg/processing.svg",
+   "png32": "png-32px/processing.png",
+   "png64": "png-64px/processing.png"
+  },
+  {
+   "name": "profile",
+   "origin": "original",
+   "svg": "svg/profile.svg",
+   "png32": "png-32px/profile.png",
+   "png64": "png-64px/profile.png"
+  },
+  {
+   "name": "reset-view",
+   "origin": "original",
+   "svg": "svg/reset-view.svg",
+   "png32": "png-32px/reset-view.png",
+   "png64": "png-64px/reset-view.png"
+  },
+  {
+   "name": "restore",
+   "origin": "original",
+   "svg": "svg/restore.svg",
+   "png32": "png-32px/restore.png",
+   "png64": "png-64px/restore.png"
+  },
+  {
+   "name": "retry",
+   "origin": "added",
+   "svg": "svg/retry.svg",
+   "png32": "png-32px/retry.png",
+   "png64": "png-64px/retry.png",
+   "reason": "Thử lại / Phân tích lại"
+  },
+  {
+   "name": "save",
+   "origin": "original",
+   "svg": "svg/save.svg",
+   "png32": "png-32px/save.png",
+   "png64": "png-64px/save.png"
+  },
+  {
+   "name": "search",
+   "origin": "original",
+   "svg": "svg/search.svg",
+   "png32": "png-32px/search.png",
+   "png64": "png-64px/search.png"
+  },
+  {
+   "name": "server-analysis",
+   "origin": "original",
+   "svg": "svg/server-analysis.svg",
+   "png32": "png-32px/server-analysis.png",
+   "png64": "png-64px/server-analysis.png"
+  },
+  {
+   "name": "settings",
+   "origin": "original",
+   "svg": "svg/settings.svg",
+   "png32": "png-32px/settings.png",
+   "png64": "png-64px/settings.png"
+  },
+  {
+   "name": "share",
+   "origin": "original",
+   "svg": "svg/share.svg",
+   "png32": "png-32px/share.png",
+   "png64": "png-64px/share.png"
+  },
+  {
+   "name": "sort",
+   "origin": "added",
+   "svg": "svg/sort.svg",
+   "png32": "png-32px/sort.png",
+   "png64": "png-64px/sort.png",
+   "reason": "Sắp xếp (SCR-P01/C01)"
+  },
+  {
+   "name": "statistics",
+   "origin": "original",
+   "svg": "svg/statistics.svg",
+   "png32": "png-32px/statistics.png",
+   "png64": "png-64px/statistics.png"
+  },
+  {
+   "name": "success",
+   "origin": "original",
+   "svg": "svg/success.svg",
+   "png32": "png-32px/success.png",
+   "png64": "png-64px/success.png"
+  },
+  {
+   "name": "sync",
+   "origin": "original",
+   "svg": "svg/sync.svg",
+   "png32": "png-32px/sync.png",
+   "png64": "png-64px/sync.png"
+  },
+  {
+   "name": "sync-error",
+   "origin": "original",
+   "svg": "svg/sync-error.svg",
+   "png32": "png-32px/sync-error.png",
+   "png64": "png-64px/sync-error.png"
+  },
+  {
+   "name": "theme",
+   "origin": "added",
+   "svg": "svg/theme.svg",
+   "png32": "png-32px/theme.png",
+   "png64": "png-64px/theme.png",
+   "reason": "Giao diện Sáng/Tối (SCR-U02)"
+  },
+  {
+   "name": "trash",
+   "origin": "original",
+   "svg": "svg/trash.svg",
+   "png32": "png-32px/trash.png",
+   "png64": "png-64px/trash.png"
+  },
+  {
+   "name": "unlock",
+   "origin": "original",
+   "svg": "svg/unlock.svg",
+   "png32": "png-32px/unlock.png",
+   "png64": "png-64px/unlock.png"
+  },
+  {
+   "name": "warning",
+   "origin": "original",
+   "svg": "svg/warning.svg",
+   "png32": "png-32px/warning.png",
+   "png64": "png-64px/warning.png"
+  },
+  {
+   "name": "zoom-in",
+   "origin": "original",
+   "svg": "svg/zoom-in.svg",
+   "png32": "png-32px/zoom-in.png",
+   "png64": "png-64px/zoom-in.png"
+  },
+  {
+   "name": "zoom-out",
+   "origin": "original",
+   "svg": "svg/zoom-out.svg",
+   "png32": "png-32px/zoom-out.png",
+   "png64": "png-64px/zoom-out.png"
+  }
+ ]
+}
