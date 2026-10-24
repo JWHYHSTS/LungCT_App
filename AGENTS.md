@@ -12,12 +12,13 @@ Tài liệu này là **bộ quy tắc bắt buộc** dành cho tất cả trợ 
    - Xóa hoặc di chuyển `LungCT_LamViecRieng` **không được phép** ảnh hưởng đến `LungCT_DoAn`.
    - Tuyệt đối không tạo code, script, cấu hình, symlink hay tài liệu trong đồ án có đường dẫn trỏ sang thư mục làm việc riêng.
 
-2. **Giới hạn phạm vi khởi tạo ban đầu (Lệnh hiện tại)**:
-   - Chỉ tạo khung thư mục, các tệp `README.md`, `AGENTS.md`, `.gitignore` và `.gitkeep`.
-   - Chưa khởi tạo framework (React Native, FastAPI), chưa cài đặt thư viện/dependencies.
-   - Không tạo mã nguồn ứng dụng giả, backend giả, mô hình giả hoặc dữ liệu/báo cáo giả.
-   - Không tự ý giải nén, chuyển đổi hay huấn luyện mô hình khi chưa có lệnh giao cụ thể.
-   - Việc chưa có tài liệu và mô hình đầu vào ở bước khởi tạo là hoàn toàn bình thường. Không yêu cầu người dùng cung cấp trước mới tạo khung.
+2. **Giới hạn phạm vi và Tình trạng tài liệu hiện tại**:
+   - Hiện trạng thực tế: Đã tiếp nhận hướng dẫn `Huong_dan_Antigravity.docx`, hai sơ đồ kiến trúc `LungCT_KienTruc.drawio`, `LungCT_Pipeline.drawio`, notebook `LungCT_Reproduction_Improved.ipynb`, gói Primary FP32 kèm SHA256 và gói LightCandidate FP16.
+   - **Đính chính quan trọng**: Chưa có bản đặc tả chức năng toàn bộ ứng dụng (chỉ có đặc tả bộ icon tại `docs/requirements/LungCT_Icons_DacTa.md`); chưa có hai báo cáo khóa luận và đề cương (thư mục `reports/android/` và `reports/ios/` hiện chỉ có `.gitkeep`).
+   - Việc chưa có đặc tả ứng dụng và hai báo cáo ở bước này là hoàn toàn bình thường, không coi là lỗi và không tạo file rỗng hay nội dung giả để thay thế. Biên bản tiếp nhận đầu vào được lưu tại `docs/requirements/TiepNhan_DauVao.md` chỉ ghi nhận hiện trạng kỹ thuật, không thay thế đặc tả ứng dụng.
+   - **Giai đoạn hiện tại**: Tập trung hoàn thiện tài liệu kỹ thuật trong đồ án, ghi chép số liệu và lưu trữ minh chứng phục vụ hai báo cáo.
+   - **Khi đã có hai báo cáo**: Mỗi lệnh triển khai tiếp theo bắt buộc phải cập nhật trực tiếp các phần nội dung bị ảnh hưởng trong CẢ HAI báo cáo, phản ánh đúng đóng góp kỹ thuật và số đo minh chứng riêng của từng nền tảng (Android: Redmi 13; iOS: iPhone thực tế).
+   - Đồ án phải hoạt động độc lập, tự chứa đựng; tuyệt đối không tạo phụ thuộc chạy/build/test sang thư mục làm việc riêng `LungCT_LamViecRieng`. Mọi hướng dẫn cần thiết để phát triển và bàn giao phải được ghi trong tài liệu chính thức của đồ án.
 
 3. **Nguyên tắc tiếp nhận và xử lý tài liệu khi người dùng bổ sung**:
    - Khi người dùng bổ sung tài liệu và giao lệnh tiếp theo, AI phải chủ động đọc kỹ hướng dẫn, đặc tả (`docs/requirements/`), sơ đồ kiến trúc (`docs/architecture/`) và hai báo cáo (`reports/`) để đối chiếu, cập nhật quy tắc.

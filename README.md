@@ -112,17 +112,22 @@ Dự án phân biệt rạch ròi 3 trạng thái của mô hình để đảm b
 
 ---
 
-## 6. Trạng thái hiện tại & Hướng dẫn bổ sung tài liệu
-Khung dự án hiện đang ở bước **khởi tạo cấu trúc nền móng**. Chưa có mã nguồn ứng dụng hay mô hình giả lập nào được tạo.
+## 6. Trạng thái tiếp nhận tài nguyên thực tế
+Dự án đã hoàn tất việc **tiếp nhận và kiểm kê tài nguyên đầu vào**. Chi tiết đối chiếu kỹ thuật được ghi nhận tại [`docs/requirements/TiepNhan_DauVao.md`](docs/requirements/TiepNhan_DauVao.md).
 
-### Danh mục tệp cần tự bổ sung vào `LungCT_DoAn`:
-1. **Đặc tả yêu cầu & chức năng**: Đặt tệp `LumaCT_DacTa.docx` (hoặc `.md`) vào [`docs/requirements/`](docs/requirements/).
-2. **Sơ đồ kiến trúc & pipeline**: Đặt `LungCT_KienTruc.drawio` và `LungCT_Pipeline.drawio` vào [`docs/architecture/`](docs/architecture/).
-3. **Notebook nghiên cứu**: Đặt notebook Colab huấn luyện và trích xuất vào [`ai/notebooks/`](ai/notebooks/).
-4. **Mô hình nguồn chính**: Đặt `LungCT_Primary_20261024T050904_329781Z.zip` và `.sha256` vào [`ai/models/source/primary/`](ai/models/source/primary/).
-5. **Mô hình ứng viên nhẹ**: Đặt `LungCT_LightCandidate_20261024T050904_329781Z.zip` vào [`ai/models/source/light_candidate/`](ai/models/source/light_candidate/).
-6. **Báo cáo Android**: Đặt bản báo cáo của Dương Thị Thu Diểm vào [`reports/android/`](reports/android/).
-7. **Báo cáo iOS**: Đặt bản báo cáo của Dương Hải Đăng vào [`reports/ios/`](reports/ios/).
-8. **Tài liệu tham khảo**: Đặt các bài báo, liên kết, dataset paper chính thức vào [`docs/references/`](docs/references/).
+### Hiện trạng tài nguyên đã có trong đồ án:
+1. **Sơ đồ kiến trúc & pipeline**: Đã tiếp nhận đầy đủ tại [`docs/architecture/`](docs/architecture/) gồm `LungCT_KienTruc.drawio` (4 trang) và `LungCT_Pipeline.drawio` (5 trang).
+2. **Notebook nghiên cứu**: Đã tiếp nhận `LungCT_Reproduction_Improved.ipynb` tại [`ai/notebooks/`](ai/notebooks/) (chứa 49 cell tái lập và cải tiến mô hình).
+3. **Mô hình nguồn chính (Primary FP32)**: Đã tiếp nhận `LungCT_Primary_20261024T050904_329781Z.zip` (923 MB) kèm tệp xác thực `.sha256` khớp mã băm tuyệt đối tại [`ai/models/source/primary/`](ai/models/source/primary/).
+4. **Mô hình ứng viên nhẹ (LightCandidate FP16)**: Đã tiếp nhận `LungCT_LightCandidate_20261024T050904_329781Z.zip` (748.8 MB) tại [`ai/models/source/light_candidate/`](ai/models/source/light_candidate/) (đã tự động ghi nhận mã băm SHA256).
+5. **Bộ icon đồ họa chuẩn**: Đã tiếp nhận và lập đặc tả 48 icon y tế tại [`docs/requirements/LungCT_Icons_DacTa.md`](docs/requirements/LungCT_Icons_DacTa.md).
+6. **Biên bản tiếp nhận kỹ thuật**: Đã tạo [`docs/requirements/TiepNhan_DauVao.md`](docs/requirements/TiepNhan_DauVao.md).
 
-> Các lệnh cài đặt môi trường, chạy demo, kiểm thử tự động và build release sẽ được cập nhật cụ thể vào README này sau khi từng cấu phần được xây dựng và kiểm chứng thực tế.
+### Các hạng mục sẽ được bổ sung và xây dựng ở bước tiếp theo:
+- **Đặc tả chức năng toàn diện (`LumaCT_DacTa`)**: Sẽ tiếp nhận và cập nhật vào `docs/requirements/` khi người dùng cung cấp.
+- **Đề cương và Hai báo cáo khóa luận**: Thư mục `reports/android/` và `reports/ios/` sẽ tiếp nhận bản thảo báo cáo để cập nhật trực tiếp nội dung đóng góp của từng nền tảng qua mỗi lệnh phát triển.
+- **Tài liệu tham khảo chính thức**: Đặt tại `docs/references/`.
+
+> [!IMPORTANT]
+> Việc chưa có đặc tả ứng dụng toàn diện và hai báo cáo ở bước này là bình thường và không coi là lỗi. Đồ án hoạt động hoàn toàn độc lập, không có bất kỳ phụ thuộc nào sang thư mục làm việc riêng `LungCT_LamViecRieng`.
+
