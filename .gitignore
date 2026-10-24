@@ -67,6 +67,7 @@ GoogleService-Info.plist
 ai/**/__pycache__/
 ai/**/*.tmp
 *.ipynb_checkpoints/
+/ai/models/source/**/*.zip
 
 # System files
 .DS_Store

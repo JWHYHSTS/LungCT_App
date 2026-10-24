@@ -96,6 +96,7 @@ Dự án phân biệt rạch ròi 3 trạng thái của mô hình để đảm b
 1. **Gói mô hình nguồn (`ai/models/source/`)**:
    - Lưu trữ các tệp `.zip` và mã băm xác thực `.sha256` nguyên bản thu được từ Colab/nghiên cứu.
    - Luôn giữ nguyên tệp gốc để đối chiếu, không chỉnh sửa trực tiếp bên trong.
+   - **Quy tắc lưu trữ & bàn giao**: Do dung lượng lớn (> 700MB mỗi gói), các tệp ZIP mô hình được lưu trữ cục bộ trên ổ đĩa và được loại trừ trong `.gitignore`, không đi cùng qua `git clone` thông thường. Khi bàn giao dự án hoặc thiết lập môi trường làm việc mới, bắt buộc phải cung cấp kèm các tệp ZIP thật và đối chiếu tính toàn vẹn bằng tệp checksum `.sha256` tương ứng.
 2. **Mô hình giải nén (`ai/models/extracted/`)**:
    - Chỉ được giải nén khi có lệnh giao tích hợp rõ ràng.
    - Chứa trọng số, cấu hình kiến trúc, custom layers và processor dùng cho backend hoặc pipeline chuyển đổi.
