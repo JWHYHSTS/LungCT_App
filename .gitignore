@@ -1,0 +1,83 @@
+# .gitignore cho dự án LungCT_DoAn
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Python virtual environment & cache
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Mobile build outputs & caches
+# Android
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+*.keystore
+!mobile/android/app/debug.keystore
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/build/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+DerivedData/
+
+# Metro & Bundler
+.metro/
+.expo/
+*.bundle
+*.assets
+
+# Fastlane & IDEs
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# Environment variables & Local secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# AI Cache & Temporary checkpoints (trừ thư mục định nghĩa source/extracted/manifests)
+ai/**/__pycache__/
+ai/**/*.tmp
+*.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build artifacts & Packaging outputs
+dist/
+build/
+backend/build/
+backend/dist/
+release/android/*.apk
+release/android/*.aab
+release/ios/*.ipa
