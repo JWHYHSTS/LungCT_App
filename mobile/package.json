@@ -1,0 +1,35 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "expo": "~58.0.19",
+    "expo-status-bar": "~58.0.4",
+    "react": "19.3.0",
+    "react-native": "0.88.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/react": "~19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^58.0.4",
+    "jest-expo": "^58.0.12",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src App.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"App.tsx\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"App.tsx\""
+  },
+  "jest": {
+    "preset": "jest-expo"
+  },
+  "private": true
+}
