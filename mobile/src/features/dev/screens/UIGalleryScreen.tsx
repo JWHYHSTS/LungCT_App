@@ -21,6 +21,20 @@ import {
   StatCard,
   EmptyState,
   Divider,
+  // UI-04 components
+  Toggle,
+  Checkbox,
+  Segmented,
+  Slider,
+  Dialog,
+  BottomSheet,
+  Snackbar,
+  ProgressBar,
+  Skeleton,
+  HeatmapLegend,
+  CTImageView,
+  ImageTile,
+  ScoreCard,
 } from '../../../ui/components';
 
 /**
@@ -36,12 +50,22 @@ export const UIGalleryScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [, setTick] = useState(0);
 
-  // Trạng thái thử nghiệm các component
+  // Trạng thái thử nghiệm các component đợt 1
   const [searchValue, setSearchValue] = useState('');
   const [textFieldVal, setTextFieldVal] = useState('Dương Thị Thu Diểm');
   const [selectedChip, setSelectedChip] = useState('all');
   const [activeTab, setActiveTab] = useState('home');
   const [btnLoading, setBtnLoading] = useState(false);
+
+  // Trạng thái thử nghiệm các component đợt 2 (UI-04)
+  const [toggleVal, setToggleVal] = useState(true);
+  const [checkboxVal, setCheckboxVal] = useState(true);
+  const [segmentedVal, setSegmentedVal] = useState<'original' | 'gradcam'>('gradcam');
+  const [sliderVal, setSliderVal] = useState(40);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [progressVal] = useState(65);
 
   const currentLang = i18n.language.startsWith('vi') ? 'vi' : 'en';
 
@@ -452,9 +476,139 @@ export const UIGalleryScreen: React.FC = () => {
           />
         </View>
 
-        {/* 8. LƯỚI 64 ICONS */}
+        {/* 8. CÁC THÀNH PHẦN ĐẶC THÙ LUNGCT ĐỢT 2 (UI-04) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="8. Khối Ảnh CT & Grad-CAM (UI-04)" />
+
+          {/* CTImageView & HeatmapLegend */}
+          <View style={{ alignItems: 'center', gap: spacing.md, marginTop: spacing.xs }}>
+            <CTImageView
+              showHeatmap={segmentedVal === 'gradcam'}
+              heatmapOpacity={sliderVal / 100}
+              size={330}
+              watermarkText="ẢNH GIẢ LẬP"
+            />
+            {segmentedVal === 'gradcam' && <HeatmapLegend />}
+          </View>
+
+          {/* Segmented & Slider Controls */}
+          <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            <Segmented
+              items={[
+                { key: 'original', label: 'Ảnh gốc' },
+                { key: 'gradcam', label: 'Grad-CAM' },
+              ]}
+              selectedKey={segmentedVal}
+              onSelect={(key) => setSegmentedVal(key as any)}
+            />
+
+            {segmentedVal === 'gradcam' && (
+              <View style={{ marginTop: spacing.xs }}>
+                <View
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}
+                >
+                  <AppText variant="labelM">Độ phủ Grad-CAM</AppText>
+                  <AppText variant="labelM" color={colors.text.secondary}>
+                    {`${sliderVal}%`}
+                  </AppText>
+                </View>
+                <Slider value={sliderVal} onValueChange={setSliderVal} min={0} max={100} step={5} />
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* 9. THẺ ĐIỂM SỐ AI & Ô ẢNH IMAGETILE (UI-04) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="9. Thẻ Điểm Số AI (ScoreCard) & Ô Ảnh (ImageTile)" />
+
+          {/* ScoreCard chuẩn 3 lớp cố định */}
+          <ScoreCard
+            scores={[
+              { classification: 'Benign', score: 0.214 },
+              { classification: 'Malignant', score: 0.712 },
+              { classification: 'Normal', score: 0.074 },
+            ]}
+          />
+
+          {/* 6 Trạng thái của ImageTile (BR-AI-04) */}
+          <AppText variant="labelM" style={{ marginTop: spacing.md, marginBottom: spacing.xs }}>
+            Các trạng thái ImageTile (Tách biệt FAIL và Thiếu CAM):
+          </AppText>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: spacing.sm }}
+          >
+            <ImageTile index={1} status="pass" aiClass="Malignant" onPress={() => {}} />
+            <ImageTile index={2} status="passNoCam" aiClass="Benign" onPress={() => {}} />
+            <ImageTile index={3} status="fail" onPress={() => {}} />
+            <ImageTile index={4} status="running" onPress={() => {}} />
+            <ImageTile index={5} status="pending" onPress={() => {}} />
+            <ImageTile index={6} status="mock" onPress={() => {}} />
+          </ScrollView>
+        </View>
+
+        {/* 10. ĐIỀU KHIỂN & HỘP THOẠI (UI-04) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="10. Điều Khiển Nhập Liệu & Hộp Thoại (UI-04)" />
+
+          <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+            <Toggle
+              label="Bật suy luận On-Device cục bộ"
+              value={toggleVal}
+              onValueChange={setToggleVal}
+            />
+
+            <Checkbox
+              label="Tôi đồng ý xác nhận kết quả tham khảo"
+              checked={checkboxVal}
+              onValueChange={setCheckboxVal}
+            />
+
+            <ProgressBar progress={progressVal} label="Tiến trình tải mô hình Adaptive" />
+
+            <View style={{ gap: spacing.xs, marginTop: spacing.xs }}>
+              <AppText variant="bodyS" color={colors.text.secondary}>
+                Khung xương tải dữ liệu (Skeleton):
+              </AppText>
+              <Skeleton width="100%" height={20} />
+              <Skeleton width="70%" height={16} />
+            </View>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: spacing.sm,
+                marginTop: spacing.sm,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Button
+                label="Mở Dialog"
+                variant="secondary"
+                size="M"
+                onPress={() => setDialogVisible(true)}
+              />
+              <Button
+                label="Mở BottomSheet"
+                variant="secondary"
+                size="M"
+                onPress={() => setSheetVisible(true)}
+              />
+              <Button
+                label="Hiện Snackbar"
+                variant="tertiary"
+                size="M"
+                onPress={() => setSnackbarVisible(true)}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* 11. LƯỚI 64 ICONS */}
         <View style={dynamicStyles.gridContainer}>
-          <SectionHeader title={`8. Hệ Thống 64 Vector Icons (${ALL_ICON_NAMES.length})`} />
+          <SectionHeader title={`11. Hệ Thống 64 Vector Icons (${ALL_ICON_NAMES.length})`} />
           <View style={dynamicStyles.iconGrid}>
             {ALL_ICON_NAMES.map((iconName) => (
               <View key={iconName} style={dynamicStyles.iconCard}>
@@ -467,6 +621,49 @@ export const UIGalleryScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Dialog demo (Destructive) */}
+      <Dialog
+        visible={dialogVisible}
+        type="destructive"
+        title="Xóa vĩnh viễn ca bệnh?"
+        body="Hành động này sẽ xóa dữ liệu cục bộ và không thể khôi phục (BR-DEL-02). Nút Hủy được ưu tiên để phòng tránh thao tác nhầm."
+        cancelLabel="Hủy bỏ"
+        confirmLabel="Xác nhận xóa"
+        onCancel={() => setDialogVisible(false)}
+        onConfirm={() => setDialogVisible(false)}
+      />
+
+      {/* BottomSheet demo */}
+      <BottomSheet
+        visible={sheetVisible}
+        title="Tùy chọn thao tác ca"
+        onClose={() => setSheetVisible(false)}
+      >
+        <View style={{ gap: spacing.md, paddingVertical: spacing.sm }}>
+          <Button
+            label="Xuất hồ sơ PDF"
+            leadingIcon="pdf-export"
+            variant="primary"
+            onPress={() => setSheetVisible(false)}
+          />
+          <Button
+            label="Đồng bộ ngay"
+            leadingIcon="sync"
+            variant="secondary"
+            onPress={() => setSheetVisible(false)}
+          />
+        </View>
+      </BottomSheet>
+
+      {/* Snackbar demo */}
+      <Snackbar
+        visible={snackbarVisible}
+        message="Đã lưu thay đổi vào bộ nhớ cục bộ trên thiết bị."
+        type="success"
+        actionLabel="Đóng"
+        onDismiss={() => setSnackbarVisible(false)}
+      />
 
       {/* TabBar demo hiển thị cố định ở đáy */}
       <TabBar role="doctor" activeTabKey={activeTab} onTabPress={setActiveTab} />

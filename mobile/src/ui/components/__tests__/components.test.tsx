@@ -17,9 +17,17 @@ import {
   EmptyState,
   Divider,
   Screen,
+  ScoreCard,
+  ScoreRow,
+  ImageTile,
+  HeatmapLegend,
+  Dialog,
+  Slider,
+  BottomSheet,
 } from '../index';
 import { ThemeProvider } from '../../theme';
 import * as themeModule from '../../theme/ThemeProvider';
+import '../../../i18n';
 
 describe('Thư viện Component lõi đợt 1 (UI-03)', () => {
   // Test 1: Đủ 17 component chuẩn hóa
@@ -156,6 +164,7 @@ describe('Thư viện Component lõi đợt 1 (UI-03)', () => {
           useEffect: () => {},
           useLayoutEffect: () => {},
           useRef: (init: any) => ({ current: init }),
+          useSyncExternalStore: (_subscribe: any, getSnapshot: any) => getSnapshot(),
         };
       }
     });
@@ -316,6 +325,245 @@ describe('Thư viện Component lõi đợt 1 (UI-03)', () => {
       patientsTab.props.onPress();
 
       expect(onTabPressMock).toHaveBeenCalledWith('patients');
+    });
+
+    // --- UI-04 Component Tests ---
+    // Test 11: ScoreCard luôn render đúng 3 dòng đúng thứ tự [Benign, Malignant, Normal] dù dữ liệu vào sai thứ tự
+    test('11. ScoreCard luôn hiển thị đúng 3 dòng theo thứ tự cố định [Benign, Malignant, Normal], nhấn mạnh lớp cao nhất và kèm MSG-02', () => {
+      // Dữ liệu đầu vào cố tình xáo trộn thứ tự: Normal trước, Benign sau cùng
+      const unorderedScores: any = [
+        { classification: 'Normal', score: 0.074 },
+        { classification: 'Malignant', score: 0.7123 },
+        { classification: 'Benign', score: 0.214 },
+      ];
+
+      const card: any = ScoreCard({ scores: unorderedScores });
+      expect(card).toBeDefined();
+
+      // Cấu trúc children: [header, rowsList, captionMsg02]
+      const [headerNode, rowsListNode, captionNode] = card.props.children;
+
+      // 1. Kiểm tra MSG-02
+      expect(captionNode.props.children).toBe(
+        'Điểm (score) là đầu ra của mô hình, chưa được hiệu chuẩn thành xác suất mắc bệnh.',
+      );
+
+      // 2. Kiểm tra nhãn AI ở header là lớp có điểm số cao nhất (Malignant)
+      const labelsWrapper = headerNode.props.children[1];
+      const topLabels = labelsWrapper.props.children;
+      expect(topLabels).toHaveLength(1);
+      expect(topLabels[0].props.classification).toBe('Malignant');
+
+      // 3. Kiểm tra 3 dòng điểm số theo thứ tự cố định [Benign, Malignant, Normal]
+      const rows = rowsListNode.props.children;
+      expect(rows).toHaveLength(3);
+
+      expect(rows[0].props.classification).toBe('Benign');
+      expect(rows[0].props.score).toBe(0.214);
+      expect(rows[0].props.isTop).toBe(false);
+
+      expect(rows[1].props.classification).toBe('Malignant');
+      expect(rows[1].props.score).toBe(0.7123);
+      expect(rows[1].props.isTop).toBe(true);
+
+      expect(rows[2].props.classification).toBe('Normal');
+      expect(rows[2].props.score).toBe(0.074);
+      expect(rows[2].props.isTop).toBe(false);
+    });
+
+    // Test 12: ScoreRow định dạng 3 chữ số thập phân với dấu phẩy "0,712"
+    test('12. ScoreRow định dạng 3 chữ số thập phân chuẩn Q-15 (0.7123 -> "0,712") và gọi là "điểm", không gọi "xác suất"', () => {
+      const row: any = ScoreRow({
+        classification: 'Malignant',
+        score: 0.7123,
+        isTop: true,
+      });
+
+      const headerRow = row.props.children[0];
+      const [labelNode, scoreNode] = headerRow.props.children;
+
+      expect(labelNode.props.children).toBe('Ác tính');
+      // Đảm bảo dấu phẩy thập phân và 3 chữ số sau dấu phẩy
+      expect(scoreNode.props.children).toBe('0,712');
+    });
+
+    // Test 13: ImageTile hỗ trợ đủ 6 trạng thái và hiển thị đúng nhãn chữ
+    test('13. ImageTile hỗ trợ đủ 6 trạng thái (pending, running, pass, passNoCam, fail, mock) và hiển thị đúng nhãn chữ', () => {
+      const statuses: {
+        status: any;
+        expectedLabel: string;
+        expectedTone: string;
+      }[] = [
+        { status: 'pending', expectedLabel: 'Chờ', expectedTone: 'pending' },
+        { status: 'running', expectedLabel: 'Đang chạy', expectedTone: 'brand' },
+        { status: 'pass', expectedLabel: 'Đạt', expectedTone: 'success' },
+        { status: 'passNoCam', expectedLabel: 'Thiếu CAM', expectedTone: 'warning' },
+        { status: 'fail', expectedLabel: 'Lỗi', expectedTone: 'danger' },
+        { status: 'mock', expectedLabel: 'Giả lập', expectedTone: 'neutral' },
+      ];
+
+      statuses.forEach(({ status, expectedLabel, expectedTone }, idx) => {
+        const tile: any = ImageTile({
+          index: idx + 1,
+          status,
+          aiClass: status === 'pass' ? 'Malignant' : undefined,
+        });
+
+        const infoWrapper = tile.props.children[1];
+        const [indexNode, badgesCol] = infoWrapper.props.children;
+
+        expect(indexNode.props.children).toBe(`Ảnh ${idx + 1}`);
+
+        const statusBadge = badgesCol.props.children[0];
+        expect(statusBadge.props.label).toBe(expectedLabel);
+        expect(statusBadge.props.tone).toBe(expectedTone);
+      });
+    });
+
+    // Test 14: HeatmapLegend hiển thị dải màu Jet và nhãn khoa học
+    test('14. HeatmapLegend render đủ các điểm dừng màu Jet cố định và các nhãn "Thấp", "Cao"', () => {
+      const legend: any = HeatmapLegend({});
+      expect(legend).toBeDefined();
+
+      const [barNode, labelsRow] = legend.props.children;
+      // Dải màu gồm 5 stops
+      expect(barNode.props.children).toHaveLength(5);
+
+      const labels = labelsRow.props.children;
+      expect(labels[0].props.children).toBe('Thấp');
+      expect(labels[1].props.children).toBe('Mức đóng góp tương đối trong ảnh này');
+      expect(labels[2].props.children).toBe('Cao');
+    });
+
+    // Test 15: Dialog destructive ưu tiên focus vào nút Hủy, kiểm tra callback độc lập và đóng scrim
+    test('15. Dialog loại destructive ưu tiên biến thể primary cho nút Hủy, Hủy không gọi xóa, xác nhận chỉ gọi đúng 1 lần', () => {
+      const onConfirmMock = jest.fn();
+      const onCancelMock = jest.fn();
+
+      const destructiveDialog: any = Dialog({
+        visible: true,
+        type: 'destructive',
+        title: 'Xóa ca bệnh',
+        body: 'Hành động này không thể hoàn tác.',
+        onConfirm: onConfirmMock,
+        onCancel: onCancelMock,
+      });
+
+      // 1. Kiểm tra cấu trúc Modal và onRequestClose (Android Back)
+      expect(destructiveDialog.props.onRequestClose).toBe(onCancelMock);
+
+      // Pressable scrim -> dialogContainer -> children: [title, body, actionsRow]
+      const scrim = destructiveDialog.props.children;
+      expect(scrim.props.onPress).toBe(onCancelMock);
+
+      const dialogContainer = scrim.props.children;
+      const actionsRow = dialogContainer.props.children[2];
+      const [cancelBtn, confirmBtn] = actionsRow.props.children;
+
+      // Nút Hủy nhận variant primary để làm nổi bật thao tác an toàn
+      expect(cancelBtn.props.label).toBe('Hủy');
+      expect(cancelBtn.props.variant).toBe('primary');
+
+      // Nút Xác nhận nhận variant danger
+      expect(confirmBtn.props.label).toBe('Xác nhận');
+      expect(confirmBtn.props.variant).toBe('danger');
+
+      // 2. Kiểm tra bấm nút Hủy: CHỈ gọi onCancel, TUYỆT ĐỐI không gọi onConfirm
+      cancelBtn.props.onPress();
+      expect(onCancelMock).toHaveBeenCalledTimes(1);
+      expect(onConfirmMock).not.toHaveBeenCalled();
+
+      // 3. Kiểm tra bấm nút Xác nhận: gọi đúng 1 lần onConfirm
+      confirmBtn.props.onPress();
+      expect(onConfirmMock).toHaveBeenCalledTimes(1);
+    });
+
+    // Test 16: Slider giới hạn giá trị và bước nhảy 5 (kèm biên 0% và 100%)
+    test('16. Slider điều chỉnh độ phủ Grad-CAM chuẩn hóa min 0, max 100, step 5 và xử lý đúng tại các mốc biên 0 và 100', () => {
+      const onValueChangeMock = jest.fn();
+
+      const slider40: any = Slider({
+        value: 40,
+        onValueChange: onValueChangeMock,
+        step: 5,
+        min: 0,
+        max: 100,
+      });
+
+      expect(slider40.props.accessibilityRole).toBe('adjustable');
+      expect(slider40.props.accessibilityValue).toEqual({ min: 0, max: 100, now: 40 });
+
+      // Kiểm tra tại mốc biên 0 (độ phủ 0%)
+      const slider0: any = Slider({
+        value: 0,
+        onValueChange: onValueChangeMock,
+        step: 5,
+        min: 0,
+        max: 100,
+      });
+      expect(slider0.props.accessibilityValue).toEqual({ min: 0, max: 100, now: 0 });
+
+      // Kiểm tra tại mốc biên 100 (độ phủ 100%)
+      const slider100: any = Slider({
+        value: 100,
+        onValueChange: onValueChangeMock,
+        step: 5,
+        min: 0,
+        max: 100,
+      });
+      expect(slider100.props.accessibilityValue).toEqual({ min: 0, max: 100, now: 100 });
+    });
+
+    // Test 17: ScoreCard xử lý trường hợp đồng hạng cao nhất: nhấn mạnh tất cả lớp cùng đạt điểm cao nhất, không tự chọn lớp thắng
+    test('17. ScoreCard khi có 2 lớp đồng hạng điểm số cao nhất nhấn mạnh tất cả các lớp đó, giữ thứ tự 3 lớp cố định và không tự ý chọn một lớp thắng', () => {
+      // Trường hợp Benign và Malignant cùng đạt điểm số cao nhất 0.450
+      const tiedScores: any = [
+        { classification: 'Normal', score: 0.1 },
+        { classification: 'Benign', score: 0.45 },
+        { classification: 'Malignant', score: 0.45 },
+      ];
+
+      const card: any = ScoreCard({ scores: tiedScores });
+      const [headerNode, rowsListNode] = card.props.children;
+      const labelsWrapper = headerNode.props.children[1];
+      const topLabels = labelsWrapper.props.children;
+
+      // Không tự ý chọn một lớp thắng: cả Benign và Malignant đều được hiển thị nhãn ở header
+      expect(topLabels).toHaveLength(2);
+      expect(topLabels[0].props.classification).toBe('Benign');
+      expect(topLabels[1].props.classification).toBe('Malignant');
+
+      // Cả 2 dòng Benign và Malignant đều được đánh dấu isTop = true
+      const rows = rowsListNode.props.children;
+      expect(rows[0].props.classification).toBe('Benign');
+      expect(rows[0].props.isTop).toBe(true);
+
+      expect(rows[1].props.classification).toBe('Malignant');
+      expect(rows[1].props.isTop).toBe(true);
+
+      expect(rows[2].props.classification).toBe('Normal');
+      expect(rows[2].props.isTop).toBe(false);
+    });
+
+    // Test 18: BottomSheet hỗ trợ chạm scrim đóng và Android Back
+    test('18. BottomSheet hỗ trợ chạm ngoài scrim đóng và bắt sự kiện phím Back Android (onRequestClose)', () => {
+      const onCloseMock = jest.fn();
+
+      const sheet: any = BottomSheet({
+        visible: true,
+        title: 'Tùy chọn thao tác',
+        onClose: onCloseMock,
+        children: null,
+      });
+
+      // 1. Kiểm tra onRequestClose cho Android Back
+      expect(sheet.props.onRequestClose).toBe(onCloseMock);
+
+      // 2. Chạm scrim ngoài gọi onClose
+      const scrim = sheet.props.children;
+      expect(scrim.props.onPress).toBe(onCloseMock);
+      scrim.props.onPress();
+      expect(onCloseMock).toHaveBeenCalledTimes(1);
     });
   });
 });
