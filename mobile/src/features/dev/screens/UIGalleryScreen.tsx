@@ -1,22 +1,47 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import { Icon } from '../../../ui/icons';
 import { ALL_ICON_NAMES } from '../../../ui/icons/manifest-constants';
+import {
+  AppText,
+  Button,
+  IconButton,
+  TextField,
+  SearchField,
+  FilterChip,
+  StatusBadge,
+  AILabel,
+  Banner,
+  TopBar,
+  TabBar,
+  ListRow,
+  SectionHeader,
+  StatCard,
+  EmptyState,
+  Divider,
+} from '../../../ui/components';
 
 /**
- * Màn hình UIGalleryScreen (UI-02) phục vụ kiểm thử và đánh giá phát triển:
- * - Hiển thị toàn bộ 64 icon hệ thống dạng lưới kèm tên chuẩn hóa.
+ * Màn hình UIGalleryScreen (UI-02 & UI-03) phục vụ kiểm thử và đánh giá phát triển:
+ * - Hiển thị toàn bộ 17 Component lõi đợt 1 với đầy đủ biến thể (Buttons, TextFields, Chips, Badges, Banners, Rows...).
  * - Cho phép chuyển đổi chế độ Sáng / Tối / Theo hệ thống.
  * - Cho phép chuyển đổi ngôn ngữ hiển thị Việt - Anh (i18n).
- * - Hiển thị các câu thông báo chuẩn y tế (MSG-01, MSG-02...) để xác nhận font Be Vietnam Pro và i18n.
+ * - Hiển thị 64 icon vector SVG hệ thống.
  */
 export const UIGalleryScreen: React.FC = () => {
   const { theme, preference, setPreference } = useTheme();
   const { colors, spacing, radius, typography } = theme;
   const { t, i18n } = useTranslation();
-  const [, setTick] = React.useState(0);
+  const [, setTick] = useState(0);
+
+  // Trạng thái thử nghiệm các component
+  const [searchValue, setSearchValue] = useState('');
+  const [textFieldVal, setTextFieldVal] = useState('Dương Thị Thu Diểm');
+  const [selectedChip, setSelectedChip] = useState('all');
+  const [activeTab, setActiveTab] = useState('home');
+  const [btnLoading, setBtnLoading] = useState(false);
 
   const currentLang = i18n.language.startsWith('vi') ? 'vi' : 'en';
 
@@ -45,15 +70,6 @@ export const UIGalleryScreen: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
         },
-        titleText: {
-          ...typography.titleL,
-          color: colors.text.primary,
-        },
-        subtitleText: {
-          ...typography.bodyS,
-          color: colors.text.secondary,
-          marginTop: spacing.xs,
-        },
         controlSection: {
           marginTop: spacing.md,
         },
@@ -62,7 +78,7 @@ export const UIGalleryScreen: React.FC = () => {
           gap: spacing.sm,
           marginTop: spacing.xs,
         },
-        button: {
+        themeBtn: {
           flex: 1,
           paddingVertical: spacing.sm,
           paddingHorizontal: spacing.md,
@@ -73,69 +89,36 @@ export const UIGalleryScreen: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
         },
-        activeButton: {
+        themeBtnActive: {
           backgroundColor: colors.brand.primary,
           borderColor: colors.brand.primary,
         },
-        buttonText: {
-          ...typography.labelS,
-          color: colors.text.secondary,
-        },
-        activeButtonText: {
-          ...typography.labelS,
-          color: colors.text.onBrand,
-        },
-        i18nBanner: {
-          margin: spacing.lg,
+        sectionBlock: {
+          marginHorizontal: spacing.lg,
+          marginTop: spacing.xl,
           padding: spacing.md,
           borderRadius: radius.lg,
           backgroundColor: colors.bg.surface,
           borderWidth: 1,
           borderColor: colors.border.default,
         },
-        i18nTitle: {
-          ...typography.labelL,
-          color: colors.brand.primary,
-          marginBottom: spacing.xs,
-        },
-        i18nText: {
-          ...typography.bodyM,
-          color: colors.text.primary,
-          marginBottom: spacing.xs,
-        },
-        i18nSubText: {
-          ...typography.bodyS,
-          color: colors.text.secondary,
+        rowGap: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+          marginTop: spacing.sm,
         },
         gridContainer: {
           paddingHorizontal: spacing.lg,
+          marginTop: spacing.xl,
           paddingBottom: spacing.xxl,
-        },
-        gridHeader: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: spacing.md,
-        },
-        gridHeaderText: {
-          ...typography.titleM,
-          color: colors.text.primary,
-        },
-        gridHeaderBadge: {
-          paddingHorizontal: spacing.sm,
-          paddingVertical: 2,
-          borderRadius: radius.full,
-          backgroundColor: colors.bg.brandSubtle,
-        },
-        gridHeaderBadgeText: {
-          ...typography.caption,
-          color: colors.brand.primary,
         },
         iconGrid: {
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: spacing.sm,
           justifyContent: 'space-between',
+          marginTop: spacing.sm,
         },
         iconCard: {
           width: '30%',
@@ -162,22 +145,31 @@ export const UIGalleryScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={dynamicStyles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header điều khiển */}
-        <View style={dynamicStyles.header}>
-          <View style={dynamicStyles.titleRow}>
-            <View>
-              <Text style={dynamicStyles.titleText}>UI Gallery (UI-02)</Text>
-              <Text style={dynamicStyles.subtitleText}>
-                Be Vietnam Pro • 64 SVG Icons • Đa ngôn ngữ Việt-Anh
-              </Text>
-            </View>
-            <Icon name="grad-cam" size={36} />
-          </View>
+      {/* TopBar demo */}
+      <TopBar
+        title="UI Gallery (UI-03 Core Components)"
+        type="root"
+        rightActions={
+          <IconButton name="settings" accessibilityLabel="Cài đặt" onPress={() => {}} />
+        }
+      />
 
-          {/* Hàng chọn Theme */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        {/* Header điều khiển Theme & Ngôn ngữ */}
+        <View style={dynamicStyles.header}>
+          <AppText variant="bodyS" color={colors.text.secondary}>
+            17 Component lõi đợt 1 • 64 SVG Icons • Be Vietnam Pro
+          </AppText>
+
+          {/* Theme Switcher */}
           <View style={dynamicStyles.controlSection}>
-            <Text style={dynamicStyles.subtitleText}>Giao diện (Theme):</Text>
+            <AppText variant="caption" color={colors.text.tertiary}>
+              Chế độ Giao diện (Theme):
+            </AppText>
             <View style={dynamicStyles.buttonRow}>
               {(['light', 'dark', 'system'] as const).map((mode) => {
                 const isActive = preference === mode;
@@ -185,12 +177,17 @@ export const UIGalleryScreen: React.FC = () => {
                 return (
                   <TouchableOpacity
                     key={mode}
-                    style={[dynamicStyles.button, isActive && dynamicStyles.activeButton]}
+                    style={[dynamicStyles.themeBtn, isActive && dynamicStyles.themeBtnActive]}
                     onPress={() => setPreference(mode)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      style={[dynamicStyles.buttonText, isActive && dynamicStyles.activeButtonText]}
+                      style={[
+                        typography.labelS,
+                        {
+                          color: isActive ? colors.text.onBrand : colors.text.secondary,
+                        },
+                      ]}
                     >
                       {label}
                     </Text>
@@ -200,33 +197,45 @@ export const UIGalleryScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Hàng chọn Ngôn ngữ */}
+          {/* Language Switcher */}
           <View style={dynamicStyles.controlSection}>
-            <Text style={dynamicStyles.subtitleText}>Ngôn ngữ (Language):</Text>
+            <AppText variant="caption" color={colors.text.tertiary}>
+              Ngôn ngữ (Language):
+            </AppText>
             <View style={dynamicStyles.buttonRow}>
               <TouchableOpacity
-                style={[dynamicStyles.button, currentLang === 'vi' && dynamicStyles.activeButton]}
+                style={[
+                  dynamicStyles.themeBtn,
+                  currentLang === 'vi' && dynamicStyles.themeBtnActive,
+                ]}
                 onPress={() => toggleLanguage('vi')}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
-                    dynamicStyles.buttonText,
-                    currentLang === 'vi' && dynamicStyles.activeButtonText,
+                    typography.labelS,
+                    {
+                      color: currentLang === 'vi' ? colors.text.onBrand : colors.text.secondary,
+                    },
                   ]}
                 >
                   Tiếng Việt (VI)
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[dynamicStyles.button, currentLang === 'en' && dynamicStyles.activeButton]}
+                style={[
+                  dynamicStyles.themeBtn,
+                  currentLang === 'en' && dynamicStyles.themeBtnActive,
+                ]}
                 onPress={() => toggleLanguage('en')}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
-                    dynamicStyles.buttonText,
-                    currentLang === 'en' && dynamicStyles.activeButtonText,
+                    typography.labelS,
+                    {
+                      color: currentLang === 'en' ? colors.text.onBrand : colors.text.secondary,
+                    },
                   ]}
                 >
                   English (EN)
@@ -236,64 +245,216 @@ export const UIGalleryScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Khối hiển thị mẫu đa ngôn ngữ y tế */}
-        <View style={dynamicStyles.i18nBanner}>
-          <Text style={dynamicStyles.i18nTitle}>
-            {t('nav.settings', 'Cài đặt')} — {t('role.doctor', 'Bác sĩ')}
-          </Text>
-          <Text style={dynamicStyles.i18nText}>MSG-01: {t('msg.msg_01', 'Đã lưu ca khám')}</Text>
-          <Text style={dynamicStyles.i18nSubText}>MSG-02: {t('msg.msg_02')}</Text>
-          <View style={{ marginTop: spacing.sm, flexDirection: 'row', gap: spacing.sm }}>
-            <View
-              style={{
-                paddingHorizontal: spacing.sm,
-                paddingVertical: spacing.xs,
-                borderRadius: radius.sm,
-                backgroundColor: colors.ai.benign.bg,
+        {/* 1. KHỐI THÔNG BÁO BANNER */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="1. Banner Thông Báo Hệ Thống" />
+          <Banner
+            type="offline"
+            title={t('common.offline', 'Chế độ Ngoại tuyến')}
+            body="Đang chạy mô hình AI Adaptive trực tiếp on-device, không cần Internet."
+            style={{ marginBottom: spacing.sm }}
+          />
+          <Banner
+            type="mock"
+            title="Dữ liệu giả lập lâm sàng"
+            body="Ảnh và thông tin trong giao diện chỉ phục vụ nghiên cứu khóa luận."
+          />
+        </View>
+
+        {/* 2. KHỐI NÚT BẤM (BUTTONS & ICONBUTTONS) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="2. Nút Bấm (Button & IconButton)" />
+          <View style={dynamicStyles.rowGap}>
+            <Button
+              label="Primary L"
+              variant="primary"
+              size="L"
+              leadingIcon="grad-cam"
+              onPress={() => {}}
+            />
+            <Button
+              label="Secondary M"
+              variant="secondary"
+              size="M"
+              leadingIcon="ct-image"
+              onPress={() => {}}
+            />
+            <Button
+              label={btnLoading ? 'Đang xử lý...' : 'Thử Loading'}
+              variant="primary"
+              size="M"
+              loading={btnLoading}
+              onPress={() => {
+                setBtnLoading(true);
+                setTimeout(() => setBtnLoading(false), 2000);
               }}
-            >
-              <Text style={{ ...typography.caption, color: colors.ai.benign.fg }}>
-                {t('common.benign', 'Lành tính')}
-              </Text>
-            </View>
-            <View
-              style={{
-                paddingHorizontal: spacing.sm,
-                paddingVertical: spacing.xs,
-                borderRadius: radius.sm,
-                backgroundColor: colors.ai.malignant.bg,
-              }}
-            >
-              <Text style={{ ...typography.caption, color: colors.ai.malignant.fg }}>
-                {t('common.malignant', 'Ác tính')}
-              </Text>
-            </View>
-            <View
-              style={{
-                paddingHorizontal: spacing.sm,
-                paddingVertical: spacing.xs,
-                borderRadius: radius.sm,
-                backgroundColor: colors.ai.normal.bg,
-              }}
-            >
-              <Text style={{ ...typography.caption, color: colors.ai.normal.fg }}>
-                {t('common.normal', 'Bình thường')}
-              </Text>
-            </View>
+            />
+            <Button
+              label="Danger (Xóa ca)"
+              variant="danger"
+              size="M"
+              leadingIcon="trash"
+              onPress={() => {}}
+            />
+          </View>
+
+          <View style={[dynamicStyles.rowGap, { marginTop: spacing.md }]}>
+            <IconButton
+              name="camera"
+              accessibilityLabel="Chụp ảnh CT"
+              variant="tonal"
+              onPress={() => {}}
+            />
+            <IconButton
+              name="image-upload"
+              accessibilityLabel="Tải ảnh lên"
+              variant="plain"
+              onPress={() => {}}
+            />
+            <IconButton
+              name="sync"
+              accessibilityLabel="Đồng bộ"
+              variant="tonal"
+              onPress={() => {}}
+            />
+            <IconButton name="lock" accessibilityLabel="Bảo mật" disabled onPress={() => {}} />
           </View>
         </View>
 
-        {/* Lưới 64 Icons */}
-        <View style={dynamicStyles.gridContainer}>
-          <View style={dynamicStyles.gridHeader}>
-            <Text style={dynamicStyles.gridHeaderText}>
-              Hệ thống Icon ({ALL_ICON_NAMES.length})
-            </Text>
-            <View style={dynamicStyles.gridHeaderBadge}>
-              <Text style={dynamicStyles.gridHeaderBadgeText}>Vector SVG</Text>
-            </View>
+        {/* 3. KHỐI Ô NHẬP LIỆU (TEXTFIELD & SEARCHFIELD) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="3. Ô Nhập Liệu & Tìm Kiếm" />
+          <SearchField
+            value={searchValue}
+            onChangeText={setSearchValue}
+            placeholder="Tìm theo tên bệnh nhân, mã hồ sơ..."
+            style={{ marginBottom: spacing.md }}
+          />
+
+          <TextField
+            label="Họ và tên Bệnh nhân"
+            value={textFieldVal}
+            onChangeText={setTextFieldVal}
+            placeholder="Nhập tên"
+            helper="Nhập đầy đủ họ tên theo căn cước hoặc thẻ BHYT"
+            trailingIcon="edit"
+            style={{ marginBottom: spacing.md }}
+          />
+
+          <TextField
+            label="Số điện thoại liên hệ"
+            value="0987654321"
+            placeholder="Số điện thoại"
+            error="Số điện thoại không đúng định dạng 10 chữ số"
+            trailingIcon="error"
+          />
+        </View>
+
+        {/* 4. KHỐI THẺ LỌC, BADGE VÀ NHÃN AI */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="4. Chip Lọc, Badge & Nhãn AI" />
+          <View style={dynamicStyles.rowGap}>
+            <FilterChip
+              label="Tất cả ca"
+              selected={selectedChip === 'all'}
+              onPress={() => setSelectedChip('all')}
+            />
+            <FilterChip
+              label="Chờ duyệt"
+              selected={selectedChip === 'pending'}
+              onPress={() => setSelectedChip('pending')}
+            />
+            <FilterChip
+              label="Ác tính"
+              selected={selectedChip === 'malignant'}
+              onPress={() => setSelectedChip('malignant')}
+            />
           </View>
 
+          <Divider spacingVertical={spacing.md} />
+
+          <View style={dynamicStyles.rowGap}>
+            <StatusBadge label="Đã hoàn thành" tone="success" />
+            <StatusBadge label="Cảnh báo kiểm tra" tone="warning" />
+            <StatusBadge label="Lỗi tải ảnh" tone="danger" />
+            <StatusBadge label="Đang chờ phân tích" tone="pending" />
+            <StatusBadge label="Trực tiếp On-Device" tone="brand" />
+          </View>
+
+          <Divider spacingVertical={spacing.md} />
+
+          <View style={dynamicStyles.rowGap}>
+            <AILabel classification="Benign" />
+            <AILabel classification="Malignant" />
+            <AILabel classification="Normal" />
+          </View>
+        </View>
+
+        {/* 5. KHỐI THẺ THỐNG KÊ (STATCARD) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader
+            title="5. Thống Kê Số Lượng (StatCard)"
+            actionLabel="Chi tiết"
+            onActionPress={() => {}}
+          />
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs }}>
+            <StatCard
+              label="Tổng ca khám"
+              value={128}
+              tone="brand"
+              icon="cases"
+              caption="+12 ca trong tuần"
+            />
+            <StatCard
+              label="Cần hội chẩn"
+              value={14}
+              tone="warning"
+              icon="warning"
+              caption="Ưu tiên đọc ảnh"
+            />
+          </View>
+        </View>
+
+        {/* 6. KHỐI DANH SÁCH (LISTROW) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader
+            title="6. Thẻ Danh Sách (ListRow)"
+            actionLabel="Xem tất cả"
+            onActionPress={() => {}}
+          />
+          <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+            <ListRow
+              title="Trần Thị Bích Loan (48 tuổi)"
+              subtitle="Ca #CT-2026-089 • Khoa Hô Hấp"
+              leadingIcon="patients"
+              badges={<AILabel classification="Malignant" />}
+              onPress={() => {}}
+            />
+            <ListRow
+              title="Lê Hoàng Nam (62 tuổi)"
+              subtitle="Ca #CT-2026-090 • Kiểm tra định kỳ"
+              leadingIcon="patients"
+              badges={<StatusBadge label="Chờ đọc CAM" tone="pending" />}
+              onPress={() => {}}
+            />
+          </View>
+        </View>
+
+        {/* 7. KHỐI TRẠNG THÁI RỖNG (EMPTYSTATE) */}
+        <View style={dynamicStyles.sectionBlock}>
+          <SectionHeader title="7. Trạng Thái Rỗng (EmptyState)" />
+          <EmptyState
+            type="noData"
+            title="Không tìm thấy kết quả"
+            body="Không có hồ sơ bệnh nhân nào khớp với từ khóa tìm kiếm của bạn."
+            actionLabel="Tạo hồ sơ bệnh nhân mới"
+            onActionPress={() => {}}
+          />
+        </View>
+
+        {/* 8. LƯỚI 64 ICONS */}
+        <View style={dynamicStyles.gridContainer}>
+          <SectionHeader title={`8. Hệ Thống 64 Vector Icons (${ALL_ICON_NAMES.length})`} />
           <View style={dynamicStyles.iconGrid}>
             {ALL_ICON_NAMES.map((iconName) => (
               <View key={iconName} style={dynamicStyles.iconCard}>
@@ -306,6 +467,9 @@ export const UIGalleryScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* TabBar demo hiển thị cố định ở đáy */}
+      <TabBar role="doctor" activeTabKey={activeTab} onTabPress={setActiveTab} />
     </SafeAreaView>
   );
 };
