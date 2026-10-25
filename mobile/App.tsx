@@ -1,6 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { ThemePreviewScreen } from './src/features/dev/screens/ThemePreviewScreen';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import './src/i18n';
+import { UIGalleryScreen } from './src/features/dev/screens/UIGalleryScreen';
 import { ThemeProvider, useTheme } from './src/ui/theme';
 
 /**
@@ -14,7 +17,7 @@ function MainAppContent(): React.JSX.Element {
 
   return (
     <>
-      <ThemePreviewScreen />
+      <UIGalleryScreen />
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
     </>
   );
@@ -23,16 +26,40 @@ function MainAppContent(): React.JSX.Element {
 /**
  * Điểm khởi nhập (Entry Point) của ứng dụng LungCT Mobile.
  *
- * Toàn bộ cây component được bao bọc bởi ThemeProvider để đảm bảo mọi thành phần con
- * đều truy xuất được bộ token màu sắc chuẩn y tế WCAG và phản ứng tức thì khi người dùng
- * hoặc hệ điều hành thay đổi chế độ sáng/tối.
+ * Tải trước font Be Vietnam Pro (Regular, Medium, SemiBold).
+ * Bao bọc ứng dụng trong ThemeProvider và i18n context.
  *
- * TODO(UI-05): Thay thế màn ThemePreviewScreen bằng hệ thống điều hướng (Navigation Stack) khi dựng flow xác thực.
+ * TODO(UI-05): Thay thế màn UIGalleryScreen bằng hệ thống điều hướng (Navigation Stack) khi dựng flow xác thực.
  */
 export default function App(): React.JSX.Element {
+  const [fontsLoaded, fontError] = useFonts({
+    'BeVietnamPro-Regular': require('./assets/fonts/BeVietnamPro-Regular.ttf'),
+    'BeVietnamPro-Medium': require('./assets/fonts/BeVietnamPro-Medium.ttf'),
+    'BeVietnamPro-SemiBold': require('./assets/fonts/BeVietnamPro-SemiBold.ttf'),
+  });
+
+  // Nếu font chưa tải xong và chưa có lỗi -> hiển thị màn hình chờ ngắn hạn.
+  // Nếu có lỗi nạp font (fontError) -> không chặn app, cho phép render với font hệ thống dự phòng (fallback).
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2F6F67" />
+      </View>
+    );
+  }
+
   return (
     <ThemeProvider>
       <MainAppContent />
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FAF8F2',
+  },
+});
