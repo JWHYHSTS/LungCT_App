@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -22,6 +23,8 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   disabled?: boolean;
   /** Icon hiển thị ở cuối ô nhập */
   trailingIcon?: IconName;
+  /** Nhãn trợ năng cho nút icon ở cuối (ví dụ: 'Ẩn/hiện mật khẩu') */
+  trailingIconAccessibilityLabel?: string;
   /** Callback khi bấm trailing icon */
   onTrailingIconPress?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -37,6 +40,7 @@ export const TextField: React.FC<TextFieldProps> = ({
   helper,
   error,
   trailingIcon,
+  trailingIconAccessibilityLabel,
   onTrailingIconPress,
   disabled = false,
   value,
@@ -100,13 +104,22 @@ export const TextField: React.FC<TextFieldProps> = ({
         />
 
         {trailingIcon && (
-          <View style={styles.trailingContainer}>
+          <Pressable
+            accessibilityRole={onTrailingIconPress ? 'button' : undefined}
+            accessibilityLabel={
+              trailingIconAccessibilityLabel ?? (onTrailingIconPress ? 'Tác vụ' : undefined)
+            }
+            disabled={!onTrailingIconPress || disabled}
+            onPress={onTrailingIconPress}
+            hitSlop={8}
+            style={styles.trailingContainer}
+          >
             <Icon
               name={trailingIcon}
               size={20}
               color={hasError ? colors.status.danger.fg : colors.text.secondary}
             />
-          </View>
+          </Pressable>
         )}
       </View>
 

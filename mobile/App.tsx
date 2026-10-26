@@ -3,7 +3,8 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import './src/i18n';
-import { UIGalleryScreen } from './src/features/dev/screens/UIGalleryScreen';
+import { AuthProvider } from './src/features/auth/context/AuthContext';
+import { RootNavigator } from './src/navigation';
 import { ThemeProvider, useTheme } from './src/ui/theme';
 
 /**
@@ -17,7 +18,7 @@ function MainAppContent(): React.JSX.Element {
 
   return (
     <>
-      <UIGalleryScreen />
+      <RootNavigator />
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
     </>
   );
@@ -27,9 +28,7 @@ function MainAppContent(): React.JSX.Element {
  * Điểm khởi nhập (Entry Point) của ứng dụng LungCT Mobile.
  *
  * Tải trước font Be Vietnam Pro (Regular, Medium, SemiBold).
- * Bao bọc ứng dụng trong ThemeProvider và i18n context.
- *
- * TODO(UI-05): Thay thế màn UIGalleryScreen bằng hệ thống điều hướng (Navigation Stack) khi dựng flow xác thực.
+ * Bao bọc ứng dụng trong AuthProvider, ThemeProvider và i18n context.
  */
 export default function App(): React.JSX.Element {
   const [fontsLoaded, fontError] = useFonts({
@@ -50,7 +49,9 @@ export default function App(): React.JSX.Element {
 
   return (
     <ThemeProvider>
-      <MainAppContent />
+      <AuthProvider>
+        <MainAppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
