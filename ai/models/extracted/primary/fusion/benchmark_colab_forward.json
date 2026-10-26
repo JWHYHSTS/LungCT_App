@@ -1,0 +1,30 @@
+{
+  "scope": "warm TF forward only; excludes decode, ViT extraction, CAM",
+  "samples": 10,
+  "milliseconds": [
+    303.9154170000984,
+    276.38753300016106,
+    255.213886999627,
+    261.7991780007287,
+    262.2672669986059,
+    275.2163669993024,
+    255.12621699999727,
+    253.55367900010606,
+    265.8267809983954,
+    271.787656000015
+  ],
+  "p50_ms": 264.04702399850066,
+  "p95_ms": 291.52786920012653,
+  "environment": {
+    "python": "3.13.16 (main, Oct  1 2026, 15:40:24) [GCC 13.3.0]",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "tensorflow": "2.21.0",
+    "torch": "2.11.0+cu130",
+    "transformers": "5.20.2",
+    "tf_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "torch_gpu": "Tesla T4"
+  },
+  "keras_bytes": 287507235
+}

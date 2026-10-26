@@ -68,6 +68,12 @@ ai/**/__pycache__/
 ai/**/*.tmp
 *.ipynb_checkpoints/
 /ai/models/source/**/*.zip
+/ai/models/extracted/**/*.keras
+/ai/models/extracted/**/*.h5
+/ai/models/extracted/**/*.safetensors
+/ai/conversion/*.tflite
+/ai/conversion/*.onnx
+/ai/conversion/*.onnx.data
 
 # System files
 .DS_Store

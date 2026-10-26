@@ -1,0 +1,46 @@
+{
+  "run_id": "20261024T050904_329781Z",
+  "model": "AACNN_Adaptive",
+  "smoke": false,
+  "class_order": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "cnn_input": [
+    512,
+    512,
+    3
+  ],
+  "cnn_range": [
+    0,
+    1
+  ],
+  "vit_size": [
+    224,
+    224
+  ],
+  "vit_feature_dim": 768,
+  "vit_model": "google/vit-base-patch16-224-in21k",
+  "vit_revision": "b4569560a39a0f1af58e3ddaf17facf20ab919b0",
+  "processor_file": "../vit_processor.json",
+  "preprocessing_version": "rgb-nearest-source-resize-v1",
+  "split_manifest_sha256": "915862cbad1822415badfeeb0c40dc9cdf1436ee9cb75706be36412d866453d9",
+  "keras_sha256": "decf00499818de3d5fb68e442881e15d1974be4c97195be04e9a9372018fe7b0",
+  "weights_sha256": "5e2af015928c194eb5de9a96e573fd1f0fb2764947665202406e28aa65ce2934",
+  "gradcam": {
+    "status": "PASS",
+    "target_layer": "conv5_block3_out",
+    "target_class": "Benign",
+    "scope": "CNN branch; fixed ViT CLS"
+  },
+  "mobile_export_status": "NOT_IMPLEMENTED",
+  "test_status": "SEE_TEST_FILES",
+  "limitations": [
+    "image-level split; patient independence unverified",
+    "not clinical validation",
+    "two frameworks; no mobile runtime integration",
+    "source license not verified",
+    "unequal training budgets/pretraining across models"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "image_path": "..\\IQ_OTHNCCD\\Benign\\Bengin case (114).jpg",
+  "class_order": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "keras_output": {
+    "scores": [
+      0.9728497266769409,
+      0.00018840719712898135,
+      0.026961857452988625
+    ],
+    "label": "Benign"
+  },
+  "tflite_output": {
+    "scores": [
+      0.9728497266769409,
+      0.0001884066587081179,
+      0.02696181833744049
+    ],
+    "label": "Benign"
+  },
+  "absolute_differences": [
+    0.0,
+    5.384208634495735e-10,
+    3.91155481338501e-08
+  ],
+  "max_absolute_error": 3.91155481338501e-08,
+  "label_matched": true,
+  "environment": {
+    "python": "3.14.2",
+    "tensorflow": "2.22.0-rc0",
+    "torch": "2.14.1+cpu"
+  }
+}

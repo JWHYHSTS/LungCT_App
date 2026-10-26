@@ -1,0 +1,5 @@
+{
+  "status": "PASS",
+  "scope": "one image; fresh CPU process, local files only",
+  "max_abs_error": 5.029141902923584e-08
+}

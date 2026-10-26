@@ -1,0 +1,15 @@
+{
+  "class_order": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "scores": [
+    0.9728490710258484,
+    0.00018840977281797677,
+    0.026962459087371826
+  ],
+  "label": "Benign",
+  "execution_source": "computer_cpu_offline",
+  "mobile_ready": false
+}

@@ -1,0 +1,7 @@
+{
+  "wall_seconds": 2640.042981298,
+  "best_val_macro_f1": 0.9399604302791494,
+  "parameters": 27592836,
+  "checkpoint_sha256": "5e2af015928c194eb5de9a96e573fd1f0fb2764947665202406e28aa65ce2934",
+  "smoke": false
+}

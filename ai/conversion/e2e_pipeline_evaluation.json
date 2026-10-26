@@ -1,0 +1,58 @@
+{
+  "image_path": "..\\IQ_OTHNCCD\\Benign\\Bengin case (114).jpg",
+  "class_order": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "original_pipeline": {
+    "vit_framework": "PyTorch 2.14.1+cpu",
+    "fusion_framework": "Keras 2.22.0-rc0",
+    "cls_vector_head": [
+      -0.08057446777820587,
+      0.14308185875415802,
+      -0.08138369023799896,
+      0.18068577349185944,
+      0.12781983613967896
+    ],
+    "scores": [
+      0.9728497266769409,
+      0.00018840719712898135,
+      0.026961857452988625
+    ],
+    "predicted_label": "Benign"
+  },
+  "converted_pipeline": {
+    "vit_framework": "ONNX Runtime 1.31.0",
+    "fusion_framework": "TensorFlow Lite (XNNPACK)",
+    "cls_vector_head": [
+      -0.08057445287704468,
+      0.14308275282382965,
+      -0.08138392865657806,
+      0.1806861311197281,
+      0.12782038748264313
+    ],
+    "scores": [
+      0.9728493094444275,
+      0.00018840926350094378,
+      0.02696225792169571
+    ],
+    "predicted_label": "Benign"
+  },
+  "parity_analysis": {
+    "cls_max_absolute_error": 1.7583370208740234e-06,
+    "scores_absolute_differences": [
+      4.172325134277344e-07,
+      2.066371962428093e-09,
+      4.0046870708465576e-07
+    ],
+    "scores_max_absolute_error": 4.172325134277344e-07,
+    "labels_matched": true
+  },
+  "environment": {
+    "python": "3.14.2",
+    "tensorflow": "2.22.0-rc0",
+    "torch": "2.14.1+cpu",
+    "onnxruntime": "1.31.0"
+  }
+}

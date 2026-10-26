@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "target_layer": "conv5_block3_out",
+  "target_class": "Benign",
+  "scope": "CNN branch; fixed ViT CLS"
+}

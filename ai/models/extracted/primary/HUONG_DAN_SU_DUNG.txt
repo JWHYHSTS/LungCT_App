@@ -1,0 +1,32 @@
+# Hướng dẫn nhận và sử dụng gói mô hình chính LungCT
+
+## File tải về sau khi chạy thành công
+Tải LungCT_Primary_<RUN_ID>.zip và file .zip.sha256 nằm cùng thư mục run trên Google Drive.
+Không tải file .ipynb rồi đặt vào app. Notebook là mã chạy thí nghiệm, không phải mô hình.
+Không chỉ lấy best.weights.h5 hoặc model.keras vì pipeline còn cần nhánh ViT và processor.
+
+## Vai trò từng file
+fusion/model.keras: kiến trúc và trọng số CNN/fusion Keras, nhận ảnh CNN cùng vector CLS ViT.
+fusion/best.weights.h5: trọng số CNN/fusion tốt nhất theo validation macro F1; không chứa toàn pipeline ViT.
+vit/: trọng số pretrained ViT, config và processor, cần để tính CLS cho ảnh mới.
+custom_layers.py: đăng ký các lớp tùy chỉnh trước khi nạp model.keras.
+predict.py: chương trình dự đoán trên máy tính CPU bằng file cục bộ; không phải runtime React Native.
+config.json, vit_processor.json, vit_source.json: đầu vào, thứ tự lớp, tiền xử lý và nguồn pretrained.
+bundle_manifest.json: danh sách file, kích thước và checksum; không phải trọng số mô hình.
+offline_parity.json: kết quả so sánh một ảnh giữa notebook và tiến trình CPU độc lập.
+fusion/*metrics.json, *predictions.csv, *confusion_matrix.json và ảnh PNG: bằng chứng nghiên cứu; không phải file chạy AI.
+
+## Thử gói độc lập trên máy tính
+1. Giải nén ZIP vào một thư mục riêng, giữ nguyên cấu trúc.
+2. Tạo môi trường Python phù hợp với environment.json và pip-freeze.txt. Không cài toàn bộ gói Colab tùy tiện vào dự án app; pip-freeze là bản ghi môi trường, cần chọn dependency cần thiết và kiểm tra tương thích.
+3. Chạy: python predict.py --image DUONG_DAN_ANH.png --output ket_qua.json
+4. Kiểm tra class_order là Benign, Malignant, Normal; scores hữu hạn, tổng gần 1.
+5. Dùng cùng ảnh và so với output notebook trong dung sai đã quy định. Kiểm thử nhiều ảnh đại diện trước triển khai.
+
+## Trạng thái gắn vào điện thoại
+Gói ZIP này CHƯA phải artifact mobile-ready. Keras và PyTorch không tự chạy trong React Native chỉ bằng sao chép file.
+Bước tiếp theo: chọn bộ thực thi sau làm thử; chuyển cả hai nhánh và preprocessing hoặc thiết kế phương án đã được chấp thuận; kiểm tra output trước/sau; triển khai Grad-CAM thật; đo thời gian/RAM/kích thước trên Android và iOS.
+Định dạng đích chưa chốt. Không tự gọi file ZIP, .keras hoặc .h5 là mô hình Android/iOS đã nghiệm thu.
+Các vị trí đích dự kiến là mobile/assets/models/android/ và mobile/assets/models/ios/ sau khi tạo artifact tương thích.
+Khi bàn giao mobile phải có manifest chỉ rõ file nào nạp bằng runtime nào, code inference, class order, preprocessing, Grad-CAM, checksum và bằng chứng tắt mạng.
+Nếu thiếu một nhánh hoặc runtime không tạo được Grad-CAM, phải báo rõ và giải quyết trước xác nhận đạt.

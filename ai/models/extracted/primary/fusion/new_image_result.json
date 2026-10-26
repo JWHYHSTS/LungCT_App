@@ -1,0 +1,18 @@
+{
+  "image_sha256": "925e9ab76b0a7ee5ff91f202de4afe25a5bfa3007cfac7fc292f098542ae4a69",
+  "model": "AACNN_Adaptive",
+  "class_order": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "scores": [
+    0.9728490710258484,
+    0.00018841012206394225,
+    0.026962509378790855
+  ],
+  "label": "Benign",
+  "mode": "real",
+  "execution_source": "colab",
+  "smoke": false
+}

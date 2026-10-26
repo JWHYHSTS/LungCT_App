@@ -1,0 +1,9 @@
+{
+  "original_train_images": 737,
+  "training_samples_including_augmented": 1474,
+  "requested_copies_per_image": 1,
+  "skipped_exact_duplicates": [],
+  "validation_images_unchanged": 158,
+  "test_images_unchanged": 159,
+  "policy": "train-only offline synchronized CNN/ViT; rotation8deg/translation3pct/brightness5pct"
+}

@@ -1,0 +1,35 @@
+{
+  "requested_ratios": {
+    "train": 0.7,
+    "validation": 0.15,
+    "test": 0.15
+  },
+  "actual_counts": {
+    "train": 737,
+    "validation": 158,
+    "test": 159
+  },
+  "actual_ratios": {
+    "train": 0.6992409867172675,
+    "validation": 0.14990512333965844,
+    "test": 0.150853889943074
+  },
+  "class_counts": {
+    "train": {
+      "Benign": 71,
+      "Malignant": 383,
+      "Normal": 283
+    },
+    "validation": {
+      "Benign": 15,
+      "Malignant": 82,
+      "Normal": 61
+    },
+    "test": {
+      "Benign": 16,
+      "Malignant": 82,
+      "Normal": 61
+    }
+  },
+  "smoke": false
+}

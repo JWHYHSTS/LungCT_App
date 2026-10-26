@@ -1,0 +1,39 @@
+{
+  "CLASS_NAMES": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "SEED": 42,
+  "IMG_SIZE": [
+    512,
+    512
+  ],
+  "VIT_SIZE": [
+    224,
+    224
+  ],
+  "BATCH_SIZE": 8,
+  "VIT_MODEL_ID": "google/vit-base-patch16-224-in21k",
+  "VIT_REVISION": "main",
+  "SPLIT_MODE": "holdout",
+  "SMOKE_TEST": false,
+  "MODELS_TO_RUN": [
+    "CNN",
+    "ViT_Head",
+    "CNN_ViT",
+    "AACNN_Adaptive"
+  ],
+  "EPOCHS_BASELINE": 15,
+  "EPOCHS_STAGE_A": 10,
+  "EPOCHS_STAGE_B": 20,
+  "UNFREEZE_LAST_N": 60,
+  "FREEZE_BATCHNORM": true,
+  "CNN_AUGMENT": false,
+  "FUSION_AUGMENT": false,
+  "MIXUP_ALPHA": 0.0,
+  "PREPROCESS_VERSION": "rgb-nearest-source-resize-v1",
+  "SYNC_AUGMENT_COPIES": 1,
+  "LIGHT_MAX_MACRO_F1_DROP": 0.01,
+  "LIGHT_MIN_LABEL_AGREEMENT": 0.98
+}
