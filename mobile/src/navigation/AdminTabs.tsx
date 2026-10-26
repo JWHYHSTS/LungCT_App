@@ -1,7 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabBar } from '../ui/components';
-import { MockRoleScreen } from '../features/auth/screens/MockRoleScreen';
+import {
+  AdminAccountsScreen,
+  AdminStatsScreen,
+  AdminProfileScreen,
+} from '../features/admin/screens';
 
 export type AdminTabParamList = {
   Accounts: undefined;
@@ -18,6 +22,8 @@ const Tab = createBottomTabNavigator<AdminTabParamList>();
 export const AdminTabs: React.FC = () => {
   return (
     <Tab.Navigator
+      initialRouteName="Accounts"
+      backBehavior="firstRoute"
       screenOptions={{
         headerShown: false,
       }}
@@ -40,22 +46,19 @@ export const AdminTabs: React.FC = () => {
       }}
     >
       <Tab.Screen name="Accounts">
-        {() => (
-          <MockRoleScreen
-            title="Quản trị · Quản lý tài khoản"
-            role="admin"
-            tabName="Quản lý tài khoản"
-          />
-        )}
+        {({ navigation }) => {
+          const parentNav = navigation.getParent() as any;
+          return (
+            <AdminAccountsScreen
+              onNavigateToDetail={(accountId) =>
+                parentNav?.navigate('AccountDetail', { accountId })
+              }
+            />
+          );
+        }}
       </Tab.Screen>
-      <Tab.Screen name="Stats">
-        {() => (
-          <MockRoleScreen title="Quản trị · Thống kê tổng hợp" role="admin" tabName="Thống kê" />
-        )}
-      </Tab.Screen>
-      <Tab.Screen name="Profile">
-        {() => <MockRoleScreen title="Quản trị · Tôi" role="admin" tabName="Tôi" />}
-      </Tab.Screen>
+      <Tab.Screen name="Stats">{() => <AdminStatsScreen />}</Tab.Screen>
+      <Tab.Screen name="Profile">{() => <AdminProfileScreen />}</Tab.Screen>
     </Tab.Navigator>
   );
 };

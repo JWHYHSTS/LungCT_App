@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme';
 import { Icon, type IconName } from '../icons';
 
@@ -33,21 +34,22 @@ export const TabBar: React.FC<TabBarProps> = ({
   onTabPress,
   style,
 }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, typography } = theme;
 
   const doctorTabs: TabItem[] = [
-    { key: 'home', label: 'Trang chủ', icon: 'home' },
-    { key: 'patients', label: 'Bệnh nhân', icon: 'patients' },
-    { key: 'cases', label: 'Ca bệnh', icon: 'cases' },
-    { key: 'stats', label: 'Thống kê', icon: 'statistics' },
-    { key: 'profile', label: 'Tôi', icon: 'profile' },
+    { key: 'home', label: t('navigation.tab_home', 'Trang chủ'), icon: 'home' },
+    { key: 'patients', label: t('navigation.tab_patients', 'Bệnh nhân'), icon: 'patients' },
+    { key: 'cases', label: t('navigation.tab_cases', 'Ca bệnh'), icon: 'cases' },
+    { key: 'stats', label: t('navigation.tab_stats', 'Thống kê'), icon: 'statistics' },
+    { key: 'profile', label: t('navigation.tab_profile', 'Tôi'), icon: 'profile' },
   ];
 
   const adminTabs: TabItem[] = [
-    { key: 'accounts', label: 'Tài khoản', icon: 'account-approval' },
-    { key: 'stats', label: 'Thống kê', icon: 'statistics' },
-    { key: 'profile', label: 'Tôi', icon: 'profile' },
+    { key: 'accounts', label: t('admin.tab_accounts', 'Tài khoản'), icon: 'account-approval' },
+    { key: 'stats', label: t('admin.tab_stats', 'Thống kê'), icon: 'statistics' },
+    { key: 'profile', label: t('admin.tab_profile', 'Tôi'), icon: 'profile' },
   ];
 
   const tabs = role === 'doctor' ? doctorTabs : adminTabs;

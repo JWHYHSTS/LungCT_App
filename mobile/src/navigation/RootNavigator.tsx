@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { AuthStack } from './AuthStack';
 import { DoctorStack } from './DoctorStack';
-import { AdminTabs } from './AdminTabs';
+import { AdminStack } from './AdminStack';
 import { useTheme } from '../ui/theme';
 
 export type RootStackParamList = {
@@ -16,12 +16,12 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 /**
- * RootNavigator (UI-05 & UI-07):
+ * RootNavigator (UI-05, UI-07, UI-08):
  * Phân luồng điều hướng cấp cao nhất theo cấu trúc:
- * RootStack = AuthStack | DoctorStack (5 tab + 5 màn chi tiết) | AdminTabs.
+ * RootStack = AuthStack | DoctorStack (5 tab + 5 màn chi tiết) | AdminStack (3 tab + 1 màn chi tiết).
  * - Khi chưa đăng nhập (user === null) -> Hiển thị AuthStack.
  * - Khi đăng nhập với vai trò 'doctor' -> Hiển thị DoctorStack.
- * - Khi đăng nhập với vai trò 'admin' -> Hiển thị AdminTabs (3 tab).
+ * - Khi đăng nhập với vai trò 'admin' -> Hiển thị AdminStack.
  * - Tự động đồng bộ màu nền và thanh trạng thái theo Theme Sáng/Tối.
  */
 export const RootNavigator: React.FC = () => {
@@ -57,7 +57,7 @@ export const RootNavigator: React.FC = () => {
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthStack} />
         ) : user?.role === 'admin' ? (
-          <Stack.Screen name="AdminApp" component={AdminTabs} />
+          <Stack.Screen name="AdminApp" component={AdminStack} />
         ) : (
           <Stack.Screen name="DoctorApp" component={DoctorStack} />
         )}

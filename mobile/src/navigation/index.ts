@@ -3,3 +3,4 @@ export * from './AuthStack';
 export * from './DoctorTabs';
 export * from './DoctorStack';
 export * from './AdminTabs';
+export * from './AdminStack';
