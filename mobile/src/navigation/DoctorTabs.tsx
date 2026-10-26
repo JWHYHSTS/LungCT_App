@@ -1,7 +1,13 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabBar } from '../ui/components';
-import { MockRoleScreen } from '../features/auth/screens/MockRoleScreen';
+import {
+  DoctorHomeScreen,
+  DoctorPatientsScreen,
+  DoctorCasesScreen,
+  DoctorStatsScreen,
+  DoctorProfileScreen,
+} from '../features/doctor/screens';
 
 export type DoctorTabParamList = {
   Home: undefined;
@@ -16,10 +22,16 @@ const Tab = createBottomTabNavigator<DoctorTabParamList>();
 /**
  * DoctorTabs (5 tab): Trang chủ, Bệnh nhân, Ca bệnh, Thống kê, Tôi.
  * Sử dụng component TabBar chuẩn hóa từ UI-03 để đảm bảo thiết kế thống nhất.
+ *
+ * Hành vi Back Android ở tab gốc (H01):
+ * - Theo mặc định của React Navigation, backBehavior="firstRoute" sẽ đưa người dùng từ các tab khác về tab Home đầu tiên.
+ * - Khi ở tab Home (tab gốc), bấm phím Back sẽ kích hoạt thoát ứng dụng (exitApp) theo đúng đặc tả Android SCR-H01.
  */
 export const DoctorTabs: React.FC = () => {
   return (
     <Tab.Navigator
+      initialRouteName="Home"
+      backBehavior="firstRoute"
       screenOptions={{
         headerShown: false,
       }}
@@ -42,20 +54,17 @@ export const DoctorTabs: React.FC = () => {
       }}
     >
       <Tab.Screen name="Home">
-        {() => <MockRoleScreen title="Bác sĩ · Trang chủ" role="doctor" tabName="Trang chủ" />}
+        {({ navigation }) => (
+          <DoctorHomeScreen
+            onNavigateToCases={() => navigation.navigate('Cases')}
+            onNavigateToPatients={() => navigation.navigate('Patients')}
+          />
+        )}
       </Tab.Screen>
-      <Tab.Screen name="Patients">
-        {() => <MockRoleScreen title="Bác sĩ · Bệnh nhân" role="doctor" tabName="Bệnh nhân" />}
-      </Tab.Screen>
-      <Tab.Screen name="Cases">
-        {() => <MockRoleScreen title="Bác sĩ · Ca bệnh" role="doctor" tabName="Ca bệnh" />}
-      </Tab.Screen>
-      <Tab.Screen name="Stats">
-        {() => <MockRoleScreen title="Bác sĩ · Thống kê" role="doctor" tabName="Thống kê" />}
-      </Tab.Screen>
-      <Tab.Screen name="Profile">
-        {() => <MockRoleScreen title="Bác sĩ · Tôi" role="doctor" tabName="Tôi" />}
-      </Tab.Screen>
+      <Tab.Screen name="Patients">{() => <DoctorPatientsScreen />}</Tab.Screen>
+      <Tab.Screen name="Cases">{() => <DoctorCasesScreen />}</Tab.Screen>
+      <Tab.Screen name="Stats">{() => <DoctorStatsScreen />}</Tab.Screen>
+      <Tab.Screen name="Profile">{() => <DoctorProfileScreen />}</Tab.Screen>
     </Tab.Navigator>
   );
 };

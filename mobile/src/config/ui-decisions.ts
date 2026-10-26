@@ -57,3 +57,50 @@ export const OFFLINE_MAX_PASSWORD_ATTEMPTS_DECISION = {
   status: 'PENDING_DECISION',
   maxAttempts: null as number | null,
 } as const;
+
+/**
+ * Tiêu chí lọc danh sách bệnh nhân trên màn hình Bác sĩ (SCR-P01) [ĐỀ XUẤT].
+ *
+ * Lý do thiết kế & ràng buộc:
+ * - Đặc tả chỉ ghi "chip bộ lọc, sắp xếp" mà chưa chốt danh mục chip cố định.
+ * - Khung Figma chuẩn minh họa 3 chip: "Tất cả", "Có ca nháp", "Chưa đồng bộ".
+ * - Trạng thái: Đề xuất kỹ thuật cho gói UI-06.
+ */
+export const PATIENT_FILTER_DECISION = {
+  status: 'PROPOSAL',
+  chips: [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'draft', label: 'Có ca nháp' },
+    { key: 'unsynced', label: 'Chưa đồng bộ' },
+  ] as const,
+  defaultChip: 'all',
+} as const;
+
+/**
+ * Tiêu chí lọc danh sách ca bệnh trên màn hình Bác sĩ (SCR-C01) [ĐỀ XUẤT].
+ *
+ * Lý do thiết kế & ràng buộc theo tài liệu handoff:
+ * - Khung Figma chuẩn `06-doctor-cases` (cả JSON và SVG) minh họa chính xác 4 chip:
+ *   1. "Tất cả" (all)
+ *   2. "Nháp" (draft)
+ *   3. "Hoàn tất" (completed)
+ *   4. "Một phần" (partial)
+ * - Về trạng thái "Đang phân tích" (RUNNING):
+ *   + Theo đặc tả quy tắc (04-thong-diep-va-quy-tac.md, BR-AI-01/04 và 02-dac-ta-tung-khung.md),
+ *     "Đang phân tích" (RUNNING) là trạng thái tác vụ phân tích AI On-device diễn ra tuần tự
+ *     BÊN TRONG màn hình biên tập ca nháp (SCR-C02 `SCR-C02 · Ca nháp · đang phân tích`).
+ *   + Ở cấp độ danh sách ca (SCR-C01), các ca có tiến trình đang xử lý thuộc nhóm ca nháp (DRAFT/RUNNING).
+ *   + Nếu giảng viên/hội đồng yêu cầu tách riêng chip "Đang phân tích" ở danh sách tổng SCR-C01,
+ *     chip này có thể được bổ sung độc lập tại cấu hình này mà không phá vỡ giao diện.
+ * - Trạng thái: Đề xuất kỹ thuật cho gói UI-06 theo đúng khung Figma gốc `06-doctor-cases`.
+ */
+export const CASE_FILTER_DECISION = {
+  status: 'PROPOSAL',
+  chips: [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'draft', label: 'Nháp' },
+    { key: 'completed', label: 'Hoàn tất' },
+    { key: 'partial', label: 'Một phần' },
+  ] as const,
+  defaultChip: 'all',
+} as const;

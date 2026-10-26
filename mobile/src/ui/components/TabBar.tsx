@@ -74,7 +74,13 @@ export const TabBar: React.FC<TabBarProps> = ({
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
             onPress={() => onTabPress?.(tab.key)}
-            style={styles.tabItem}
+            style={[
+              styles.tabItem,
+              isActive && {
+                backgroundColor: colors.bg.brandSubtle,
+                borderRadius: 12,
+              },
+            ]}
           >
             <Icon name={tab.icon} size={24} color={color} />
             <Text
