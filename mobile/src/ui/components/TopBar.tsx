@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme';
 import { IconButton } from './IconButton';
 
@@ -30,6 +31,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   rightActions,
   style,
 }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, typography } = theme;
 
@@ -50,8 +52,20 @@ export const TopBar: React.FC<TopBarProps> = ({
       ]}
     >
       <View style={styles.leftContainer}>
-        {isStack && <IconButton name="back" accessibilityLabel="Quay lại" onPress={onBackPress} />}
-        {isModal && <IconButton name="close" accessibilityLabel="Đóng" onPress={onClosePress} />}
+        {isStack && (
+          <IconButton
+            name="back"
+            accessibilityLabel={t('common.back', 'Quay lại')}
+            onPress={onBackPress}
+          />
+        )}
+        {isModal && (
+          <IconButton
+            name="close"
+            accessibilityLabel={t('common.close', 'Đóng')}
+            onPress={onClosePress}
+          />
+        )}
         <Text
           style={[
             isRoot ? typography.titleL : typography.titleS,

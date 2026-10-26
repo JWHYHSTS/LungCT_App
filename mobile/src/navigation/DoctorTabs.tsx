@@ -54,15 +54,44 @@ export const DoctorTabs: React.FC = () => {
       }}
     >
       <Tab.Screen name="Home">
-        {({ navigation }) => (
-          <DoctorHomeScreen
-            onNavigateToCases={() => navigation.navigate('Cases')}
-            onNavigateToPatients={() => navigation.navigate('Patients')}
-          />
-        )}
+        {({ navigation }) => {
+          const parentNav = navigation.getParent() as any;
+          return (
+            <DoctorHomeScreen
+              onNavigateToCases={() => navigation.navigate('Cases')}
+              onNavigateToPatients={() => navigation.navigate('Patients')}
+              onNavigateToCaseDetail={(caseId) => parentNav?.navigate('CaseDetail', { caseId })}
+              onNavigateToPatientDetail={(patientId) =>
+                parentNav?.navigate('PatientDetail', { patientId })
+              }
+              onNavigateToCreatePatient={() => parentNav?.navigate('PatientForm')}
+            />
+          );
+        }}
       </Tab.Screen>
-      <Tab.Screen name="Patients">{() => <DoctorPatientsScreen />}</Tab.Screen>
-      <Tab.Screen name="Cases">{() => <DoctorCasesScreen />}</Tab.Screen>
+      <Tab.Screen name="Patients">
+        {({ navigation }) => {
+          const parentNav = navigation.getParent() as any;
+          return (
+            <DoctorPatientsScreen
+              onNavigateToDetail={(patientId) =>
+                parentNav?.navigate('PatientDetail', { patientId })
+              }
+              onNavigateToCreatePatient={() => parentNav?.navigate('PatientForm')}
+            />
+          );
+        }}
+      </Tab.Screen>
+      <Tab.Screen name="Cases">
+        {({ navigation }) => {
+          const parentNav = navigation.getParent() as any;
+          return (
+            <DoctorCasesScreen
+              onNavigateToCaseDetail={(caseId) => parentNav?.navigate('CaseDetail', { caseId })}
+            />
+          );
+        }}
+      </Tab.Screen>
       <Tab.Screen name="Stats">{() => <DoctorStatsScreen />}</Tab.Screen>
       <Tab.Screen name="Profile">{() => <DoctorProfileScreen />}</Tab.Screen>
     </Tab.Navigator>

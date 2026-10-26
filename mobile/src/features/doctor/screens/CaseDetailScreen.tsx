@@ -1,0 +1,523 @@
+import React, { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../ui/theme';
+import {
+  AppText,
+  BottomSheet,
+  Button,
+  Dialog,
+  Divider,
+  EmptyState,
+  IconButton,
+  ImageTile,
+  StatusBadge,
+  TextField,
+  TopBar,
+} from '../../../ui/components';
+import {
+  findCaseById,
+  subscribeDoctorStore,
+  addImageToCase,
+  updateCaseNotes,
+  completeCase,
+  trashCase,
+  type MockCase,
+} from '../../../mocks';
+
+export interface CaseDetailScreenProps {
+  caseId: string;
+  onBack: () => void;
+  onNavigateToImageResult: (caseId: string, imageIndex: number) => void;
+  onNavigateToExportPdf: (caseId: string) => void;
+}
+
+/**
+ * SCR-C02 (15-case-detail): Màn hình Chi tiết ca / Biên tập nháp (Trung tâm xử lý ca).
+ * - Đa ngôn ngữ qua useTranslation('doctor_detail').
+ * - Đầu ca: Mã ca, Bệnh nhân, Ngày chụp, Trạng thái ca (DRAFT, COMPLETED, PARTIAL).
+ * - Thêm ảnh: Mở BottomSheet chọn nguồn (Thư viện / Camera) -> Thêm ảnh giả lập.
+ * - Lưới ảnh: Hiển thị các lát cắt qua component ImageTile (tách rõ pass/passNoCam/fail/mock).
+ * - Nhận xét: Tự lưu với nhãn "Đã lưu tạm trong phiên mô phỏng lúc hh:mm".
+ * - Xuất PDF: Điều hướng tới SCR-D01.
+ * - Hoàn tất ca: Bị DISABLED kèm lý do rõ ràng khi 0 ảnh hoặc có ảnh RUNNING (BR-CASE-01).
+ *   Khi bấm hoàn tất -> Mở Modal xác nhận tổng kết trạng thái từng ảnh (SCR-C05 / MSG-12).
+ */
+export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
+  caseId,
+  onBack,
+  onNavigateToImageResult,
+  onNavigateToExportPdf,
+}) => {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const { colors, spacing, radius } = theme;
+
+  const [currentCase, setCurrentCase] = useState<MockCase | undefined>(() => findCaseById(caseId));
+  const [notesText, setNotesText] = useState(currentCase?.notes ?? '');
+  const [notesSaveStatus, setNotesSaveStatus] = useState<string>(
+    currentCase?.notesSavedAt
+      ? t('doctor_detail.case_notes_saved_prefix', { time: currentCase.notesSavedAt })
+      : '',
+  );
+
+  React.useEffect(() => {
+    return subscribeDoctorStore(() => {
+      const updated = findCaseById(caseId);
+      setCurrentCase(updated);
+      if (updated && updated.notes !== undefined) {
+        setNotesText(updated.notes);
+        if (updated.notesSavedAt) {
+          setNotesSaveStatus(
+            t('doctor_detail.case_notes_saved_prefix', { time: updated.notesSavedAt }),
+          );
+        }
+      }
+    });
+  }, [caseId, t]);
+
+  const [showAddImageSheet, setShowAddImageSheet] = useState(false);
+  const [showCompleteConfirmModal, setShowCompleteConfirmModal] = useState(false);
+  const [showMenuOptionsDialog, setShowMenuOptionsDialog] = useState(false);
+  const [showTrashConfirmDialog, setShowTrashConfirmDialog] = useState(false);
+
+  const [noticeDialog, setNoticeDialog] = useState<{
+    visible: boolean;
+    title: string;
+    body: string;
+    onClose?: () => void;
+  }>({ visible: false, title: '', body: '' });
+
+  // Xử lý khi không tìm thấy ca bệnh
+  if (!currentCase) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
+        <TopBar title={t('doctor_detail.case_not_found_title')} type="stack" onBackPress={onBack} />
+        <View style={[styles.centerBox, { padding: spacing.lg }]}>
+          <EmptyState
+            title={t('doctor_detail.case_not_found_title')}
+            body={t('doctor_detail.case_not_found_body')}
+            type="noData"
+            actionLabel={t('doctor_detail.case_not_found_back')}
+            onActionPress={onBack}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  // Điều kiện hoàn tất ca (BR-CASE-01)
+  const isImageEmpty = currentCase.images.length === 0;
+  const isRunning = currentCase.images.some((img) => img.status === 'running');
+  const canComplete = !isImageEmpty && !isRunning && currentCase.status === 'DRAFT';
+
+  const completeDisabledReason = isImageEmpty
+    ? t('doctor_detail.case_complete_disabled_reason')
+    : isRunning
+      ? 'Đang phân tích — chờ xong hoặc hủy trước khi hoàn tất.'
+      : currentCase.status !== 'DRAFT'
+        ? 'Ca bệnh đã được hoàn tất trước đó.'
+        : undefined;
+
+  // Xử lý lưu nhận xét tạm
+  const handleSaveNotes = () => {
+    updateCaseNotes(currentCase.id, notesText);
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setNotesSaveStatus(t('doctor_detail.case_notes_saved_prefix', { time: timeStr }));
+  };
+
+  // Thêm ảnh từ Thư viện / Camera
+  const handleSelectImageSource = (source: 'gallery' | 'camera') => {
+    setShowAddImageSheet(false);
+    const added = addImageToCase(currentCase.id, source, 'mock');
+    if (added) {
+      setNoticeDialog({
+        visible: true,
+        title: 'Đã thêm ảnh cắt lớp',
+        body: `[Mô phỏng] Đã nạp thành công ảnh lát cắt #${added.sliceNumber}. Dữ liệu đã lưu tạm trong phiên mô phỏng.`,
+      });
+    }
+  };
+
+  // Hoàn tất ca bệnh
+  const handleConfirmComplete = () => {
+    setShowCompleteConfirmModal(false);
+    const res = completeCase(currentCase.id);
+    if (res.success) {
+      setNoticeDialog({
+        visible: true,
+        title: 'Hoàn tất ca bệnh thành công',
+        body: `Ca bệnh ${currentCase.caseCode} đã được hoàn tất. Dữ liệu đã lưu tạm trong phiên mô phỏng; có thể mất khi khởi động lại app.`,
+      });
+    } else {
+      setNoticeDialog({
+        visible: true,
+        title: 'Không thể hoàn tất ca',
+        body: res.reason ?? 'Lỗi không xác định.',
+      });
+    }
+  };
+
+  // Chuyển ca vào thùng rác
+  const handleTrashCase = () => {
+    setShowTrashConfirmDialog(false);
+    trashCase(currentCase.id);
+    setNoticeDialog({
+      visible: true,
+      title: t('label.thung_rac'),
+      body: t('doctor_detail.case_delete_confirm_body', { code: currentCase.caseCode }),
+      onClose: () => {
+        setNoticeDialog({ visible: false, title: '', body: '' });
+        onBack();
+      },
+    });
+  };
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.container, { backgroundColor: colors.bg.app }]}
+    >
+      <TopBar
+        title={t('doctor_detail.case_detail_title')}
+        type="stack"
+        onBackPress={onBack}
+        rightActions={
+          <View style={styles.topBarActions}>
+            <IconButton
+              name="sync"
+              accessibilityLabel="Đồng bộ ca"
+              onPress={() =>
+                setNoticeDialog({
+                  visible: true,
+                  title: 'Đồng bộ ca bệnh',
+                  body: 'Chức năng đồng bộ ca bệnh sẽ được triển khai ở gói SYNC-01.',
+                })
+              }
+            />
+            <IconButton
+              name="more"
+              accessibilityLabel={t('doctor_detail.case_menu_title')}
+              onPress={() => setShowMenuOptionsDialog(true)}
+            />
+          </View>
+        }
+      />
+
+      <ScrollView
+        contentContainerStyle={[styles.content, { padding: spacing.md }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Thẻ thông tin đầu ca */}
+        <View
+          style={[
+            styles.headerCard,
+            {
+              backgroundColor: colors.bg.surface,
+              borderColor: colors.border.default,
+              borderRadius: radius.lg,
+              padding: spacing.md,
+              marginBottom: spacing.md,
+            },
+          ]}
+        >
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="titleM" style={{ color: colors.text.primary }}>
+                {currentCase.caseCode}
+              </AppText>
+              <AppText variant="bodyM" style={{ color: colors.text.link, marginTop: 2 }}>
+                {currentCase.patientName} ({currentCase.patientCode})
+              </AppText>
+            </View>
+            <StatusBadge
+              label={
+                currentCase.status === 'DRAFT'
+                  ? t('label.nhap')
+                  : currentCase.status === 'COMPLETED'
+                    ? t('label.hoan_tat')
+                    : t('label.ket_qua_mot_phan')
+              }
+              tone={
+                currentCase.status === 'COMPLETED'
+                  ? 'success'
+                  : currentCase.status === 'PARTIAL'
+                    ? 'warning'
+                    : 'neutral'
+              }
+            />
+          </View>
+
+          <Divider style={{ marginVertical: spacing.sm }} />
+
+          <View style={styles.cardMetaRow}>
+            <AppText variant="caption" color={colors.text.secondary}>
+              {t('doctor_detail.case_capture_date', { date: currentCase.captureDate })}
+            </AppText>
+            <AppText variant="caption" color={colors.text.secondary}>
+              {t('doctor_detail.case_total_images', { count: currentCase.images.length })}
+            </AppText>
+          </View>
+        </View>
+
+        {/* Nút tác vụ chính */}
+        <View style={styles.actionButtonsRow}>
+          <Button
+            label={t('doctor_detail.case_add_image_btn')}
+            variant="secondary"
+            size="M"
+            onPress={() => setShowAddImageSheet(true)}
+            style={{ flex: 1, marginRight: spacing.xs }}
+          />
+          <Button
+            label={t('doctor_detail.case_export_pdf_btn')}
+            variant="tertiary"
+            size="M"
+            leadingIcon="pdf-export"
+            onPress={() => onNavigateToExportPdf(currentCase.id)}
+            style={{ flex: 1, marginLeft: spacing.xs }}
+          />
+        </View>
+
+        {/* Danh sách ảnh lát cắt */}
+        <View style={[styles.sectionHeader, { marginTop: spacing.md }]}>
+          <AppText variant="titleS">
+            {t('doctor_detail.case_grid_title', { count: currentCase.images.length })}
+          </AppText>
+          <AppText variant="caption" color={colors.text.secondary}>
+            {t('doctor_detail.case_grid_hint')}
+          </AppText>
+        </View>
+
+        {currentCase.images.length === 0 ? (
+          <View
+            style={[
+              styles.emptyImagesBox,
+              {
+                backgroundColor: colors.bg.surface,
+                borderColor: colors.border.default,
+                borderRadius: radius.md,
+                padding: spacing.xl,
+              },
+            ]}
+          >
+            <AppText variant="titleS" style={{ color: colors.text.primary, marginBottom: 4 }}>
+              {t('doctor_detail.case_empty_images_title')}
+            </AppText>
+            <AppText
+              variant="caption"
+              color={colors.text.secondary}
+              style={{ textAlign: 'center' }}
+            >
+              {t('doctor_detail.case_empty_images_body')}
+            </AppText>
+          </View>
+        ) : (
+          <View style={styles.gridContainer}>
+            {currentCase.images.map((img, idx) => (
+              <View key={img.id} style={styles.gridItem}>
+                <ImageTile
+                  index={idx + 1}
+                  status={img.status}
+                  aiClass={img.aiClass}
+                  onPress={() => onNavigateToImageResult(currentCase.id, idx + 1)}
+                />
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Nhận xét của Bác sĩ */}
+        <View style={[styles.sectionHeader, { marginTop: spacing.lg }]}>
+          <AppText variant="titleS">{t('doctor_detail.case_notes_section_title')}</AppText>
+          <AppText variant="caption" style={{ color: colors.text.link }}>
+            {notesSaveStatus}
+          </AppText>
+        </View>
+
+        <TextField
+          label=""
+          value={notesText}
+          onChangeText={setNotesText}
+          placeholder={t('doctor_detail.case_notes_placeholder')}
+          multiline
+          numberOfLines={4}
+          helper={t('doctor_detail.case_notes_helper')}
+          style={{ marginBottom: spacing.sm }}
+        />
+
+        <Button
+          label={t('doctor_detail.case_save_notes_btn')}
+          variant="tertiary"
+          size="M"
+          onPress={handleSaveNotes}
+          style={{ alignSelf: 'flex-start', marginBottom: spacing.lg }}
+        />
+
+        {/* Nút Hoàn tất ca bệnh */}
+        <View style={{ marginBottom: spacing.xl }}>
+          <Button
+            label={t('doctor_detail.case_complete_btn')}
+            variant="primary"
+            size="L"
+            disabled={!canComplete}
+            onPress={() => setShowCompleteConfirmModal(true)}
+          />
+          {completeDisabledReason ? (
+            <AppText
+              variant="caption"
+              color={colors.text.secondary}
+              style={{ marginTop: spacing.xxs, textAlign: 'center' }}
+            >
+              {completeDisabledReason}
+            </AppText>
+          ) : null}
+        </View>
+      </ScrollView>
+
+      {/* BottomSheet nạp ảnh CT */}
+      <BottomSheet
+        visible={showAddImageSheet}
+        title={t('doctor_detail.case_source_picker_title')}
+        onClose={() => setShowAddImageSheet(false)}
+      >
+        <View style={styles.bottomSheetActions}>
+          <Button
+            label={t('doctor_detail.case_source_gallery')}
+            variant="secondary"
+            leadingIcon="image-upload"
+            onPress={() => handleSelectImageSource('gallery')}
+          />
+          <Button
+            label={t('doctor_detail.case_source_camera')}
+            variant="secondary"
+            leadingIcon="camera"
+            onPress={() => handleSelectImageSource('camera')}
+          />
+        </View>
+      </BottomSheet>
+
+      {/* Modal tổng kết hoàn tất ca (SCR-C05 / MSG-12) */}
+      <Dialog
+        visible={showCompleteConfirmModal}
+        type="default"
+        title={t('doctor_detail.case_complete_confirm_title')}
+        body={t('doctor_detail.case_complete_confirm_body', {
+          code: currentCase.caseCode,
+          count: currentCase.images.length,
+        })}
+        confirmLabel={t('doctor_detail.case_complete_confirm_btn')}
+        cancelLabel={t('doctor_detail.case_complete_confirm_cancel')}
+        onConfirm={handleConfirmComplete}
+        onCancel={() => setShowCompleteConfirmModal(false)}
+      />
+
+      {/* Menu tùy chọn ... */}
+      <Dialog
+        visible={showMenuOptionsDialog}
+        type="default"
+        title={t('doctor_detail.case_menu_title')}
+        body={t('doctor_detail.case_menu_body')}
+        confirmLabel={t('doctor_detail.case_menu_delete')}
+        cancelLabel={t('doctor_detail.common_dialog_cancel')}
+        onConfirm={() => {
+          setShowMenuOptionsDialog(false);
+          setShowTrashConfirmDialog(true);
+        }}
+        onCancel={() => setShowMenuOptionsDialog(false)}
+      />
+
+      {/* Dialog xác nhận chuyển thùng rác */}
+      <Dialog
+        visible={showTrashConfirmDialog}
+        type="destructive"
+        title={t('doctor_detail.case_delete_confirm_title')}
+        body={t('doctor_detail.case_delete_confirm_body', { code: currentCase.caseCode })}
+        confirmLabel={t('label.thung_rac')}
+        cancelLabel={t('doctor_detail.common_dialog_cancel')}
+        onConfirm={handleTrashCase}
+        onCancel={() => setShowTrashConfirmDialog(false)}
+      />
+
+      {/* Thông báo kết quả */}
+      <Dialog
+        visible={noticeDialog.visible}
+        type="default"
+        title={noticeDialog.title}
+        body={noticeDialog.body}
+        confirmLabel={t('doctor_detail.common_dialog_close')}
+        onConfirm={() => {
+          if (noticeDialog.onClose) {
+            noticeDialog.onClose();
+          } else {
+            setNoticeDialog({ visible: false, title: '', body: '' });
+          }
+        }}
+        onCancel={() => {
+          if (noticeDialog.onClose) {
+            noticeDialog.onClose();
+          } else {
+            setNoticeDialog({ visible: false, title: '', body: '' });
+          }
+        }}
+      />
+    </KeyboardAvoidingView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    paddingBottom: 40,
+  },
+  centerBox: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerCard: {
+    borderWidth: 1,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  gridItem: {
+    width: '48%',
+  },
+  emptyImagesBox: {
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomSheetActions: {
+    gap: 12,
+    paddingVertical: 8,
+  },
+});

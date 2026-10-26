@@ -16,7 +16,12 @@ import {
   TopBar,
 } from '../../../ui/components';
 import { Icon } from '../../../ui/icons';
-import { MOCK_CASES, MOCK_PATIENTS } from '../../../mocks';
+import {
+  getMockCases,
+  getMockPatients,
+  subscribeDoctorStore,
+  createMockCaseForPatient,
+} from '../../../mocks';
 import { SCORE_FORMAT_DECISION } from '../../../config/ui-decisions';
 import { useAuth } from '../../auth/context/AuthContext';
 
@@ -25,6 +30,7 @@ export interface DoctorHomeScreenProps {
   onNavigateToPatients?: () => void;
   onNavigateToCaseDetail?: (caseId: string) => void;
   onNavigateToPatientDetail?: (patientId: string) => void;
+  onNavigateToCreatePatient?: () => void;
   isLoadingInitial?: boolean;
   isEmptyInitial?: boolean;
   isModelErrorInitial?: boolean;
@@ -35,6 +41,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
   onNavigateToPatients,
   onNavigateToCaseDetail,
   onNavigateToPatientDetail,
+  onNavigateToCreatePatient,
   isLoadingInitial = false,
   isEmptyInitial = false,
   isModelErrorInitial = false,
@@ -48,6 +55,16 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
   const [isEmpty] = useState(isEmptyInitial);
   const [isModelError] = useState(isModelErrorInitial);
   const [isSelectPatientSheetVisible, setIsSelectPatientSheetVisible] = useState(false);
+
+  const [casesList, setCasesList] = useState(getMockCases());
+  const [patientsList, setPatientsList] = useState(getMockPatients());
+
+  React.useEffect(() => {
+    return subscribeDoctorStore(() => {
+      setCasesList(getMockCases());
+      setPatientsList(getMockPatients());
+    });
+  }, []);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -67,8 +84,8 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
     setDialogNotice({ visible: false, title: '', body: '' });
   };
 
-  const pendingCases = isEmpty ? [] : MOCK_CASES.filter((c) => c.status === 'DRAFT');
-  const recentPatients = isEmpty ? [] : MOCK_PATIENTS.slice(0, 3);
+  const pendingCases = isEmpty ? [] : casesList.filter((c) => c.status === 'DRAFT');
+  const recentPatients = isEmpty ? [] : patientsList.slice(0, 3);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg.app }]}>
@@ -305,7 +322,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             Chọn bệnh nhân có sẵn từ danh sách hoặc tạo bệnh nhân mới để bắt đầu:
           </AppText>
 
-          {MOCK_PATIENTS.map((p) => (
+          {patientsList.map((p) => (
             <ListRow
               key={p.id}
               title={`${p.code} · ${p.fullName}`}
@@ -314,10 +331,15 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
               leadingIcon="patients"
               onPress={() => {
                 setIsSelectPatientSheetVisible(false);
-                showFeatureNotice(
-                  'Khởi tạo ca khám (CASE-01)',
-                  `[Chế độ mô phỏng] Đã chọn bệnh nhân ${p.fullName} (${p.code}). Luồng biên tập ca chi tiết (SCR-C02) sẽ hoàn thiện ở gói UI-08.`,
-                );
+                const createdCase = createMockCaseForPatient(p);
+                if (onNavigateToCaseDetail) {
+                  onNavigateToCaseDetail(createdCase.id);
+                } else {
+                  showFeatureNotice(
+                    'Đã tạo ca khám mới (CASE-01)',
+                    `[Chế độ mô phỏng] Đã tạo ca ${createdCase.caseCode} cho bệnh nhân ${p.fullName}. Dữ liệu đã lưu tạm trong phiên mô phỏng; có thể mất khi khởi động lại app.`,
+                  );
+                }
               }}
               style={{ marginBottom: 6 }}
             />
@@ -328,10 +350,14 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             variant="secondary"
             onPress={() => {
               setIsSelectPatientSheetVisible(false);
-              showFeatureNotice(
-                'Biểu mẫu bệnh nhân (SCR-P02)',
-                'Giao diện nhập thông tin bệnh nhân mới (SCR-P02) sẽ hoàn thiện ở gói UI-07.',
-              );
+              if (onNavigateToCreatePatient) {
+                onNavigateToCreatePatient();
+              } else {
+                showFeatureNotice(
+                  'Biểu mẫu bệnh nhân (SCR-P02)',
+                  'Mở biểu mẫu thêm bệnh nhân mới.',
+                );
+              }
             }}
             style={{ marginTop: spacing.sm }}
           />

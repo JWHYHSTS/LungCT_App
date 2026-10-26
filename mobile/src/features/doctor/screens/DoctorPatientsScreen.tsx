@@ -12,7 +12,7 @@ import {
   StatusBadge,
   TopBar,
 } from '../../../ui/components';
-import { MOCK_PATIENTS } from '../../../mocks';
+import { getMockPatients, subscribeDoctorStore } from '../../../mocks';
 import { PATIENT_FILTER_DECISION } from '../../../config/ui-decisions';
 
 export interface DoctorPatientsScreenProps {
@@ -27,8 +27,15 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing } = theme;
 
+  const [patients, setPatients] = useState(getMockPatients());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(PATIENT_FILTER_DECISION.defaultChip);
+
+  React.useEffect(() => {
+    return subscribeDoctorStore(() => {
+      setPatients(getMockPatients());
+    });
+  }, []);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -49,7 +56,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   };
 
   const filteredPatients = useMemo(() => {
-    return MOCK_PATIENTS.filter((patient) => {
+    return patients.filter((patient) => {
       const q = searchQuery.trim().toLowerCase();
       const matchQuery =
         !q || patient.code.toLowerCase().includes(q) || patient.fullName.toLowerCase().includes(q);
@@ -64,7 +71,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       }
       return true;
     });
-  }, [searchQuery, selectedFilter]);
+  }, [patients, searchQuery, selectedFilter]);
 
   const isNoResult =
     filteredPatients.length === 0 && (searchQuery.trim().length > 0 || selectedFilter !== 'all');

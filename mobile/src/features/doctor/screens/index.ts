@@ -3,3 +3,8 @@ export * from './DoctorPatientsScreen';
 export * from './DoctorCasesScreen';
 export * from './DoctorStatsScreen';
 export * from './DoctorProfileScreen';
+export * from './PatientFormModal';
+export * from './PatientDetailScreen';
+export * from './CaseDetailScreen';
+export * from './AIImageResultScreen';
+export * from './ExportPdfScreen';

@@ -104,3 +104,21 @@ export const CASE_FILTER_DECISION = {
   ] as const,
   defaultChip: 'all',
 } as const;
+
+/**
+ * Cấu hình các trường bắt buộc và quy tắc kiểm tra tính hợp lệ khi thêm bệnh nhân [CHƯA CHỐT Q-20].
+ *
+ * Lý do thiết kế & ràng buộc theo tài liệu handoff:
+ * - Theo 02-dac-ta-tung-khung.md (SCR-P02) và 07-man-chi-tiet-bac-si.md:
+ *   + 4 trường bắt buộc (*) theo đề xuất Q-20: Mã bệnh nhân, Họ tên, Ngày sinh, Giới tính.
+ *   + 2 trường không bắt buộc: Điện thoại, Triệu chứng.
+ *   + Quy tắc ngày sinh: Phải đúng ngày lịch thực tế (hợp lệ theo tháng/năm nhuận) và không nằm trong tương lai.
+ *   + Định dạng chuẩn hiển thị và nhập: DD/MM/YYYY.
+ */
+export const PATIENT_FORM_DECISION = {
+  code: 'Q-20',
+  status: 'PENDING_DECISION',
+  requiredFields: ['code', 'fullName', 'dob', 'gender'] as const,
+  dateFormat: 'DD/MM/YYYY',
+  codePattern: /^[A-Za-z0-9-]{1,30}$/,
+} as const;

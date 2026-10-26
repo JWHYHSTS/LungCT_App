@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import { resetDoctorStore } from '../../../mocks/doctorMocks';
 
 export type UserRole = 'doctor' | 'admin';
 
@@ -73,6 +74,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    // Đảm bảo không lộ dữ liệu phiên mô phỏng của tài khoản trước
+    resetDoctorStore();
     setUser(null);
   };
 

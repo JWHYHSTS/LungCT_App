@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import { AppText, Button, Dialog, ListRow, StatusBadge, TopBar } from '../../../ui/components';
 import { Icon } from '../../../ui/icons';
@@ -11,11 +12,13 @@ export interface DoctorProfileScreenProps {
 }
 
 export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogoutSuccess }) => {
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing } = theme;
   const { logout } = useAuth();
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showLanguageDialog, setShowLanguageDialog] = useState(false);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -112,16 +115,15 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
           />
 
           <ListRow
-            title="Cài đặt"
-            subtitle="Tùy chọn ngôn ngữ, giao diện và thông báo"
+            title={t('ui.cai_at', 'Cài đặt')}
+            subtitle={
+              i18n.language === 'en'
+                ? 'Language: English · Tap to switch'
+                : 'Ngôn ngữ: Tiếng Việt · Nhấn để đổi'
+            }
             type="setting"
             leadingIcon="settings"
-            onPress={() =>
-              showFeatureNotice(
-                'Cài đặt ứng dụng (SCR-U02)',
-                'Màn hình cài đặt hệ thống (SCR-U02) sẽ hoàn thiện ở đợt cập nhật tiếp theo.',
-              )
-            }
+            onPress={() => setShowLanguageDialog(true)}
             style={{ marginBottom: spacing.xs }}
           />
 
@@ -165,6 +167,24 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
           <Button label="Đăng xuất" variant="danger" onPress={() => setShowLogoutDialog(true)} />
         </View>
       </ScrollView>
+
+      <Dialog
+        visible={showLanguageDialog}
+        type="default"
+        title={t('ui.ngon_ngu', 'Ngôn ngữ')}
+        body={
+          i18n.language === 'en'
+            ? 'Currently using English. Would you like to switch to Vietnamese?'
+            : 'Đang dùng Tiếng Việt. Bạn có muốn đổi sang Tiếng Anh (English)?'
+        }
+        confirmLabel={i18n.language === 'en' ? 'Tiếng Việt' : 'English'}
+        cancelLabel={t('doctor_detail.discard_dialog_continue', 'Đóng')}
+        onConfirm={() => {
+          setShowLanguageDialog(false);
+          i18n.changeLanguage(i18n.language === 'en' ? 'vi' : 'en');
+        }}
+        onCancel={() => setShowLanguageDialog(false)}
+      />
 
       <Dialog
         visible={showLogoutDialog}

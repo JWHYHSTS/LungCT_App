@@ -11,7 +11,7 @@ import {
   StatusBadge,
   TopBar,
 } from '../../../ui/components';
-import { MOCK_CASES } from '../../../mocks';
+import { getMockCases, subscribeDoctorStore } from '../../../mocks';
 import { CASE_FILTER_DECISION, SCORE_FORMAT_DECISION } from '../../../config/ui-decisions';
 
 export interface DoctorCasesScreenProps {
@@ -26,8 +26,15 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing } = theme;
 
+  const [cases, setCases] = useState(getMockCases());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(CASE_FILTER_DECISION.defaultChip);
+
+  React.useEffect(() => {
+    return subscribeDoctorStore(() => {
+      setCases(getMockCases());
+    });
+  }, []);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -48,7 +55,7 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
   };
 
   const filteredCases = useMemo(() => {
-    return MOCK_CASES.filter((caseItem) => {
+    return cases.filter((caseItem) => {
       const q = searchQuery.trim().toLowerCase();
       const matchQuery =
         !q ||
@@ -69,7 +76,7 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
       }
       return true;
     });
-  }, [searchQuery, selectedFilter]);
+  }, [cases, searchQuery, selectedFilter]);
 
   const isNoResult =
     filteredCases.length === 0 && (searchQuery.trim().length > 0 || selectedFilter !== 'all');
