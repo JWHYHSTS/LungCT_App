@@ -9,7 +9,12 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useTheme } from '../theme';
-import { IMAGE_CANVAS } from '../theme/heatmap';
+import {
+  IMAGE_CANVAS,
+  MOCK_CT_PLACEHOLDER_BG,
+  MOCK_CT_PLACEHOLDER_BORDER,
+  MOCK_CT_LOBE_BG,
+} from '../theme/heatmap';
 import { AILabel, type AIClass } from './AILabel';
 import { AppText } from './AppText';
 import { StatusBadge, type StatusBadgeTone } from './StatusBadge';
@@ -148,9 +153,9 @@ const styles = StyleSheet.create({
     width: '80%',
     height: '80%',
     borderRadius: 8,
-    backgroundColor: '#1E201D',
+    backgroundColor: MOCK_CT_PLACEHOLDER_BG,
     borderWidth: 1,
-    borderColor: '#30332D',
+    borderColor: MOCK_CT_PLACEHOLDER_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -158,7 +163,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 36,
     borderRadius: 14,
-    backgroundColor: '#0A0B09',
+    backgroundColor: MOCK_CT_LOBE_BG,
   },
   infoWrapper: {
     alignItems: 'flex-start',

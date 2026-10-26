@@ -113,8 +113,8 @@ export const AdminProfileScreen: React.FC<AdminProfileScreenProps> = ({ onLogout
             title={t('admin.action_settings', 'Cài đặt')}
             subtitle={
               i18n.language === 'en'
-                ? `English · ${preference === 'dark' ? 'Dark' : 'Light'} Mode`
-                : `Tiếng Việt · Giao diện ${preference === 'dark' ? 'Tối' : 'Sáng'}`
+                ? `English · ${preference === 'system' ? 'System Default' : preference === 'dark' ? 'Dark Mode' : 'Light Mode'}`
+                : `Tiếng Việt · Giao diện ${preference === 'system' ? 'Theo hệ thống' : preference === 'dark' ? 'Tối' : 'Sáng'}`
             }
             type="setting"
             leadingIcon="settings"
@@ -133,24 +133,32 @@ export const AdminProfileScreen: React.FC<AdminProfileScreenProps> = ({ onLogout
         </View>
       </ScrollView>
 
-      {/* Dialog Cài đặt (Đổi ngôn ngữ + Đổi giao diện) */}
+      {/* Dialog Cài đặt (Đổi ngôn ngữ + Đổi giao diện Sáng/Tối/Theo hệ thống) */}
       <Dialog
         visible={showSettingsDialog}
         type="default"
         title={t('admin.action_settings', 'Cài đặt')}
-        body={
-          i18n.language === 'en'
-            ? 'Adjust your preferred application language and color theme.'
-            : 'Tùy chỉnh ngôn ngữ hiển thị và chủ đề giao diện Sáng / Tối.'
-        }
+        body={t(
+          'admin.settings_dialog_body_full',
+          'Tùy chỉnh ngôn ngữ hiển thị và chủ đề giao diện (Sáng / Tối / Theo hệ thống).',
+        )}
         confirmLabel={i18n.language === 'en' ? 'Switch to Tiếng Việt' : 'Đổi sang English'}
-        cancelLabel={preference === 'dark' ? 'Chế độ Sáng' : 'Chế độ Tối'}
+        cancelLabel={
+          preference === 'dark'
+            ? t('admin.theme_switch_to_light', 'Chế độ Sáng')
+            : t('admin.theme_switch_to_dark', 'Chế độ Tối')
+        }
+        neutralLabel={t('admin.theme_system', 'Theo hệ thống')}
         onConfirm={() => {
           handleToggleLanguage();
           setShowSettingsDialog(false);
         }}
         onCancel={() => {
           handleToggleTheme();
+          setShowSettingsDialog(false);
+        }}
+        onNeutral={() => {
+          setPreference('system');
           setShowSettingsDialog(false);
         }}
       />

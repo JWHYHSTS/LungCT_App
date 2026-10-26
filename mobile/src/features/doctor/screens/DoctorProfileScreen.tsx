@@ -13,7 +13,7 @@ export interface DoctorProfileScreenProps {
 
 export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogoutSuccess }) => {
   const { t, i18n } = useTranslation();
-  const { theme } = useTheme();
+  const { theme, preference, setPreference } = useTheme();
   const { colors, spacing } = theme;
   const { logout } = useAuth();
 
@@ -115,11 +115,11 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
           />
 
           <ListRow
-            title={t('ui.cai_at', 'Cài đặt')}
+            title={t('admin.action_settings', 'Cài đặt')}
             subtitle={
               i18n.language === 'en'
-                ? 'Language: English · Tap to switch'
-                : 'Ngôn ngữ: Tiếng Việt · Nhấn để đổi'
+                ? `English · ${preference === 'system' ? 'System Default' : preference === 'dark' ? 'Dark Mode' : 'Light Mode'}`
+                : `Tiếng Việt · Giao diện ${preference === 'system' ? 'Theo hệ thống' : preference === 'dark' ? 'Tối' : 'Sáng'}`
             }
             type="setting"
             leadingIcon="settings"
@@ -168,22 +168,34 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
         </View>
       </ScrollView>
 
+      {/* Dialog Cài đặt (SET-01: Ngôn ngữ, SET-02: Chủ đề Sáng/Tối/Theo hệ thống) */}
       <Dialog
         visible={showLanguageDialog}
         type="default"
-        title={t('ui.ngon_ngu', 'Ngôn ngữ')}
-        body={
-          i18n.language === 'en'
-            ? 'Currently using English. Would you like to switch to Vietnamese?'
-            : 'Đang dùng Tiếng Việt. Bạn có muốn đổi sang Tiếng Anh (English)?'
+        title={t('admin.action_settings', 'Cài đặt')}
+        body={t(
+          'admin.settings_dialog_body_full',
+          'Tùy chỉnh ngôn ngữ hiển thị và chủ đề giao diện (Sáng / Tối / Theo hệ thống).',
+        )}
+        confirmLabel={i18n.language === 'en' ? 'Switch to Tiếng Việt' : 'Đổi sang English'}
+        cancelLabel={
+          preference === 'dark'
+            ? t('admin.theme_switch_to_light', 'Chế độ Sáng')
+            : t('admin.theme_switch_to_dark', 'Chế độ Tối')
         }
-        confirmLabel={i18n.language === 'en' ? 'Tiếng Việt' : 'English'}
-        cancelLabel={t('doctor_detail.discard_dialog_continue', 'Đóng')}
+        neutralLabel={t('admin.theme_system', 'Theo hệ thống')}
         onConfirm={() => {
           setShowLanguageDialog(false);
           i18n.changeLanguage(i18n.language === 'en' ? 'vi' : 'en');
         }}
-        onCancel={() => setShowLanguageDialog(false)}
+        onCancel={() => {
+          setShowLanguageDialog(false);
+          setPreference(preference === 'dark' ? 'light' : 'dark');
+        }}
+        onNeutral={() => {
+          setShowLanguageDialog(false);
+          setPreference('system');
+        }}
       />
 
       <Dialog

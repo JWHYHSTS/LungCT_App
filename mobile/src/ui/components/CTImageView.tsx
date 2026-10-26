@@ -9,7 +9,17 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { IMAGE_CANVAS, HEATMAP_DEFAULT_OPACITY } from '../theme/heatmap';
+import {
+  IMAGE_CANVAS,
+  HEATMAP_DEFAULT_OPACITY,
+  MOCK_CT_PLACEHOLDER_BG,
+  MOCK_CT_PLACEHOLDER_BORDER,
+  MOCK_CT_LOBE_BG,
+  MOCK_CT_SPINE_BG,
+  MOCK_CT_HEATMAP_SPOT_BG,
+  MOCK_CT_HEATMAP_SPOT_GLOW,
+  MOCK_CT_TEXT_LIGHT,
+} from '../theme/heatmap';
 import { AppText } from './AppText';
 
 export interface CTImageViewProps {
@@ -30,7 +40,7 @@ export interface CTImageViewProps {
 
 /**
  * Khung xem ảnh cắt lớp CT y tế (CTImageView).
- * - Nền cố định màu IMAGE_CANVAS (#111210) bất kể chế độ sáng/tối.
+ * - Nền cố định màu IMAGE_CANVAS bất kể chế độ sáng/tối.
  * - Hỗ trợ zoom (pinch) và pan (kéo) trực tiếp qua PanResponder tích hợp mượt mà.
  * - Tích hợp lớp phủ Grad-CAM với độ phủ tùy chỉnh.
  * - Bắt buộc hiển thị nhãn "ẢNH GIẢ LẬP" khi ở môi trường kiểm thử/demo (BR-AI-06).
@@ -168,7 +178,7 @@ export const CTImageView: React.FC<CTImageViewProps> = ({
       {/* Dấu watermark y tế bắt buộc */}
       {watermarkText && (
         <View style={styles.watermarkBadge}>
-          <AppText variant="labelS" color="#FAF8F2">
+          <AppText variant="labelS" color={MOCK_CT_TEXT_LIGHT}>
             {watermarkText}
           </AppText>
         </View>
@@ -177,7 +187,7 @@ export const CTImageView: React.FC<CTImageViewProps> = ({
       {/* Ghi chú điều khiển zoom/pan */}
       {currentScale > 1 && (
         <View style={styles.zoomBadge}>
-          <AppText variant="caption" color="#FAF8F2">
+          <AppText variant="caption" color={MOCK_CT_TEXT_LIGHT}>
             {`Zoom: ${currentScale.toFixed(1)}x (Chạm đúp để đặt lại)`}
           </AppText>
         </View>
@@ -208,9 +218,9 @@ const styles = StyleSheet.create({
     width: '80%',
     height: '80%',
     borderRadius: 120,
-    backgroundColor: '#1E201D',
+    backgroundColor: MOCK_CT_PLACEHOLDER_BG,
     borderWidth: 1,
-    borderColor: '#30332D',
+    borderColor: MOCK_CT_PLACEHOLDER_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -218,7 +228,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 180,
     borderRadius: 70,
-    backgroundColor: '#0A0B09',
+    backgroundColor: MOCK_CT_LOBE_BG,
     opacity: 0.7,
   },
   mockSpine: {
@@ -227,7 +237,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E5E2D9',
+    backgroundColor: MOCK_CT_SPINE_BG,
   },
   heatmapOverlay: {
     ...StyleSheet.absoluteFill,
@@ -238,8 +248,8 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#E61A0D',
-    shadowColor: '#FFD900',
+    backgroundColor: MOCK_CT_HEATMAP_SPOT_BG,
+    shadowColor: MOCK_CT_HEATMAP_SPOT_GLOW,
     shadowRadius: 30,
     shadowOpacity: 0.9,
     elevation: 10,

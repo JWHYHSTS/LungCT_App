@@ -644,6 +644,13 @@
     "logout_cancel_btn": "Ở lại",
     "feature_notice_title": "Tính năng Quản trị",
     "feature_notice_body": "Chức năng thay đổi mật khẩu quản trị sẽ được tích hợp ở đợt cập nhật tiếp theo.",
-    "account_not_found": "Không tìm thấy tài khoản bác sĩ."
+    "account_not_found": "Không tìm thấy tài khoản bác sĩ.",
+    "theme_switch_to_light": "Chế độ Sáng",
+    "theme_switch_to_dark": "Chế độ Tối",
+    "theme_system": "Theo hệ thống",
+    "theme_light": "Sáng",
+    "theme_dark": "Tối",
+    "theme_current_label": "Chủ đề: {{theme}}",
+    "settings_dialog_body_full": "Tùy chỉnh ngôn ngữ hiển thị và chủ đề giao diện (Sáng / Tối / Theo hệ thống)."
   }
 }

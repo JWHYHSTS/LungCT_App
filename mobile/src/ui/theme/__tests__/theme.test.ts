@@ -1,6 +1,7 @@
 import { contrastRatio } from '../contrast';
 import { darkColors } from '../dark';
 import { lightColors } from '../light';
+import { buildTheme } from '../ThemeProvider';
 import type { ColorTokens } from '../types';
 
 /** Liệt kê đường dẫn khóa dạng "bg.app" để so sánh hai theme. */
@@ -53,4 +54,14 @@ describe('theme LungCT', () => {
       });
     }
   }
+
+  it('buildTheme tạo đúng scheme và bảng màu tương ứng', () => {
+    const lightTheme = buildTheme('light');
+    expect(lightTheme.scheme).toBe('light');
+    expect(lightTheme.colors).toEqual(lightColors);
+
+    const darkTheme = buildTheme('dark');
+    expect(darkTheme.scheme).toBe('dark');
+    expect(darkTheme.colors).toEqual(darkColors);
+  });
 });

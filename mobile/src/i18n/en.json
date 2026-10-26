@@ -644,6 +644,13 @@
     "logout_cancel_btn": "Stay",
     "feature_notice_title": "Administrative Feature",
     "feature_notice_body": "Administrator password change feature will be connected in a future update.",
-    "account_not_found": "Physician account not found."
+    "account_not_found": "Physician account not found.",
+    "theme_switch_to_light": "Light Mode",
+    "theme_switch_to_dark": "Dark Mode",
+    "theme_system": "System Default",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_current_label": "Theme: {{theme}}",
+    "settings_dialog_body_full": "Adjust application language and color theme (Light / Dark / System Default)."
   }
 }

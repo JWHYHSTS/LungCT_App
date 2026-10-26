@@ -1,10 +1,19 @@
-import React, { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useColorScheme } from 'react-native';
 import { darkColors } from './dark';
 import { lightColors } from './light';
 import { radius, spacing } from './spacing';
 import { typography } from './typography';
 import type { ColorSchemeName, ColorTokens, ThemePreference } from './types';
+import { loadStoredThemePreference, saveStoredThemePreference } from '../../config/settingsStorage';
 
 /** Toàn bộ giá trị giao diện mà component đọc qua `useTheme()`. */
 export interface Theme {
@@ -17,9 +26,9 @@ export interface Theme {
 
 interface ThemeContextValue {
   theme: Theme;
-  /** Lựa chọn hiện tại trong Cài đặt (SET-02). */
+  /** Lựa chọn hiện tại trong Cài đặt (SET-02): 'system' | 'light' | 'dark'. */
   preference: ThemePreference;
-  /** Đổi lựa chọn. Việc lưu bền vững (SQLite/secure storage) do tầng dữ liệu đảm nhận. */
+  /** Đổi lựa chọn và lưu bền vững vào AsyncStorage. */
   setPreference: (p: ThemePreference) => void;
 }
 
@@ -38,7 +47,7 @@ export function buildTheme(scheme: ColorSchemeName): Theme {
 
 /**
  * Bao quanh toàn app (trong `App.tsx`). Mặc định theo chế độ Sáng/Tối của hệ thống;
- * khi người dùng chọn cố định trong Cài đặt thì dùng lựa chọn đó.
+ * khôi phục từ AsyncStorage khi khởi động lại và phản hồi thay đổi theme của Android.
  */
 export function ThemeProvider({
   children,
@@ -48,13 +57,34 @@ export function ThemeProvider({
   initialPreference?: ThemePreference;
 }) {
   const system = useColorScheme();
-  const [preference, setPreference] = useState<ThemePreference>(initialPreference);
+  const [preference, setPreferenceState] = useState<ThemePreference>(initialPreference);
+
+  // Tải cài đặt đã lưu khi ứng dụng khởi chạy
+  useEffect(() => {
+    let isMounted = true;
+    loadStoredThemePreference().then((saved) => {
+      if (isMounted && saved) {
+        setPreferenceState(saved);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const setPreference = useCallback((nextPref: ThemePreference) => {
+    setPreferenceState(nextPref);
+    saveStoredThemePreference(nextPref);
+  }, []);
+
   const scheme: ColorSchemeName =
     preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
+
   const value = useMemo(
     () => ({ theme: buildTheme(scheme), preference, setPreference }),
-    [scheme, preference],
+    [scheme, preference, setPreference],
   );
+
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

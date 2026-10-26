@@ -21,3 +21,12 @@ export const HEATMAP_OPACITY_STEP = 0.05;
 
 /** Nền vùng xem ảnh CT — cố định, không đổi theo theme. */
 export const IMAGE_CANVAS = '#111210';
+
+/** Màu mô phỏng mô phổi và cột sống trong placeholder ảnh CT — cố định độc lập theme */
+export const MOCK_CT_PLACEHOLDER_BG = '#1E201D';
+export const MOCK_CT_PLACEHOLDER_BORDER = '#30332D';
+export const MOCK_CT_LOBE_BG = '#0A0B09';
+export const MOCK_CT_SPINE_BG = '#E5E2D9';
+export const MOCK_CT_HEATMAP_SPOT_BG = '#E61A0D';
+export const MOCK_CT_HEATMAP_SPOT_GLOW = '#FFD900';
+export const MOCK_CT_TEXT_LIGHT = '#FAF8F2';
