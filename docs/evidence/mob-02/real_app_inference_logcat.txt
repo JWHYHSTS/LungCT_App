@@ -1,0 +1,29 @@
+--------- beginning of main
+10-27 13:59:18.647 14694 14710 D EGL_emulation: app_time_stats: avg=20.71ms min=2.40ms max=365.99ms count=38
+10-27 13:59:19.648 14694 14710 D EGL_emulation: app_time_stats: avg=5.79ms min=2.22ms max=25.84ms count=58
+10-27 13:59:19.811 14694 14787 W onnxruntime:  [W:onnxruntime:ort-java, telemetry_1ds.cc:406 Initialize] Android telemetry is unavailable because the 1DS Java HttpClient was not initialized
+10-27 13:59:19.816 14694 14701 W nonymous.mobile: Cleared Reference was only reachable from finalizer (only reported once)
+10-27 13:59:19.827 14694 14701 I nonymous.mobile: Background concurrent copying GC freed 240657(8940KB) AllocSpace objects, 19(1324KB) LOS objects, 49% free, 12MB/25MB, paused 4.543ms,11us total 104.002ms
+10-27 13:59:19.844 14694 14703 E System  : Uncaught exception thrown by finalizer
+10-27 13:59:19.847 14694 14703 E System  : java.lang.IllegalArgumentException: Receiver not registered: null
+10-27 13:59:19.847 14694 14703 E System  : 	at android.app.LoadedApk.forgetReceiverDispatcher(LoadedApk.java:1662)
+10-27 13:59:19.847 14694 14703 E System  : 	at android.app.ContextImpl.unregisterReceiver(ContextImpl.java:1872)
+10-27 13:59:19.847 14694 14703 E System  : 	at android.content.ContextWrapper.unregisterReceiver(ContextWrapper.java:820)
+10-27 13:59:19.847 14694 14703 E System  : 	at ai.onnxruntime.telemetry.HttpClient.finalize(r8-map-id-2bc3b3e13f1e17963926e14f4cb34f07687bcf9b584f3e27b262d04d11ffb29c:17)
+10-27 13:59:19.847 14694 14703 E System  : 	at java.lang.Daemons$FinalizerDaemon.doFinalize(Daemons.java:339)
+10-27 13:59:19.847 14694 14703 E System  : 	at java.lang.Daemons$FinalizerDaemon.processReference(Daemons.java:324)
+10-27 13:59:19.847 14694 14703 E System  : 	at java.lang.Daemons$FinalizerDaemon.runInternal(Daemons.java:300)
+10-27 13:59:19.847 14694 14703 E System  : 	at java.lang.Daemons$Daemon.run(Daemons.java:145)
+10-27 13:59:19.847 14694 14703 E System  : 	at java.lang.Thread.run(Thread.java:1012)
+10-27 13:59:20.598 14694 14787 I TensorFlowLite: Loaded native library: tensorflowlite_jni
+10-27 13:59:20.609 14694 14787 I TensorFlowLite: Didn't load native library: tensorflowlite_jni_gms_client
+10-27 13:59:20.648 14694 14710 D EGL_emulation: app_time_stats: avg=15.32ms min=2.41ms max=33.65ms count=59
+10-27 13:59:20.657 14694 14787 I tflite  : Initialized TensorFlow Lite runtime.
+10-27 13:59:20.666 14694 14787 I tflite  : Created TensorFlow Lite XNNPACK delegate for CPU.
+10-27 13:59:20.666 14694 14787 I tflite  : Replacing 142 out of 151 node(s) with delegate (TfLiteXNNPackDelegate) node, yielding 7 partitions for subgraph 0.
+10-27 13:59:21.665 14694 14710 D EGL_emulation: app_time_stats: avg=3.06ms min=2.05ms max=7.07ms count=61
+10-27 13:59:22.666 14694 14710 D EGL_emulation: app_time_stats: avg=19.41ms min=3.25ms max=59.53ms count=39
+10-27 13:59:23.677 14694 14710 D EGL_emulation: app_time_stats: avg=7.21ms min=2.31ms max=29.81ms count=58
+10-27 13:59:23.746 14694 14694 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+10-27 13:59:23.746 14694 14694 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+10-27 13:59:23.802 14694 14710 E OpenGLRenderer: Unable to match the desired swap behavior.

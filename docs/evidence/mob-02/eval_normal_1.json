@@ -1,0 +1,58 @@
+{
+  "image_path": "C:\\Users\\thudi\\OneDrive\\Desktop\\LungCT_Workspace\\IQ_OTHNCCD\\Normal\\Normal case (1).jpg",
+  "class_order": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "original_pipeline": {
+    "vit_framework": "PyTorch 2.14.1+cpu",
+    "fusion_framework": "Keras 2.22.0-rc0",
+    "cls_vector_head": [
+      0.013516031205654144,
+      0.14328639209270477,
+      -0.23487335443496704,
+      0.12724436819553375,
+      0.013056095689535141
+    ],
+    "scores": [
+      0.000794427702203393,
+      9.810901246964931e-06,
+      0.9991957545280457
+    ],
+    "predicted_label": "Normal"
+  },
+  "converted_pipeline": {
+    "vit_framework": "ONNX Runtime 1.31.0",
+    "fusion_framework": "TensorFlow Lite (XNNPACK)",
+    "cls_vector_head": [
+      0.013515826314687729,
+      0.1432877480983734,
+      -0.23487286269664764,
+      0.12724417448043823,
+      0.013055972754955292
+    ],
+    "scores": [
+      0.0007944363751448691,
+      9.810985829972196e-06,
+      0.9991957545280457
+    ],
+    "predicted_label": "Normal"
+  },
+  "parity_analysis": {
+    "cls_max_absolute_error": 1.7583370208740234e-06,
+    "scores_absolute_differences": [
+      8.672941476106644e-09,
+      8.458300726488233e-11,
+      0.0
+    ],
+    "scores_max_absolute_error": 8.672941476106644e-09,
+    "labels_matched": true
+  },
+  "environment": {
+    "python": "3.14.2",
+    "tensorflow": "2.22.0-rc0",
+    "torch": "2.14.1+cpu",
+    "onnxruntime": "1.31.0"
+  }
+}

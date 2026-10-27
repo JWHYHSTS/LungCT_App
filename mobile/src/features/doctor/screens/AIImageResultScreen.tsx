@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import {
   AILabel,
   AppText,
   Banner,
+  BottomSheet,
   CTImageView,
+  Button,
   Dialog,
   Divider,
   EmptyState,
@@ -18,6 +20,15 @@ import {
   TopBar,
 } from '../../../ui/components';
 import { findCaseById, type MockCase, type MockCTImage } from '../../../mocks';
+import {
+  runNativePipelineFromBase64,
+  runNativePipelineFromFilePath,
+  getAvailableTestImages,
+  pickImageFromDevice,
+  isInferenceRunning,
+  type AvailableTestImage,
+} from '../../../services/ai/onDevicePipeline';
+import { PipelinePredictionResult } from '../../../services/ai/types';
 
 export interface AIImageResultScreenProps {
   caseId: string;
@@ -37,6 +48,7 @@ export interface AIImageResultScreenProps {
  *   + FAIL (MSG-10): Không hiển thị ScoreCard và Grad-CAM; hiển thị Banner thông báo lỗi hội tụ.
  *   + passNoCam (MSG-11): Vẫn hiển thị ScoreCard nhưng lớp Grad-CAM báo thiếu và hiển thị thông điệp giải thích.
  *   + mock: Có Watermark "ẢNH GIẢ LẬP" và Banner minh bạch chế độ mô phỏng.
+ * - Hỗ trợ chọn tệp ảnh CT trực tiếp từ thiết bị (/sdcard/Download, bộ nhớ app).
  */
 export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
   caseId,
@@ -59,6 +71,142 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     title: string;
     body: string;
   }>({ visible: false, title: '', body: '' });
+
+  const [onDeviceResult, setOnDeviceResult] = useState<PipelinePredictionResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedFileLabel, setSelectedFileLabel] = useState<string | null>(null);
+
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+
+  // BottomSheet chọn tệp từ thiết bị
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [availableFiles, setAvailableFiles] = useState<AvailableTestImage[]>([]);
+
+  const handleOpenFilePicker = async () => {
+    const list = await getAvailableTestImages();
+    setAvailableFiles(list);
+    setShowFilePicker(true);
+  };
+
+  const handlePickFromSystemPicker = async () => {
+    setShowFilePicker(false);
+    try {
+      const picked = await pickImageFromDevice();
+      if (picked.canceled || !picked.uri) {
+        // Người dùng hủy chọn ảnh: giữ nguyên trạng thái hiện tại
+        return;
+      }
+
+      const fileName = picked.name || 'Ảnh chọn từ thiết bị';
+      // Reset triệt để kết quả cũ trước khi chạy phân tích ảnh mới
+      setSelectedFileLabel(fileName);
+      setSelectedImageUri(picked.uri);
+      setOnDeviceResult(null);
+      setIsAnalyzing(true);
+
+      const result = await runNativePipelineFromFilePath(picked.uri);
+      setOnDeviceResult(result);
+      setNoticeDialog({
+        visible: true,
+        title: 'Phân tích tệp thiết bị thành công',
+        body: `Đã phân tích tệp: ${fileName}\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms`,
+      });
+    } catch (err: any) {
+      setOnDeviceResult(null);
+      setSelectedImageUri(null);
+      setSelectedFileLabel(null);
+      setNoticeDialog({
+        visible: true,
+        title: 'Lỗi phân tích tệp CT (MSG-10)',
+        body: err?.message || 'Không thể giải mã hoặc suy luận tệp ảnh đã chọn.',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleSelectFile = async (file: AvailableTestImage) => {
+    setShowFilePicker(false);
+    // Reset triệt để kết quả cũ trước khi chạy phân tích ảnh mới
+    setSelectedFileLabel(file.name);
+    setSelectedImageUri(file.path.startsWith('/') ? `file://${file.path}` : file.path);
+    setOnDeviceResult(null);
+    setIsAnalyzing(true);
+
+    try {
+      const result = await runNativePipelineFromFilePath(file.path);
+      setOnDeviceResult(result);
+      setNoticeDialog({
+        visible: true,
+        title: 'Phân tích tệp thiết bị thành công',
+        body: `Đã phân tích tệp: ${file.name}\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms`,
+      });
+    } catch (err: any) {
+      setOnDeviceResult(null);
+      setSelectedImageUri(null);
+      setSelectedFileLabel(null);
+      setNoticeDialog({
+        visible: true,
+        title: 'Lỗi phân tích tệp CT (MSG-10)',
+        body: err?.message || 'Không thể giải mã hoặc suy luận tệp ảnh đã chọn.',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Xử lý chạy trực tiếp toàn bộ pipeline ViT ONNX + Fusion TFLite trên thiết bị từ lát cắt hiện tại
+  const handleRunRealInference = async () => {
+    if (isAnalyzing || isInferenceRunning()) {
+      setNoticeDialog({
+        visible: true,
+        title: 'Hệ thống đang bận',
+        body: 'Tiến trình suy luận AI Edge FP32 đang được thực thi. Vui lòng không bấm liên tiếp.',
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setSelectedFileLabel(null);
+    setSelectedImageUri(null);
+    try {
+      if (isFail) {
+        setOnDeviceResult(null);
+        throw new Error(
+          activeImage.failReason ||
+            'Không thể phân tích ảnh này (MSG-10). Chất lượng lát cắt hoặc định dạng ảnh không hợp lệ.',
+        );
+      }
+
+      setOnDeviceResult(null);
+
+      // Chọn dữ liệu base64 của ảnh CT tương ứng lát cắt đang hiển thị
+      let b64Payload = testCtData.benign_b64;
+      if (activeIndex === 2) {
+        b64Payload = testCtData.malignant_b64;
+      } else if (activeIndex >= 3) {
+        b64Payload = testCtData.normal_b64;
+      }
+
+      const result = await runNativePipelineFromBase64(b64Payload);
+      setOnDeviceResult(result);
+
+      setNoticeDialog({
+        visible: true,
+        title: 'Phân tích On-Device Hoàn Tất',
+        body: `Mô hình trên thiết bị đã phân tích thành công lát cắt #${activeImage.sliceNumber}:\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms`,
+      });
+    } catch (err: any) {
+      setOnDeviceResult(null);
+      setNoticeDialog({
+        visible: true,
+        title: 'Lỗi phân tích AI (MSG-10)',
+        body: err?.message || 'Không thể thực hiện suy luận on-device cho lát cắt này.',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Xử lý khi không tìm thấy ca bệnh hoặc ca không có ảnh
   if (!currentCase || images.length === 0) {
@@ -90,11 +238,21 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
   const activeImage: MockCTImage = images[activeIndex - 1] || images[0];
 
   const handlePrev = () => {
-    if (activeIndex > 1) setCurrentIndex(activeIndex - 1);
+    if (activeIndex > 1) {
+      setOnDeviceResult(null);
+      setSelectedFileLabel(null);
+      setSelectedImageUri(null);
+      setCurrentIndex(activeIndex - 1);
+    }
   };
 
   const handleNext = () => {
-    if (activeIndex < images.length) setCurrentIndex(activeIndex + 1);
+    if (activeIndex < images.length) {
+      setOnDeviceResult(null);
+      setSelectedFileLabel(null);
+      setSelectedImageUri(null);
+      setCurrentIndex(activeIndex + 1);
+    }
   };
 
   const isFail = activeImage.status === 'fail';
@@ -139,17 +297,21 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           />
           <View style={{ alignItems: 'center' }}>
             <AppText variant="titleS">
-              {t('doctor_detail.ai_slice_info', {
-                current: activeIndex,
-                total: images.length,
-                slice: activeImage.sliceNumber,
-                defaultValue: `Ảnh ${activeIndex}/${images.length} · Lát cắt #${activeImage.sliceNumber}`,
-              })}
+              {selectedFileLabel
+                ? `Tệp: ${selectedFileLabel}`
+                : t('doctor_detail.ai_slice_info', {
+                    current: activeIndex,
+                    total: images.length,
+                    slice: activeImage.sliceNumber,
+                    defaultValue: `Ảnh ${activeIndex}/${images.length} · Lát cắt #${activeImage.sliceNumber}`,
+                  })}
             </AppText>
             <AppText variant="caption" color={colors.text.secondary}>
-              {activeImage.source === 'gallery'
-                ? t('doctor_detail.ai_source_gallery', 'Nguồn: Thư viện ảnh')
-                : t('doctor_detail.ai_source_camera', 'Nguồn: Máy ảnh')}
+              {selectedFileLabel
+                ? 'Nguồn: Bộ nhớ thiết bị (Tệp thực)'
+                : activeImage.source === 'gallery'
+                  ? t('doctor_detail.ai_source_gallery', 'Nguồn: Thư viện ảnh')
+                  : t('doctor_detail.ai_source_camera', 'Nguồn: Máy ảnh')}
             </AppText>
           </View>
           <IconButton
@@ -163,64 +325,76 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         {/* Khung hiển thị ảnh cắt lớp CT */}
         <View style={styles.canvasWrapper}>
           <CTImageView
-            key={activeImage.id}
-            showHeatmap={showHeatmapLayer}
+            key={selectedImageUri || activeImage.id}
+            imageSource={selectedImageUri ? { uri: selectedImageUri } : undefined}
+            showHeatmap={selectedImageUri ? false : showHeatmapLayer}
             heatmapOpacity={camOpacity / 100}
             size={340}
-            watermarkText={activeImage.mockWatermark || 'ẢNH GIẢ LẬP'}
+            watermarkText={
+              onDeviceResult
+                ? 'ON-DEVICE AI THỰC'
+                : selectedImageUri
+                  ? 'ẢNH TỪ THIẾT BỊ'
+                  : activeImage.mockWatermark || 'ẢNH GIẢ LẬP'
+            }
           />
         </View>
 
         {/* Cảnh báo trạng thái FAIL hoặc Thiếu CAM */}
-        {isFail ? (
-          <Banner
-            type="error"
-            title={t('doctor_detail.ai_banner_fail_title', 'Không thể phân tích ảnh này (MSG-10)')}
-            body={
-              activeImage.failReason ||
-              t(
-                'doctor_detail.ai_banner_fail_body',
-                'Không thể phân tích ảnh này. Vui lòng thử lại hoặc kiểm tra thông báo lỗi.',
-              )
-            }
-            style={{ marginVertical: spacing.sm }}
-          />
-        ) : isNoCam ? (
-          <Banner
-            type="warning"
-            title={t('doctor_detail.ai_banner_nocam_title', 'Không thể tạo Grad-CAM (MSG-11)')}
-            body={t(
-              'doctor_detail.ai_banner_nocam_body',
-              'Phân loại AI thành công nhưng nhánh giải thích Grad-CAM không thể trích xuất bản đồ nhiệt từ lát cắt này.',
-            )}
-            style={{ marginVertical: spacing.sm }}
-          />
-        ) : (
-          <Banner
-            type="info"
-            title={t('doctor_detail.ai_banner_simulated_title', 'Chế độ mô phỏng On-device')}
-            body={t(
-              'doctor_detail.ai_banner_simulated_body',
-              'Kết quả hiển thị trên thiết bị nhằm mục đích nghiên cứu và tham khảo chuyên môn, không thay thế chẩn đoán xác định của bác sĩ.',
-            )}
-            style={{ marginVertical: spacing.sm }}
-          />
+        {isFail && (
+          <View style={{ marginVertical: spacing.sm }}>
+            <Banner
+              title={t('doctor_detail.ai_banner_fail_title', 'Lỗi phân tích hội tụ (MSG-10)')}
+              body={
+                activeImage.failReason ||
+                t(
+                  'doctor_detail.ai_banner_fail_body',
+                  'Ảnh lát cắt chất lượng thấp hoặc hội tụ thuật toán thất bại. Không thể xuất bản đồ nhiệt và điểm AI.',
+                )
+              }
+              type="error"
+            />
+          </View>
         )}
 
-        {/* Chú giải dải màu HeatmapLegend */}
-        {showHeatmapLayer && (
-          <View style={{ marginVertical: spacing.xs }}>
+        {isNoCam && !isFail && (
+          <View style={{ marginVertical: spacing.sm }}>
+            <Banner
+              title={t('doctor_detail.ai_banner_nocam_title', 'Không có bản đồ Grad-CAM')}
+              body={t(
+                'doctor_detail.ai_banner_nocam_body',
+                'Lát cắt này không có bản đồ nhiệt do độ tin cậy thấp hoặc chưa được tính toán.',
+              )}
+              type="warning"
+            />
+          </View>
+        )}
+
+        {/* Chú giải thang màu nhiệt (HeatmapLegend) */}
+        {!selectedImageUri && viewMode === 'cam' && !isFail && activeImage.hasGradCam && (
+          <View
+            style={[
+              styles.legendCard,
+              {
+                backgroundColor: colors.bg.surface,
+                borderColor: colors.border.default,
+                borderRadius: radius.md,
+                padding: spacing.md,
+                marginVertical: spacing.xs,
+              },
+            ]}
+          >
             <HeatmapLegend />
           </View>
         )}
 
-        {/* Chuyển đổi Ảnh gốc ↔ Grad-CAM */}
-        {!isFail && (
-          <View style={{ marginVertical: spacing.xs }}>
+        {/* Chuyển đổi Ảnh gốc / Grad-CAM */}
+        {!selectedImageUri && !isFail && activeImage.hasGradCam && (
+          <View style={{ marginVertical: spacing.sm }}>
             <Segmented
               items={[
-                { key: 'orig', label: t('doctor_detail.ai_tab_orig', 'Ảnh gốc') },
-                { key: 'cam', label: t('doctor_detail.ai_tab_cam', 'Grad-CAM') },
+                { key: 'orig', label: t('doctor_detail.ai_mode_orig', 'Ảnh gốc') },
+                { key: 'cam', label: t('doctor_detail.ai_mode_cam', 'Grad-CAM') },
               ]}
               selectedKey={viewMode}
               onSelect={setViewMode}
@@ -229,7 +403,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         )}
 
         {/* Slider điều chỉnh độ phủ Grad-CAM */}
-        {viewMode === 'cam' && !isFail && activeImage.hasGradCam && (
+        {!selectedImageUri && viewMode === 'cam' && !isFail && activeImage.hasGradCam && (
           <View
             style={[
               styles.sliderCard,
@@ -261,55 +435,88 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           </View>
         )}
 
-        {/* Bảng điểm phân loại 3 lớp AI (Chỉ hiện khi KHÔNG fail theo quy tắc) */}
-        {!isFail && activeImage.scores ? (
+        {/* Nút bấm kích hoạt phân tích thực tế On-Device */}
+        <View style={{ marginVertical: spacing.sm, gap: spacing.xs }}>
+          <Button
+            label={
+              isAnalyzing ? 'Đang phân tích On-Device...' : 'Chạy phân tích AI Lát Cắt Này (FP32)'
+            }
+            leadingIcon="on-device"
+            variant="primary"
+            loading={isAnalyzing}
+            disabled={isAnalyzing}
+            onPress={handleRunRealInference}
+          />
+          <Button
+            label="Chọn ảnh từ thiết bị để chạy AI"
+            variant="secondary"
+            disabled={isAnalyzing}
+            onPress={handleOpenFilePicker}
+          />
+        </View>
+
+        {/* Bảng điểm phân loại 3 lớp AI */}
+        {!isFail && (onDeviceResult || (!selectedImageUri && activeImage.scores)) ? (
           <View style={{ marginVertical: spacing.sm }}>
             <View style={[styles.sectionHeader, { marginBottom: spacing.xs }]}>
               <AppText variant="titleS">
                 {t('doctor_detail.ai_section_scores', 'Nhãn phân loại AI')}
               </AppText>
-              {activeImage.aiClass && <AILabel classification={activeImage.aiClass} />}
+              {(onDeviceResult?.predictedClass || (!selectedImageUri && activeImage.aiClass)) && (
+                <AILabel classification={onDeviceResult?.predictedClass || activeImage.aiClass!} />
+              )}
             </View>
             <ScoreCard
-              scores={[
-                { classification: 'Benign', score: activeImage.scores.benign },
-                { classification: 'Malignant', score: activeImage.scores.malignant },
-                { classification: 'Normal', score: activeImage.scores.normal },
-              ]}
+              scores={
+                onDeviceResult
+                  ? [
+                      { classification: 'Benign', score: onDeviceResult.probabilities.Benign },
+                      {
+                        classification: 'Malignant',
+                        score: onDeviceResult.probabilities.Malignant,
+                      },
+                      { classification: 'Normal', score: onDeviceResult.probabilities.Normal },
+                    ]
+                  : [
+                      { classification: 'Benign', score: activeImage.scores!.benign },
+                      { classification: 'Malignant', score: activeImage.scores!.malignant },
+                      { classification: 'Normal', score: activeImage.scores!.normal },
+                    ]
+              }
             />
           </View>
         ) : null}
 
-        {/* Thông tin kỹ thuật mô hình (BR-AI-01 / BR-AI-04) */}
+        {/* Thông tin metadata kỹ thuật */}
+        <Divider style={{ marginVertical: spacing.md }} />
         <View
           style={[
-            styles.modelInfoCard,
+            styles.metaCard,
             {
               backgroundColor: colors.bg.surface,
               borderColor: colors.border.default,
-              borderRadius: radius.lg,
+              borderRadius: radius.md,
               padding: spacing.md,
-              marginTop: spacing.sm,
             },
           ]}
         >
-          <AppText variant="titleS" style={{ marginBottom: spacing.xs }}>
-            {t('doctor_detail.thong_tin_phan_tich', 'Thông tin phân tích')}
+          <AppText variant="titleS" style={{ marginBottom: spacing.sm }}>
+            {t('doctor_detail.ai_section_meta', 'Thông số lát cắt & Mô hình')}
           </AppText>
-          <Divider style={{ marginBottom: spacing.xs }} />
-
           <View style={styles.metaRow}>
             <AppText variant="caption" color={colors.text.secondary}>
               {t('doctor_detail.mo_hinh', 'Mô hình')}
             </AppText>
-            <AppText variant="bodyM">Adaptive AACNN–ViT</AppText>
+            <AppText variant="bodyM">Adaptive AACNN–ViT (FP32)</AppText>
           </View>
           <View style={styles.metaRow}>
             <AppText variant="caption" color={colors.text.secondary}>
               {t('doctor_detail.nguon_thuc_thi', 'Nguồn thực thi')}
             </AppText>
             <AppText variant="bodyM">
-              {t('doctor_detail.on_device', 'Trên thiết bị (On-Device)')}
+              {onDeviceResult
+                ? 'Thiết bị thực tế (ViT ONNX + Fusion TFLite)'
+                : t('doctor_detail.on_device', 'Trên thiết bị (On-Device)')}
             </AppText>
           </View>
           <View style={styles.metaRow}>
@@ -317,11 +524,23 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
               {t('doctor_detail.trang_thai_grad_cam', 'Trạng thái Grad-CAM')}
             </AppText>
             <AppText variant="bodyM">
-              {activeImage.hasGradCam
-                ? t('doctor_detail.at', 'Đạt')
-                : t('doctor_detail.khong_kha_dung', 'Không khả dụng')}
+              {onDeviceResult
+                ? 'Không khả dụng ngoại tuyến (MSG-11)'
+                : activeImage.hasGradCam
+                  ? t('doctor_detail.at', 'Đạt')
+                  : t('doctor_detail.khong_kha_dung', 'Không khả dụng')}
             </AppText>
           </View>
+          {onDeviceResult && (
+            <View style={styles.metaRow}>
+              <AppText variant="caption" color={colors.text.secondary}>
+                Thời gian suy luận
+              </AppText>
+              <AppText variant="bodyM">
+                {`${onDeviceResult.latency.totalInferenceMs} ms (ViT: ${onDeviceResult.latency.vitInferenceMs}ms, Fusion: ${onDeviceResult.latency.fusionInferenceMs}ms)`}
+              </AppText>
+            </View>
+          )}
           <View style={styles.metaRow}>
             <AppText variant="caption" color={colors.text.secondary}>
               {t('doctor_detail.thoi_iem', 'Thời điểm')}
@@ -355,6 +574,84 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         </View>
       </ScrollView>
 
+      {/* BottomSheet Chọn Tệp Từ Thiết Bị */}
+      <BottomSheet
+        visible={showFilePicker}
+        title="Chọn tệp ảnh CT từ thiết bị"
+        onClose={() => setShowFilePicker(false)}
+      >
+        <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+          {/* Nút mở trình duyệt tệp hệ thống Android (chọn ảnh bất kỳ từ máy) */}
+          <TouchableOpacity
+            onPress={handlePickFromSystemPicker}
+            style={{
+              padding: spacing.md,
+              backgroundColor: colors.bg.surfaceAlt || colors.bg.surface,
+              borderWidth: 1.5,
+              borderColor: colors.border.focus || colors.text.link,
+              borderRadius: radius.sm,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: spacing.xs,
+            }}
+          >
+            <View style={{ flex: 1, marginRight: spacing.sm }}>
+              <AppText variant="labelM" color={colors.text.primary} style={{ fontWeight: '700' }}>
+                📁 Mở trình chọn tệp hệ thống (System Picker)
+              </AppText>
+              <AppText variant="caption" color={colors.text.secondary}>
+                Duyệt và chọn ảnh bất kỳ từ bộ nhớ thiết bị, Thư viện ảnh, Drive...
+              </AppText>
+            </View>
+            <AppText variant="labelM" color={colors.text.link}>
+              Mở →
+            </AppText>
+          </TouchableOpacity>
+
+          <Divider style={{ marginVertical: spacing.xs }} />
+
+          <AppText variant="caption" color={colors.text.secondary} style={{ fontWeight: '600' }}>
+            Tệp tìm thấy trong thư mục kiểm thử (/sdcard/Download, app storage):
+          </AppText>
+
+          {availableFiles.length === 0 ? (
+            <AppText variant="bodyM" color={colors.text.secondary}>
+              Không tìm thấy tệp ảnh CT nào trong các thư mục quét mặc định.
+            </AppText>
+          ) : (
+            availableFiles.map((file) => (
+              <TouchableOpacity
+                key={file.path}
+                onPress={() => handleSelectFile(file)}
+                style={{
+                  padding: spacing.md,
+                  backgroundColor: colors.bg.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border.default,
+                  borderRadius: radius.sm,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <AppText variant="labelM" color={colors.text.primary}>
+                    {file.name}
+                  </AppText>
+                  <AppText variant="caption" color={colors.text.secondary}>
+                    {`Dung lượng: ${Math.round(file.size / 1024)} KB · ${file.path}`}
+                  </AppText>
+                </View>
+                <AppText variant="labelM" color={colors.text.link}>
+                  Phân tích →
+                </AppText>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </BottomSheet>
+
       {/* Dialog thông báo */}
       <Dialog
         visible={noticeDialog.visible}
@@ -383,14 +680,17 @@ const styles = StyleSheet.create({
   },
   navBarRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   canvasWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginVertical: 4,
+  },
+  legendCard: {
+    borderWidth: 1,
   },
   sliderCard: {
     borderWidth: 1,
@@ -398,20 +698,22 @@ const styles = StyleSheet.create({
   sliderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 6,
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  modelInfoCard: {
+  metaCard: {
     borderWidth: 1,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    alignItems: 'center',
+    marginVertical: 4,
   },
   legalBox: {
     borderWidth: 1,

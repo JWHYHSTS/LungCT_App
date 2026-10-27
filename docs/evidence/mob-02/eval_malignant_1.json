@@ -1,0 +1,58 @@
+{
+  "image_path": "C:\\Users\\thudi\\OneDrive\\Desktop\\LungCT_Workspace\\IQ_OTHNCCD\\Malignant\\Malignant case (1).jpg",
+  "class_order": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "original_pipeline": {
+    "vit_framework": "PyTorch 2.14.1+cpu",
+    "fusion_framework": "Keras 2.22.0-rc0",
+    "cls_vector_head": [
+      -0.0731741338968277,
+      -0.12005679309368134,
+      -0.13765384256839752,
+      0.1685456782579422,
+      -0.10790501534938812
+    ],
+    "scores": [
+      8.569833211125033e-12,
+      1.0,
+      3.4821017180775016e-09
+    ],
+    "predicted_label": "Malignant"
+  },
+  "converted_pipeline": {
+    "vit_framework": "ONNX Runtime 1.31.0",
+    "fusion_framework": "TensorFlow Lite (XNNPACK)",
+    "cls_vector_head": [
+      -0.07317357510328293,
+      -0.12005621194839478,
+      -0.13765384256839752,
+      0.1685446798801422,
+      -0.10790450125932693
+    ],
+    "scores": [
+      8.569914743128404e-12,
+      1.0,
+      3.482148125399931e-09
+    ],
+    "predicted_label": "Malignant"
+  },
+  "parity_analysis": {
+    "cls_max_absolute_error": 1.3262033462524414e-06,
+    "scores_absolute_differences": [
+      8.153200337090993e-17,
+      0.0,
+      4.6407322429331543e-14
+    ],
+    "scores_max_absolute_error": 4.6407322429331543e-14,
+    "labels_matched": true
+  },
+  "environment": {
+    "python": "3.14.2",
+    "tensorflow": "2.22.0-rc0",
+    "torch": "2.14.1+cpu",
+    "onnxruntime": "1.31.0"
+  }
+}

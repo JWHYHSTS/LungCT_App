@@ -1,5 +1,5 @@
 {
-  "image_path": "..\\IQ_OTHNCCD\\Benign\\Bengin case (114).jpg",
+  "image_path": "docs\\evidence\\mob-02\\benign_case_114.jpg",
   "class_order": [
     "Benign",
     "Malignant",
@@ -16,9 +16,9 @@
       0.12781983613967896
     ],
     "scores": [
-      0.9728497266769409,
-      0.00018840719712898135,
-      0.026961857452988625
+      0.9728496074676514,
+      0.00018840735720004886,
+      0.02696186676621437
     ],
     "predicted_label": "Benign"
   },
@@ -42,11 +42,11 @@
   "parity_analysis": {
     "cls_max_absolute_error": 1.7583370208740234e-06,
     "scores_absolute_differences": [
-      4.172325134277344e-07,
-      2.066371962428093e-09,
-      4.0046870708465576e-07
+      2.980232238769531e-07,
+      1.9063008949160576e-09,
+      3.91155481338501e-07
     ],
-    "scores_max_absolute_error": 4.172325134277344e-07,
+    "scores_max_absolute_error": 3.91155481338501e-07,
     "labels_matched": true
   },
   "environment": {
