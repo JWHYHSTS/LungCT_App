@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <boolean name="RCTI18nUtil_allowRTL" value="true" />
+    <boolean name="RCTI18nUtil_forceRTL" value="false" />
+</map>

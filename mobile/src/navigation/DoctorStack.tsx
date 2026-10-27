@@ -11,7 +11,7 @@ import {
 
 export type DoctorStackParamList = {
   DoctorTabs: undefined;
-  PatientForm: undefined;
+  PatientForm: { patientId?: string } | undefined;
   PatientDetail: { patientId: string };
   CaseDetail: { caseId: string };
   AIImageResult: { caseId: string; imageIndex?: number };
@@ -25,7 +25,7 @@ const Stack = createNativeStackNavigator<DoctorStackParamList>();
  * Bao gồm:
  * - DoctorTabs: 5 tab chính (Trang chủ, Bệnh nhân, Ca bệnh, Thống kê, Tôi).
  * - Các màn hình chi tiết mở chồng lên tab theo đúng bản đồ điều hướng (05-man-hinh-va-dieu-huong.md):
- *   + PatientForm (SCR-P02 / 13): Mở dạng Modal.
+ *   + PatientForm (SCR-P02 / 13): Mở dạng Modal (hỗ trợ cả Thêm mới và Sửa).
  *   + PatientDetail (SCR-P03 / 14): Mở dạng Stack.
  *   + CaseDetail (SCR-C02 / 15): Mở dạng Stack.
  *   + AIImageResult (SCR-R01 / 16): Mở dạng Stack.
@@ -49,11 +49,18 @@ export const DoctorStack: React.FC = () => {
           animation: 'slide_from_bottom',
         }}
       >
-        {({ navigation }) => (
+        {({ navigation, route }) => (
           <PatientFormModal
+            initialPatientId={route.params?.patientId}
             onClose={() => navigation.goBack()}
-            onSuccess={(newPatientId) => {
-              navigation.replace('PatientDetail', { patientId: newPatientId });
+            onSuccess={(savedPatientId) => {
+              if (route.params?.patientId) {
+                // Đang sửa: chỉ đóng modal quay lại trang chi tiết
+                navigation.goBack();
+              } else {
+                // Tạo mới: mở trang chi tiết bệnh nhân vừa tạo
+                navigation.replace('PatientDetail', { patientId: savedPatientId });
+              }
             }}
           />
         )}
@@ -65,6 +72,7 @@ export const DoctorStack: React.FC = () => {
             patientId={route.params.patientId}
             onBack={() => navigation.goBack()}
             onNavigateToCaseDetail={(caseId) => navigation.navigate('CaseDetail', { caseId })}
+            onNavigateToEditPatient={(patientId) => navigation.navigate('PatientForm', { patientId })}
           />
         )}
       </Stack.Screen>

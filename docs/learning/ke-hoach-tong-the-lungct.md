@@ -19,25 +19,25 @@
 
 ```mermaid
 graph TD
-    A[Giai đoạn 1: Khung & Thiết kế UI] -->|Đã đạt 100% Mock UI| B[Giai đoạn 2: Nghiên cứu & Chuyển đổi Model AI]
+    A[Giai đoạn 1: Khung & Thiết kế UI] -->|Đã dựng 17 màn hình Mock UI Shell| B[Giai đoạn 2: Nghiên cứu & Chuyển đổi Model AI]
     B -->|Đã chuyển đổi FP32| C[Giai đoạn 3: AI On-Device Android]
-    C -->|MOB-02 Emulator Done| D{VỊ TRÍ HIỆN TẠI}
+    C -->|MOB-02 Máy ảo Emulator Đạt| D{VỊ TRÍ HIỆN TẠI}
     D -.->|Ưu tiên 1| E[Nghiệm thu MOB-02 trên Xiaomi Redmi 13 thật]
-    D -.->|Ưu tiên 2| F[Giai đoạn 4: AI On-Device iOS CoreML/ONNX]
-    D -.->|Ưu tiên 3| G[Giai đoạn 5: Giải pháp Grad-CAM On-Device]
-    D -.->|Song song Hải Đăng/Jim| H[Giai đoạn 7: Backend FastAPI & Firebase Sync]
-    D -.->|Song song Hải Đăng/Jim| I[Giai đoạn 6: SQLite / WatermelonDB Local-First]
+    D -.->|Ưu tiên 2| F[Giai đoạn 4: Khảo sát & Chuyển đổi AI On-Device iOS]
+    D -.->|Ưu tiên 3| G[Giai đoạn 5: Giải pháp Grad-CAM On-Device không Autograd]
+    D -.->|Song song Hải Đăng/Jim| H[Giai đoạn 7: Backend FastAPI & Đồng bộ Cloud]
+    D -.->|Song song Hải Đăng/Jim| I[Giai đoạn 6: CSDL Cục bộ Local-First]
 ```
 
-- **Vị trí hiện tại**: Đã hoàn thành mốc **MOB-02 trên máy ảo Android (Emulator API 34)** — tích hợp thành công pipeline Adaptive FP32 (ViT ONNX 1.31.0 + Fusion LiteRT 1.4.0), thuật toán Pillow Nearest Resample và trình chọn ảnh Android System Picker (`content://`). Đang chuẩn bị commit Git và chuyển giao sang thiết bị thật.
+- **Vị trí hiện tại**: Đã hoàn thành mốc **MOB-02 trên máy ảo Android (Emulator API 34)** — tích hợp thành công pipeline Adaptive FP32 (ViT ONNX 1.31.0 + Fusion LiteRT 1.4.0), thuật toán Pillow Nearest Resample và trình chọn ảnh Android System Picker (`content://`). Đang lưu trữ mã native tại `mobile/native-templates/android/` và chuẩn bị các bước tiếp theo.
 - **Ưu tiên kỹ thuật tiếp theo**:
   1. Kiểm thử APK Release trên thiết bị vật lý thật **Xiaomi Redmi 13** (đo RAM, pin, độ trễ chip Helio G91-Ultra).
-  2. Khởi động nhánh **iOS CoreML / ONNX Runtime** trên Xcode / iPhone thật.
+  2. Khảo sát và lựa chọn công nghệ cho nhánh **iOS Edge AI** (đối chiếu giữa ONNX Runtime iOS / ExecuTorch / CoreML tùy thuộc tính khả thi với custom layers của ViT).
   3. Nghiên cứu giải pháp **Grad-CAM On-Device (MSG-11)** không cần Autograd.
 - **Hạng mục có thể làm song song (Jim / Hải Đăng)**:
   - Xây dựng Backend FastAPI chuẩn RESTful y tế và schema cơ sở dữ liệu bệnh nhân/ca bệnh.
-  - Cấu hình Firebase Authentication, Firebase Storage cho ảnh CT và Firestore rules.
-  - Chuyển đổi tầng lưu trữ cục bộ từ Mock sang SQLite/WatermelonDB theo mô hình Local-First.
+  - Cấu hình Firebase Authentication, bộ lưu trữ đám mây cho ảnh CT và phân quyền Firestore.
+  - Chuyển đổi tầng lưu trữ cục bộ từ Mock sang cơ sở dữ liệu nhúng (SQLite / WatermelonDB / MMKV / Expo SQLite tùy thuộc đặc tả chốt).
 
 ---
 
@@ -51,16 +51,16 @@ graph TD
   - *Căn cứ*: [`AGENTS.md`](../../AGENTS.md), [`docs/requirements/TiepNhan_DauVao.md`](../requirements/TiepNhan_DauVao.md).
   - *Môi trường*: Dùng chung.
 - [x] **1.2 Bộ Design System Tokens & Theme Đa Nền Tảng (Sáng / Tối)**
-  - *Căn cứ*: `mobile/src/ui/theme/` (`palette.ts`, `light.ts`, `dark.ts`, `spacing.ts`, `typography.ts`). 32/32 tests pass tại `src/ui/theme/__tests__/theme.test.ts`.
+  - *Căn cứ*: `mobile/src/ui/theme/` (`palette.ts`, `light.ts`, `dark.ts`, `spacing.ts`, `typography.ts`). 33/33 tests pass tại `src/ui/theme/__tests__/theme.test.ts`.
   - *Môi trường*: Dùng chung React Native.
 - [x] **1.3 Bộ Icon Hệ Thống Y Tế 48/64 Icon Chuẩn Hóa**
   - *Căn cứ*: `LungCT-Icons/` và `docs/ui_handoff/file-name-mapping.md`.
   - *Môi trường*: Dùng chung.
-- [x] **1.4 Khung Giao Diện 17 Màn Hình Chuẩn Figma (Mock Data)**
-  - *Căn cứ*: Toàn bộ 17 màn hình (Bác sĩ, Quản trị viên, Cài đặt, Đăng nhập) tại `mobile/src/features/`. Vượt qua 113/113 unit tests.
-  - *Môi trường*: Dùng chung / Android & iOS UI Shell.
+- [ ] **1.4 Khung Giao Diện 17 Màn Hình Chuẩn Figma**
+  - *Trạng thái*: **Đang ở mức UI Mock Shell / Tích hợp AI một phần**. Đã dựng 17 màn hình với bố cục, màu sắc chuẩn Figma, vượt qua 113/113 unit tests. Tuy nhiên dữ liệu bệnh nhân, ca bệnh, tài khoản vẫn đang dùng dữ liệu giả lập (`doctorMocks.ts`, `adminMocks.ts`), chưa kết nối CSDL thật hay Backend.
+  - *Phần còn thiếu*: Kết nối cơ sở dữ liệu cục bộ và API thật.
 - [x] **1.5 Hỗ trợ Đa Ngôn Ngữ Song Ngữ (i18n Tiếng Việt - Tiếng Anh)**
-  - *Căn cứ*: `mobile/src/i18n/` (`vi.json`, `en.json`) với 16 thông điệp chuẩn y tế `MSG-01` đến `MSG-16`.
+  - *Căn cứ*: `mobile/src/i18n/` (`vi.json`, `en.json`) với 16 thông điệp chuẩn y tế `MSG-01` đến `MSG-16`, chuyển ngữ mượt mà trong giao diện.
   - *Môi trường*: Dùng chung.
 - [ ] **1.6 Kiểm thử giao diện và độ phản hồi trên màn hình thực tế (Tablet / Dynamic Island / Notches)**
   - *Trạng thái*: Chưa kiểm chứng. Mới kiểm tra trên máy ảo Android 1080x2400.
@@ -80,11 +80,11 @@ graph TD
   - *Căn cứ*: [`ai/conversion/convert_to_tflite.py`](../../ai/conversion/convert_to_tflite.py), tạo ra `fusion_model.tflite` (104.93 MB).
   - *Môi trường*: Python máy tính.
 - [x] **2.4 Đồng bộ hóa thuật toán tiền xử lý ảnh (Pillow Nearest Resampling)**
-  - *Căn cứ*: [`ai/conversion/eval_non512.py`](../../ai/conversion/eval_non512.py). Đã chứng minh triệt tiêu sai lệch nội suy Bilinear, đưa sai lệch số học về mức $\le 2.14 \times 10^{-7}$.
+  - *Căn cứ*: [`ai/conversion/eval_non512.py`](../../ai/conversion/eval_non512.py). Đã chứng minh triệt tiêu sai lệch nội suy Bilinear của Skia. Điểm số hiển thị trên app (làm tròn 6 chữ số thập phân) khớp hoàn toàn với pipeline máy tính trong giới hạn làm tròn hiển thị ($\Delta_{display} \le 2.14 \times 10^{-7}$).
   - *Môi trường*: Python đối chứng với mã nguồn Kotlin.
-- [ ] **2.5 Đánh giá và so sánh mô hình ứng viên nhẹ (LightCandidate FP16 / INT8)**
-  - *Trạng thái*: Chưa làm. Hiện tại đồ án đang chạy bản Primary FP32 để đảm bảo độ chính xác tuyệt đối.
-  - *Phần còn thiếu*: Lượng hóa dung lượng, RAM và độ suy giảm AUC/F1-score khi lượng tử hóa sang INT8/FP16.
+- [ ] **2.5 Nghiên cứu và đánh giá tối ưu hóa lượng tử hóa mô hình (Model Quantization: FP16 / INT8)**
+  - *Trạng thái*: **Chưa làm (Công việc tối ưu hóa cần đánh giá thực nghiệm)**. Hiện tại đồ án đang chạy bản Primary FP32 để bảo toàn độ chính xác tuyệt đối.
+  - *Nội dung cần đánh giá*: Đo đạc mức giảm dung lượng tệp, RAM đỉnh, độ trễ và đánh giá độ suy giảm các chỉ số chẩn đoán y tế (AUC, Sensitivity, Specificity, F1-score) khi lượng tử hóa sang INT8/FP16 trên mô hình ứng viên nhẹ (LightCandidate) so với bản gốc FP32.
 
 ---
 
@@ -111,22 +111,25 @@ graph TD
 
 ---
 
-### GIAI ĐOẠN 4: AI ON-DEVICE TRÊN IOS (COREML / ONNX RUNTIME)
+### GIAI ĐOẠN 4: AI ON-DEVICE TRÊN IOS (LỰA CHỌN RUNTIME PHÙ HỢP)
 
-- [ ] **4.1 Chuyển đổi mô hình Adaptive sang định dạng Apple CoreML (`.mlpackage`)**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Chuyển đổi nhánh ViT PyTorch bằng `coremltools` và nhánh Fusion Keras sang CoreML; kiểm tra tính tương thích của custom attention layers trên Apple Neural Engine (ANE).
+- [ ] **4.1 Khảo sát và lựa chọn Runtime AI phù hợp cho iOS (ONNX Runtime / CoreML / ExecuTorch)**
+  - *Trạng thái*: **Đang khảo sát, chưa chốt**.
+  - *Phân tích kỹ thuật*:
+    - Lựa chọn 1: **ONNX Runtime for iOS / React Native**: Đồng nhất mô hình với Android (`vit_cls.onnx` FP32), giảm thiểu công sức chuyển đổi, nhưng cần kiểm tra hiệu năng GPU/NPU qua Execution Provider (CoreML EP).
+    - Lựa chọn 2: **Apple CoreML (`.mlpackage`)**: Tối ưu tối đa cho Apple Neural Engine (ANE), nhưng cần kiểm tra khả năng chuyển đổi các lớp custom attention của nhánh ViT và Fusion qua `coremltools`.
+    - Lựa chọn 3: **ExecuTorch (PyTorch Mobile)**: Nếu các runtime trên gặp vấn đề tương thích.
 - [ ] **4.2 Xây dựng Native Module iOS (Swift / Objective-C++)**
   - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Triển khai cầu nối Native Module tương đương `LungCtPipelineModule` cho nền tảng iOS, quản lý luồng ảnh qua CoreGraphics/vImage.
-- [ ] **4.3 Cấu hình CocoaPods và quyền truy cập Photos / Document Picker trên iOS**
+  - *Phần còn thiếu*: Triển khai cầu nối Native Module tương đương `LungCtPipelineModule` cho iOS, quản lý luồng ảnh qua CoreGraphics/vImage với thuật toán Nearest Resampling tương thích.
+- [ ] **4.3 Cấu hình quyền truy cập và Document/Photo Picker trên iOS**
   - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Cấu hình `Info.plist`, xử lý quyền truy cập bộ sưu tập ảnh và chọn tệp qua `UIDocumentPickerViewController`.
+  - *Phần còn thiếu*: Cấu hình `Info.plist` (quyền Photos/Camera), xử lý mở `PHPickerViewController` hoặc `UIDocumentPickerViewController` cho phép bác sĩ chọn ảnh CT bất kỳ từ iPhone/iCloud.
 - [ ] **4.4 Kiểm thử trên iOS Simulator**
   - *Trạng thái*: Chưa làm (Yêu cầu môi trường macOS + Xcode).
 - [ ] **4.5 Kiểm thử trên thiết bị vật lý iPhone thật**
   - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Đo đạc thời gian suy luận, tiêu thụ RAM đỉnh trên A-series chip và ghi nhận minh chứng vào `reports/ios/`.
+  - *Phần còn thiếu*: Đo đạc thời gian suy luận (latency), tiêu thụ RAM đỉnh trên chip Apple A-series và lưu trữ minh chứng vào `reports/ios/`.
 
 ---
 
@@ -138,31 +141,89 @@ graph TD
 - [x] **5.2 Cơ chế cô lập và cảnh báo khi Grad-CAM ngoại tuyến chưa khả dụng (MSG-11)**
   - *Căn cứ*: `AIImageResultScreen.tsx` tự động ẩn thanh Grad-CAM, gắn nhãn "Không khả dụng ngoại tuyến (MSG-11)" khi chọn ảnh ngoài máy, không để ảnh nhiệt cũ gây nhầm lẫn.
   - *Minh chứng*: `docs/evidence/mob-02/user_picker/run2_content_uri_malignant_600x450_screen.png`.
-- [ ] **5.3 Nghiên cứu và triển khai thuật toán Grad-CAM On-Device không phụ thuộc Autograd**
+- [ ] **5.3 Nghiên cứu và triển khai thuật toán Grad-CAM On-Device bảo đảm đúng phương pháp khoa học**
   - *Trạng thái*: **CHƯA KHẢ DỤNG CỤC BỘ**.
-  - *Lý do kỹ thuật*: ONNX Runtime và TensorFlow Lite trên di động chỉ hỗ trợ Forward-pass (không có đồ thị đạo hàm ngược Autograd để tính Gradient $\frac{\partial Y^c}{\partial A^k}$).
-  - *Giải pháp cần làm*:
-    - Phương án A (Activation Subgraph / Trọng số tĩnh): Xuất mô hình phụ trích xuất trực tiếp Feature Maps và nhân với vector trọng số phân loại cố định (Class Activation Mapping - CAM).
-    - Phương án B (Tạo Graph đạo hàm sẵn): Nối sẵn các phép tính Gradient vào graph ONNX/TFLite lúc xuất từ PyTorch/TensorFlow.
-- [ ] **5.4 Đối chiếu ma trận bản đồ nhiệt giữa Python Colab và Thiết bị di động**
-  - *Trạng thái*: Chưa làm. Cần so sánh sai lệch pixel-by-pixel (MSE, SSIM) giữa heatmaps trên máy tính và điện thoại.
-
----
-
-### GIAI ĐOẠN 6: XÁC THỰC, PHÂN QUYỀN & LƯU TRỮ CỤC BỘ (LOCAL-FIRST)
-
-- [x] **6.1 Luồng giao diện Đăng nhập, Quên mật khẩu & Chuyển đổi Vai trò (Bác sĩ / Quản trị)**
-  - *Căn cứ*: `mobile/src/features/auth/screens/SignInScreen.tsx`, `RoleSwitchScreen.tsx`. Vượt qua test suite `authScreens.test.tsx`.
-  - *Môi trường*: React Native UI (Mock Storage).
-- [ ] **6.2 Tích hợp Firebase Authentication thực tế (Email/Password, Token Refresh)**
-  - *Trạng thái*: Chưa làm. Hiện đang dùng mock auth thông qua `AsyncStorage`.
-  - *Phần còn thiếu*: Cài đặt `@react-native-firebase/auth`, cấu hình `google-services.json` (Android) và `GoogleService-Info.plist` (iOS).
-- [ ] **6.3 Kiến trúc Cơ sở dữ liệu Cục bộ (SQLite / WatermelonDB / MMKV)**
-  - *Trạng thái*: Chưa làm. Dữ liệu bệnh nhân và ca bệnh hiện đang nạp tĩnh từ `doctorMocks.ts`.
-  - *Phần còn thiếu*: Thiết kế schema bảng SQLite: `patients`, `cases`, `ct_slices`, `ai_predictions`. Đảm bảo hoạt động trơn tru khi offline hoàn toàn.
+  - *Lý do kỹ thuật & Nguyên tắc khoa học*:
+ - [ ] **6.3 Kiến trúc Cơ sở dữ liệu Cục bộ Mã hóa (Encrypted Local Storage Layer) — ĐANG TRIỂN KHAI (CHƯA CHỐT TOÀN BỘ)**
+  - *Tổng quan trạng thái*: Đã hoàn thiện và kiểm chứng trên APK Release mới cho quy trình mã hóa bản ghi qua Native Keystore AES-256-GCM, CRUD bệnh nhân (Thêm, Sửa, Thùng rác, Khôi phục) và persistence qua vòng đời app. Tuy nhiên **chưa chốt hoàn thành toàn bộ mục 6.3** do còn các đầu việc lớn (SQLite mã hóa cấp file SQLCipher, Xác thực thật backend, Đo kiểm trên thiết bị vật lý thật). Chi tiết các đầu việc phân rã như sau:
+  - [x] **6.3a Quản lý khóa Native Keystore AES-256-GCM & Nghiệp vụ Bệnh nhân Hoàn chỉnh (ĐÃ HOÀN THÀNH & CÓ MINH CHỨNG TRÊN APK RELEASE)**
+    - *Kho lưu trữ & Thuật toán mã hóa*:
+      - Triển khai adapter `EncryptedLocalStorageService` theo Repository Pattern bọc trên AsyncStorage/SQLite.
+      - Chuẩn mã hóa: **AES-256-GCM** (IV 96-bit ngẫu nhiên, Auth Tag 128-bit) và hàm dẫn xuất khóa **PBKDF2-HMAC-SHA256 (100.000 vòng lặp)**.
+      - **Chính sách an toàn dữ liệu y tế (Không fallback không an toàn)**: Đã loại bỏ hoàn toàn cơ chế mã hóa dự phòng bằng `simpleHash/xor`. Nếu native module mã hóa chưa sẵn sàng trên môi trường di động, hệ thống ném lỗi `NATIVE_CRYPTO_UNAVAILABLE` và **DỪNG LƯU TRỮ NGAY LẬP TỨC**; giao diện hiển thị cảnh báo từ chối lưu thay vì thông báo "đã lưu có mã hóa".
+      - **Cơ chế tái tạo build Git**: Đã sao lưu toàn bộ mã nguồn `NativeCryptoVaultModule.kt` và `LungCtNativePackage.kt` vào `mobile/native-templates/android/` cùng hướng dẫn tái tạo trong `README.md` (khắc phục việc `mobile/android/` bị `.gitignore` bỏ qua).
+    - *Mô-đun Native Android Keystore (`NativeCryptoVaultModule.kt`)*:
+      - Quản lý khóa qua **Android Keystore System** (`AndroidKeyStore`), sinh khóa AES-256 theo alias tài khoản bác sĩ.
+      - *Giải trình trung thực về phần cứng*: Mức độ bảo vệ phụ thuộc vào phần cứng thiết bị thực tế (có thể là TEE, StrongBox Keymaster hoặc Software Keymaster trên máy ảo/thiết bị cũ); **không tự ý khẳng định là TEE/StrongBox nếu chưa đo kiểm qua KeyInfo trên thiết bị thật**.
+      - **Quy tắc xử lý khóa lỗi (Strict Key Lifecycle Protection)**: Tuyệt đối không tự xóa khóa cũ hoặc tạo khóa mới khi còn dữ liệu cần giải mã. Khi giải mã nếu thiếu khóa ném `KEY_NOT_FOUND`, khóa hỏng ném `CORRUPTED_KEY_RECOVERY_REQUIRED` yêu cầu quy trình khôi phục và giữ nguyên dữ liệu mã hóa; khi mã hóa chỉ tạo mới nếu alias chưa tồn tại, nếu alias hỏng ném `KEY_ACCESS_ERROR` không ghi đè; chỉ xóa khóa theo luồng xóa dữ liệu rõ ràng (`deleteKeystoreKey`).
+      - Bắt lỗi sai khóa và dữ liệu bị sửa đổi qua `AEADBadTagException`.
+    - *Minh chứng thực nghiệm trực tiếp trên APK Release mới (`app-release.apk` biên dịch lúc 20:37:45, cập nhật giao diện Sửa/Thùng rác)*:
+      - **Thêm bệnh nhân mới**: Tạo thành công hồ sơ giả lập `BN-2026-888` (`Le_Van_Sua`), mã hóa an toàn qua native Keystore AES-256-GCM.
+      - **Sửa bệnh nhân trên giao diện**: Bấm icon bút chì trên chi tiết `BN-2026-888`, modal chuyển chế độ "Sửa thông tin bệnh nhân", khóa mã bệnh nhân (read-only), sửa tên thành `Le_Van_Sua_Da_Cap_Nhat`, lưu thành công.
+      - **Vòng đời ứng dụng (Lifecycle Persistence sau khi sửa)**: Chạy `am force-stop` tắt hẳn ứng dụng, mở lại bằng `am start`, đăng nhập lại bác sĩ: Bệnh nhân `BN-2026-888` hiển thị nguyên vẹn với tên đã cập nhật `Le_Van_Sua_Da_Cap_Nhat`.
+      - **Thao tác Thùng rác (Xóa mềm)**: Mở chi tiết `BN-2026-888` → Menu tùy chọn → "Xóa mềm bệnh nhân vào thùng rác" → Xác nhận xóa. Bệnh nhân được ẩn khỏi tab "Tất cả" và chuyển vào tab "Thùng rác" mang badge `Đã xóa`.
+      - **Tính bền vững của Thùng rác**: Tắt hẳn app (`force-stop`) và mở lại app (`am start`): Truy cập tab "Thùng rác", hồ sơ vẫn nằm trong Thùng rác đúng trạng thái xóa mềm (`status: 'TRASHED'`).
+      - **Khôi phục bệnh nhân từ Thùng rác**: Bấm vào hồ sơ trong Thùng rác → Hiển thị dialog "Khôi phục bệnh nhân" → Bấm "Khôi phục". Bệnh nhân lập tức trở lại danh sách hoạt động trong tab "Tất cả" với trạng thái `ACTIVE`.
+      - **Kiểm tra trực tiếp tệp SQLite trên đĩa (`/data/data/com.anonymous.mobile/databases/AsyncStorage`)**:
+        - Dùng lệnh `strings` quét toàn bộ cơ sở dữ liệu: **Hoàn toàn không tìm thấy bất kỳ chuỗi plaintext nào** về họ tên hay mã bệnh nhân.
+        - Truy vấn thực tế bảng `Storage`: Khóa `@lungct_db/v1/usr-doc-01/patients` lưu trữ chuỗi mã hóa `ENC:KEYSTORE:AES-GCM:v1:...` với độ dài 2.761 bytes. Khẳng định 100% dữ liệu trên đĩa được mã hóa an toàn.
+      - **Đăng ký và hoạt động đồng thời của Native Modules AI**: Sau khi thêm `NativeCryptoVaultModule`, module AI `LungCtPipelineModule` vẫn được đăng ký đầy đủ trong `LungCtNativePackage.kt`. Kiểm tra suy luận thực tế trên APK mới với ca bệnh `CA-2026-000045` lát cắt #1 thành công: ViT ONNX 995 ms, Fusion TFLite 865 ms, kết quả Normal (Bình thường: 99.92%).
+    - *Kiểm thử Jest tự động (Node.js Mock / Jest Sandbox)*:
+      - Đạt 100% (**14/14 test suites, 138/138 tests pass**).
+      - **Các trường hợp kiểm thử Jest chuyên biệt**:
+        - Sửa bệnh nhân và đóng/mở lại app: Đọc lại đầy đủ họ tên, triệu chứng, ngày sinh, số điện thoại, giới tính trong môi trường sandbox Jest.
+        - Tạo ca bệnh mới, sửa nhận xét bác sĩ, hoàn tất ca và đóng/mở lại app nạp lại nguyên vẹn từ kho lưu trữ mã hóa (`caseRepository.test.ts`).
+        - Thiếu/mất khóa giải mã (`KEY_NOT_FOUND`), dữ liệu bị sửa đổi giả mạo (`AEADBadTagException`), thiếu native module (`NATIVE_CRYPTO_UNAVAILABLE` chặn lưu), cô lập đa người dùng và kịch bản biên AUTH-08.
+      - *Đính chính khoa học về phạm vi kiểm thử*: Kết quả 5 trường bệnh nhân trong Jest không tự chứng minh đã kiểm tra cả 5 trường trên UI máy ảo (trên UI máy ảo ta mới kiểm tra trực tiếp Họ tên và Mã bệnh nhân `Le_Van_Sua_Da_Cap_Nhat`, `BN-2026-888`). Không mô tả mock in-memory là dữ liệu đọc từ đĩa nếu chưa đo kiểm cụ thể trên thiết bị thực tế.
+    - *Rà soát toàn diện các vị trí lưu trữ dữ liệu nhạy cảm trên Android*:
+      - **AsyncStorage (`/data/data/com.anonymous.mobile/databases/AsyncStorage`)**: Toàn bộ thực thể bệnh nhân được mã hóa AES-256-GCM cấp bản ghi (`ENC:KEYSTORE:AES-GCM:v1:...`). Quét chuỗi mẫu không thấy plaintext.
+      - **Tệp ảnh CT (`/data/data/com.anonymous.mobile/files/test_images/`)**: Hiện chỉ chứa ảnh mẫu đối chứng chuẩn benchmark (`IQ-OTH/NCCD`), chưa có ảnh DICOM/CT nhạy cảm của bệnh nhân thực tế.
+      - **Bộ nhớ đệm (`/data/data/com.anonymous.mobile/cache/`)**: Chỉ chứa font chữ TTF (`ExponentAsset-*.ttf`) và tệp khóa tạm `AsyncStorage.lck`, không lưu đệm dữ liệu bệnh nhân.
+      - **Nhật ký hệ thống (Android Logcat)**: Đã kiểm tra tiến trình `com.anonymous.mobile`, không ghi log PII/PHI (họ tên, triệu chứng, mã bệnh nhân) ra logcat.
+      - *Phân định phạm vi*: Việc quét chuỗi mẫu (`Le_Van_Sua`, `BN-2026-888`) là minh chứng thực nghiệm xác thực cơ chế mã hóa hoạt động đúng trên các mẫu đã nhập; để kết luận bảo vệ toàn diện toàn bộ dữ liệu, cần tiếp tục kiến trúc SQLite mã hóa cấp file ở mục 6.3b.
+  - [ ] **6.3b Cơ sở dữ liệu SQLite quan hệ có mã hóa (Encrypted SQLite Native Engine & Safe Data Migration)**
+    - *Trạng thái*: **Đang triển khai** (Hiện tại đã hoàn thành và kiểm chứng kiến trúc SQLite Native quan hệ kết hợp mã hóa payload AES-256-GCM qua Android Keystore; **chưa đáp ứng mã hóa cấp toàn bộ tệp (Page-level Full DB Encryption) chuẩn SQLCipher**).
+    - *Bản chất CSDL hiện tại và phân định bảo mật*:
+      - CSDL cục bộ `/data/data/com.anonymous.mobile/databases/lungct_secure_<ownerId>.db` được tạo qua Android standard SQLite native (`SQLiteDatabase.openOrCreateDatabase(dbFile, null)`).
+      - **Mức độ mã hóa hiện tại**: Mã hóa cấp trường/payload (Field/Payload-level Encryption) bằng AES-256-GCM lấy khóa từ Android Keystore cho cột `encrypted_payload`.
+      - **Dữ liệu/Cột còn đọc được dạng văn bản rõ (Plaintext) nếu truy cập tệp vật lý trực tiếp (Root/Forensics)**:
+        - Bảng `secure_patients`: `patient_id`, `owner_id`, `patient_code`, `full_name`, `dob`, `sex`, `phone`, `symptoms`, `status`, `revision`, `sync_state`, `created_at`, `updated_at`, `trashed_at`.
+        - Bảng `secure_cases`: `case_id`, `owner_id`, `case_code`, `patient_id`, `scan_date`, `status`, `clinical_note`, `doctor_comment`, `revision`, `sync_state`, `created_at`, `updated_at`, `trashed_at`.
+        - Bảng `secure_predictions`: `result_id`, `owner_id`, `image_id`, `label`, `scores`, `duration_ms`, `model_version`, `status`, `created_at`.
+        - Bảng `secure_metadata`: `meta_key`, `meta_value`, `updated_at`.
+      - **Đánh giá an ninh**: Tầng mã hóa hiện tại bảo vệ cấu trúc payload JSON thực thể gốc khỏi việc đọc ngoài luồng ứng dụng và cô lập đa người dùng theo `ownerId`. Tuy nhiên, do các cột chỉ mục phục vụ tìm kiếm/phân trang nhanh (`patient_code`, `full_name`, `phone`, `symptoms`, `doctor_comment`) chưa được mã hóa nhị phân ở tầng trang đĩa (như cơ chế của SQLCipher với khóa 256-bit AES cipher toàn file), mục này được đưa về trạng thái **Đang triển khai** để tiếp tục tích hợp module SQLCipher native C/C++ tương thích React Native 0.88 New Architecture (CMake C++20, NDK r26c).
+    - *Dịch vụ di chuyển dữ liệu an toàn (Zero Data Loss Migration Service)*:
+      - Tự động nạp và kiểm tra trạng thái di chuyển từ AsyncStorage sang SQLite khi khởi động ứng dụng (`migrateLegacyStorageToSqlite`).
+      - Toàn bộ dữ liệu AsyncStorage gốc được **giữ nguyên vẹn 100%** (kích thước tệp 24.576 bytes không đổi), không xóa để phòng ngừa rủi ro.
+      - Ghi nhận trạng thái hoàn thành vào bảng `secure_metadata`: `sqlite_migration_status = 'COMPLETED'`, `sqlite_migration_patient_count = 6`.
+      - Đã kiểm tra tính toàn vẹn sâu: đối chiếu từng trường (`dob`, `sex`, `phone`, `symptoms`, `sync_state`, `revision`, `created_at`, `scan_date`, `status`, `clinical_note`, `doctor_comment`), đối chiếu quan hệ khóa ngoại `case.patient_id == patient.patient_id`, và giải mã payload AES-256-GCM đối chiếu khớp 100% với AsyncStorage ban đầu.
+      - Thử nghiệm cơ chế phục hồi khi gián đoạn (Idempotency & Resume after interruption) thành công, không làm nhân đôi hoặc mất mát dữ liệu.
+    - *Bảng đối chiếu 3 trạng thái độc lập (Tính trung thực khoa học)*:
+      | Nghiệp vụ / Tính năng | 1. Đã viết mã (Code Complete) | 2. Đạt Jest Sandbox (Node.js Mock In-Memory) | 3. Đã kiểm thử trên APK Máy ảo (Real Android SQLite on Disk) |
+      | :--- | :---: | :---: | :---: |
+      | Tạo & Mở SQLite Native (`lungct_secure_*.db`) | Đạt | Đạt | Đạt (Tệp đĩa 61.440 bytes) |
+      | Di chuyển an toàn từ AsyncStorage (Zero Data Loss) | Đạt | Đạt (141/141 tests) | Đạt (Di chuyển 6 bệnh nhân gốc thành công) |
+      | Idempotency & Phục hồi khi gián đoạn (Resume) | Đạt | Đạt (`sqliteMigration.test.ts`) | Đạt (Không nhân đôi bản ghi) |
+      | Thêm bệnh nhân mới trên UI vào SQLite | Đạt | Đạt | Đạt (`BN-2026-SQLITE`, tổng 7 BN) |
+      | Tạo ca bệnh mới gắn với bệnh nhân (Khóa ngoại) | Đạt | Đạt | Đạt (`CA-2026-000005`, tổng 5 ca) |
+      | Nhận xét bác sĩ có mã hóa vào SQLite | Đạt | Đạt | Đạt (`doctor_comment`, revision 2) |
+      | Chạy On-Device AI FP32 và lưu kết quả vào SQLite | Đạt | Đạt | Đạt (`res_1793118243771_jb5ws`, latency 3.744ms) |
+      | Vòng đời sau khởi động lại app (`am force-stop` & `start`) | Đạt | Đạt | Đạt (Đọc lại 100% từ đĩa SQLite) |
+      | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher) | Đang triển khai | Chưa (Cần native SQLCipher) | Chưa (Hiện là SQLite chuẩn + Keystore Payload) |
+  - [ ] **6.3c Hệ thống Xác thực thật và Phân quyền Backend (JWT Token & FastAPI Server)**
+    - *Trạng thái*: **Chưa làm (Hiện tại đang mô phỏng Mock Auth UI-05)**.
+    - *Mục tiêu kỹ thuật*: Thay thế đăng nhập giả lập bằng hệ thống xác thực thật qua JWT Token, kết nối dịch vụ FastAPI Backend, quản lý phiên làm việc và phân quyền bảo mật cấp API thay vì chỉ cô lập ở tầng logic ứng dụng (`ownerId`).
+  - [ ] **6.3d Kiểm thử Tầng Lưu trữ trên iOS và Thiết bị vật lý thật (Xiaomi Redmi 13 / iPhone)**
+    - *Trạng thái*: **Chưa thực hiện**.
+    - *Nhiệm vụ*: Cài đặt bản build APK Release lên điện thoại vật lý Xiaomi Redmi 13 để kiểm tra `KeyInfo` xác định cơ chế bảo vệ phần cứng (TEE/StrongBox); biên dịch IPA trên macOS/Xcode để kiểm thử native Keychain Services trên iPhone. Không tự đánh đồng kết quả máy ảo giả lập với thiết bị thật.
+  - *Đối chiếu chính sách AUTH-08 & Điểm cần quyết định*:
+    - *Đặc tả*: Khi tài khoản bị khóa, xóa dữ liệu đã đồng bộ (`synced`), giữ nháp chưa đồng bộ (`pending`).
+    - *Tình huống biên (Bệnh nhân đã sync nhưng có ca nháp chưa sync)*:
+      - Giữ lại bệnh nhân gốc để bảo toàn khóa ngoại và liên kết hồ sơ của ca nháp, không để ca nháp mồ côi.
+      - Ghi nhận đây là phương án kỹ thuật an toàn đề xuất, chờ chỉ đạo chính thức từ GVHD/Hội đồng.
 - [ ] **6.4 Chính sách Đồng bộ dữ liệu Hai chiều (Offline-First Sync Engine)**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Cơ chế đánh dấu trạng thái đồng bộ (`sync_status: 'synced' | 'pending' | 'conflict'`), xử lý hàng đợi đẩy lên cloud khi có mạng trở lại.
+  - *Trạng thái*: **Chưa làm (Phụ thuộc Backend/Cloud)**.
+  - *Phần còn thiếu*: Hàng đợi đồng bộ Outbox (`SyncOperation`), cơ chế giải quyết xung đột khi sửa cùng ca bệnh trên nhiều thiết bị và đẩy ảnh lên cloud khi có mạng trở lại.
 
 ---
 
@@ -177,8 +238,8 @@ graph TD
 - [ ] **7.3 API Dự phòng Phân tích AI trên Máy chủ (Server-side Inference & Full Grad-CAM)**
   - *Trạng thái*: Chưa làm.
   - *Phần còn thiếu*: Tích hợp mô hình Primary Adaptive AACNN-ViT trên server với đầy đủ PyTorch GPU inference và Grad-CAM chính xác cao khi người dùng chọn chế độ điện toán đám mây.
-- [ ] **7.4 Tích hợp Lưu trữ Đám mây Firebase Cloud Storage / S3**
-  - *Trạng thái*: Chưa làm.
+- [ ] **7.4 Tích hợp Lưu trữ Ảnh Đám mây (Firebase Storage / S3-compatible / Tự lưu trữ)**
+  - *Trạng thái*: **Chưa chốt phương án**. Tùy thuộc vào hạ tầng cloud được cấp phép cho đồ án.
 
 ---
 
@@ -193,8 +254,8 @@ graph TD
 - [x] **8.3 Màn hình Thống kê Ca bệnh & Bảng biểu Quản trị**
   - *Căn cứ*: `mobile/src/features/doctor/screens/DoctorStatsScreen.tsx`, `AdminStatsScreen.tsx`.
   - *Môi trường*: React Native UI.
-- [ ] **8.4 Tích hợp Dịch vụ Thông báo Cục bộ & Đẩy (Local & Push Notifications - FCM)**
-  - *Trạng thái*: Chưa làm.
+- [ ] **8.4 Tích hợp Dịch vụ Thông báo Cục bộ & Đẩy (Local & Push Notifications)**
+  - *Trạng thái*: Chưa làm. Khảo sát giải pháp thông báo phù hợp khi có kết quả phân tích hoặc lịch hẹn tái khám.
 
 ---
 
@@ -204,12 +265,14 @@ graph TD
   - *Trạng thái*: Đã sinh thử nghiệm `app-release.apk` (534 MB). Cần tối ưu loại bỏ file thừa, kiểm tra lại cờ ProGuard/R8.
 - [ ] **9.2 Đóng gói bộ cài đặt iOS Release (IPA / TestFlight)**
   - *Trạng thái*: Chưa làm.
-- [ ] **9.3 Cập nhật Báo cáo Khóa luận Phân hệ Android (`reports/android/`)**
-  - *Trạng thái*: Chưa làm (Thư mục chỉ có `.gitkeep`).
-  - *Phần còn thiếu*: Viết các chương Kiến trúc, Thuật toán On-Device ViT ONNX + Fusion LiteRT, số đo thực nghiệm trên Xiaomi Redmi 13.
-- [ ] **9.4 Cập nhật Báo cáo Khóa luận Phân hệ iOS (`reports/ios/`)**
-  - *Trạng thái*: Chưa làm (Thư mục chỉ có `.gitkeep`).
-  - *Phần còn thiếu*: Viết các chương Kiến trúc iOS, CoreML, số đo thực nghiệm trên iPhone.
+- [ ] **9.3 Cập nhật Báo cáo Khóa luận Phân hệ Android (`reports/android/`) — ĐANG SOẠN THẢO**
+  - *Căn cứ*: Bản thảo khóa luận tại [`reports/android/khoa-luan-android.md`](../../reports/android/khoa-luan-android.md) và Bảng đối chiếu đề cương tại [`docs/learning/bang-doi-chieu-de-cuong-kltn.md`](bang-doi-chieu-de-cuong-kltn.md).
+  - *Trạng thái*: **Đang phát triển theo cấu trúc 5 chương chuẩn của Đề cương chi tiết đã duyệt** (Mở đầu, Chương 1 Tổng quan tình hình nghiên cứu, Chương 2 Cơ sở lý thuyết và nền tảng công nghệ, Chương 3 Phân tích và thiết kế hệ thống, Chương 4 Cài đặt thực nghiệm và đánh giá, Chương 5 Kết luận và hướng phát triển). Đã tích hợp đề xuất nâng cấp On-Device Edge AI, phân định rõ chức năng ngoại tuyến (AI chẩn đoán On-Device, lưu trữ cục bộ) và trực tuyến (xác thực, đồng bộ đám mây qua FastAPI/Firebase).
+  - *Phần còn thiếu*: Tiếp tục cập nhật số liệu đo kiểm thực tế trên thiết bị vật lý Xiaomi Redmi 13 và xin ý kiến GVHD (ThS. Trịnh Huy Hoàng) về các điểm điều chỉnh đề xuất.
+- [ ] **9.4 Cập nhật Báo cáo Khóa luận Phân hệ iOS (`reports/ios/`) — ĐANG SOẠN THẢO**
+  - *Căn cứ*: Bản thảo khóa luận tại [`reports/ios/khoa-luan-ios.md`](../../reports/ios/khoa-luan-ios.md) và Bảng đối chiếu đề cương tại [`docs/learning/bang-doi-chieu-de-cuong-kltn.md`](bang-doi-chieu-de-cuong-kltn.md).
+  - *Trạng thái*: **Đang phát triển theo cấu trúc 5 chương chuẩn của Đề cương chi tiết đã duyệt**, làm rõ các đặc thù công nghệ Apple (Apple Neural Engine, CoreML, iOS Keychain & Secure Enclave, tuân thủ Apple HIG, so sánh với Android).
+  - *Phần còn thiếu*: Tiếp tục cập nhật số đo thực nghiệm khi biên dịch bản build IPA trên macOS/Xcode và thử nghiệm trên thiết bị iPhone thật.
 - [ ] **9.5 Nghiệm thu tổng thể & Bàn giao sản phẩm độc lập cho Hội đồng**
   - *Trạng thái*: Chưa làm.
 

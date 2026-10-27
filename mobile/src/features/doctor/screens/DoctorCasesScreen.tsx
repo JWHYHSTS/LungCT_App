@@ -11,8 +11,10 @@ import {
   StatusBadge,
   TopBar,
 } from '../../../ui/components';
-import { getMockCases, subscribeDoctorStore } from '../../../mocks';
+import { getMockCases, subscribeDoctorStore, type MockCase } from '../../../mocks';
 import { CASE_FILTER_DECISION, SCORE_FORMAT_DECISION } from '../../../config/ui-decisions';
+import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 
 export interface DoctorCasesScreenProps {
   onNavigateToCaseDetail?: (caseId: string) => void;
@@ -25,16 +27,42 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
 }) => {
   const { theme } = useTheme();
   const { colors, spacing } = theme;
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
-  const [cases, setCases] = useState(getMockCases());
+  const [cases, setCases] = useState<MockCase[]>(() => getMockCases());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(CASE_FILTER_DECISION.defaultChip);
 
   React.useEffect(() => {
-    return subscribeDoctorStore(() => {
-      setCases(getMockCases());
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        const storedCases = await CaseRepository.getCasesForUI(ownerId, undefined, true);
+        if (isMounted && storedCases && storedCases.length > 0) {
+          setCases(storedCases);
+        }
+      } catch (err) {
+        console.warn('[DoctorCasesScreen] Lỗi nạp ca bệnh từ kho mã hóa:', err);
+      }
+    };
+
+    loadData();
+
+    const unsubRepo = subscribeCaseRepository(() => {
+      loadData();
     });
-  }, []);
+    const unsubMock = subscribeDoctorStore(() => {
+      loadData();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubRepo();
+      unsubMock();
+    };
+  }, [ownerId]);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -56,6 +84,13 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
 
   const filteredCases = useMemo(() => {
     return cases.filter((caseItem) => {
+      // 1. Phân biệt ca đang hoạt động và ca trong thùng rác
+      if (selectedFilter === 'trashed') {
+        if (!caseItem.isTrashed) return false;
+      } else {
+        if (caseItem.isTrashed) return false;
+      }
+
       const q = searchQuery.trim().toLowerCase();
       const matchQuery =
         !q ||
@@ -199,7 +234,9 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
                 type="case"
                 leadingIcon="cases"
                 badges={
-                  caseItem.syncStatus === 'pending' ? (
+                  caseItem.isTrashed ? (
+                    <StatusBadge label="Đã xóa" tone="danger" icon="trash" />
+                  ) : caseItem.syncStatus === 'pending' ? (
                     <StatusBadge label="Chờ gửi" tone="warning" icon="sync" />
                   ) : undefined
                 }

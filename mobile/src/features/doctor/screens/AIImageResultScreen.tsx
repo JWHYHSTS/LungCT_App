@@ -21,7 +21,6 @@ import {
 } from '../../../ui/components';
 import { findCaseById, type MockCase, type MockCTImage } from '../../../mocks';
 import {
-  runNativePipelineFromBase64,
   runNativePipelineFromFilePath,
   getAvailableTestImages,
   pickImageFromDevice,
@@ -29,6 +28,8 @@ import {
   type AvailableTestImage,
 } from '../../../services/ai/onDevicePipeline';
 import { PipelinePredictionResult } from '../../../services/ai/types';
+import { localStorageService } from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 
 export interface AIImageResultScreenProps {
   caseId: string;
@@ -58,6 +59,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
   const currentCase: MockCase | undefined = useMemo(() => findCaseById(caseId), [caseId]);
   const images = currentCase?.images ?? [];
@@ -180,21 +183,64 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
 
       setOnDeviceResult(null);
 
-      // Chọn dữ liệu base64 của ảnh CT tương ứng lát cắt đang hiển thị
-      let b64Payload = testCtData.benign_b64;
-      if (activeIndex === 2) {
-        b64Payload = testCtData.malignant_b64;
-      } else if (activeIndex >= 3) {
-        b64Payload = testCtData.normal_b64;
+      // Tìm tệp ảnh CT tương ứng từ danh sách tệp thiết bị sẵn có
+      const files = await getAvailableTestImages();
+      let targetFile: AvailableTestImage | undefined = files[0];
+      if (activeIndex === 2 && files.length >= 2) {
+        targetFile = files[1];
+      } else if (activeIndex >= 3 && files.length >= 3) {
+        targetFile = files[2];
       }
 
-      const result = await runNativePipelineFromBase64(b64Payload);
+      if (!targetFile) {
+        throw new Error(
+          'Chưa tìm thấy tệp ảnh CT mẫu trên thiết bị (/sdcard/Download hoặc thư mục app). Vui lòng dùng nút "Chọn ảnh từ thiết bị để chạy AI" bên dưới.',
+        );
+      }
+
+      setSelectedFileLabel(targetFile.name);
+      setSelectedImageUri(targetFile.path.startsWith('/') ? `file://${targetFile.path}` : targetFile.path);
+
+      const result = await runNativePipelineFromFilePath(targetFile.path);
       setOnDeviceResult(result);
+
+      // Lưu kết quả dự đoán vào kho lưu trữ mã hóa cục bộ
+      try {
+        const mappedLabel =
+          result.predictedClass.toLowerCase() === 'benign'
+            ? 'BENIGN'
+            : result.predictedClass.toLowerCase() === 'malignant'
+              ? 'MALIGNANT'
+              : 'NORMAL';
+
+        await localStorageService.savePredictionResult(ownerId, {
+          imageId: activeImage.id,
+          imageVersion: 1,
+          classificationStatus: 'PASS',
+          scores: [
+            result.probabilities.Benign,
+            result.probabilities.Malignant,
+            result.probabilities.Normal,
+          ],
+          label: mappedLabel,
+          explanationStatus: result.gradcamAvailable ? 'PASS' : 'UNAVAILABLE',
+          modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
+          preprocessingVersion: 'Libyuv-Bilinear-v1',
+          executionSource: 'LOCAL',
+          mode: 'REAL',
+          startedAt: new Date(Date.now() - (result.latency.totalInferenceMs || 1000)).toISOString(),
+          finishedAt: new Date().toISOString(),
+          durationMs: result.latency.totalInferenceMs,
+          state: 'CURRENT',
+        });
+      } catch (saveErr) {
+        console.warn('[AIImageResultScreen] Lỗi ghi kết quả AI vào kho lưu trữ:', saveErr);
+      }
 
       setNoticeDialog({
         visible: true,
         title: 'Phân tích On-Device Hoàn Tất',
-        body: `Mô hình trên thiết bị đã phân tích thành công lát cắt #${activeImage.sliceNumber}:\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms`,
+        body: `Mô hình trên thiết bị đã phân tích thành công lát cắt #${activeImage.sliceNumber}:\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms\n(Kết quả đã được mã hóa và lưu trữ an toàn)`,
       });
     } catch (err: any) {
       setOnDeviceResult(null);

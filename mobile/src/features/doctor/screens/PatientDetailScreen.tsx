@@ -21,6 +21,13 @@ import {
   trashPatient,
   type MockPatient,
 } from '../../../mocks';
+import {
+  PatientRepository,
+  subscribePatientRepository,
+  CaseRepository,
+  subscribeCaseRepository,
+} from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 import { SCORE_FORMAT_DECISION } from '../../../config/ui-decisions';
 
 export interface PatientDetailScreenProps {
@@ -47,16 +54,56 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
   const [patient, setPatient] = useState<MockPatient | undefined>(() => findPatientById(patientId));
   const [cases, setCases] = useState(() => getCasesByPatientId(patientId));
 
+  const [isLoading, setIsLoading] = useState(true);
+
   React.useEffect(() => {
-    return subscribeDoctorStore(() => {
-      setPatient(findPatientById(patientId));
+    let isMounted = true;
+    const loadFromStorage = async () => {
+      try {
+        const stored = await PatientRepository.getPatientById(ownerId, patientId);
+        if (isMounted) {
+          if (stored) {
+            setPatient(stored);
+          }
+          const storedCases = await CaseRepository.getCasesForUI(ownerId, patientId, true);
+          if (storedCases && storedCases.length > 0) {
+            setCases(storedCases);
+          }
+        }
+      } catch (err) {
+        console.warn('[PatientDetailScreen] Lỗi nạp dữ liệu chi tiết:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadFromStorage();
+
+    const unsubMock = subscribeDoctorStore(() => {
+      const mockP = findPatientById(patientId);
+      if (mockP) setPatient(mockP);
       setCases(getCasesByPatientId(patientId));
     });
-  }, [patientId]);
+    const unsubRepo = subscribePatientRepository(() => {
+      loadFromStorage();
+    });
+    const unsubCaseRepo = subscribeCaseRepository(() => {
+      loadFromStorage();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubMock();
+      unsubRepo();
+      unsubCaseRepo();
+    };
+  }, [ownerId, patientId]);
 
   const [showTrashConfirmDialog, setShowTrashConfirmDialog] = useState(false);
   const [showMenuOptionsDialog, setShowMenuOptionsDialog] = useState(false);
@@ -67,7 +114,20 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     onClose?: () => void;
   }>({ visible: false, title: '', body: '' });
 
-  // Trường hợp không tìm thấy hồ sơ bệnh nhân
+  // Đang tải dữ liệu từ kho lưu trữ
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
+        <TopBar
+          title={t('doctor_detail.patient_detail_title')}
+          type="stack"
+          onBackPress={onBack}
+        />
+      </View>
+    );
+  }
+
+  // Trường hợp không tìm thấy hồ sơ bệnh nhân sau khi đã nạp xong
   if (!patient) {
     return (
       <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
@@ -89,12 +149,12 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     );
   }
 
-  const handleCreateNewCase = () => {
-    const createdCase = createMockCaseForPatient(patient);
+  const handleCreateNewCase = async () => {
+    const createdCase = await CaseRepository.createCase(ownerId, patient);
     setNoticeDialog({
       visible: true,
       title: 'Đã tạo ca mới',
-      body: `Đã tạo thành công ca ${createdCase.caseCode} cho bệnh nhân ${patient.fullName}. Dữ liệu đã lưu tạm trong phiên mô phỏng; có thể mất khi khởi động lại app.`,
+      body: `Đã tạo thành công ca ${createdCase.caseCode} cho bệnh nhân ${patient.fullName}. Dữ liệu đã được lưu trữ an toàn trong kho mã hóa.`,
       onClose: () => {
         setNoticeDialog({ visible: false, title: '', body: '' });
         onNavigateToCaseDetail(createdCase.id);
@@ -102,8 +162,13 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     });
   };
 
-  const handleTrashPatient = () => {
+  const handleTrashPatient = async () => {
     trashPatient(patient.id);
+    try {
+      await PatientRepository.trashPatient(ownerId, patient.id);
+    } catch (err) {
+      console.warn('[PatientDetailScreen] Không thể cập nhật trạng thái xóa mềm trong kho lưu trữ:', err);
+    }
     setShowTrashConfirmDialog(false);
     setNoticeDialog({
       visible: true,

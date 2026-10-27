@@ -24,6 +24,8 @@ import {
   trashCase,
   type MockCase,
 } from '../../../mocks';
+import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 
 export interface CaseDetailScreenProps {
   caseId: string;
@@ -38,7 +40,7 @@ export interface CaseDetailScreenProps {
  * - Đầu ca: Mã ca, Bệnh nhân, Ngày chụp, Trạng thái ca (DRAFT, COMPLETED, PARTIAL).
  * - Thêm ảnh: Mở BottomSheet chọn nguồn (Thư viện / Camera) -> Thêm ảnh giả lập.
  * - Lưới ảnh: Hiển thị các lát cắt qua component ImageTile (tách rõ pass/passNoCam/fail/mock).
- * - Nhận xét: Tự lưu với nhãn "Đã lưu tạm trong phiên mô phỏng lúc hh:mm".
+ * - Nhận xét: Tự lưu với nhãn "Đã lưu lúc hh:mm", lưu có mã hóa vào kho lưu trữ cục bộ.
  * - Xuất PDF: Điều hướng tới SCR-D01.
  * - Hoàn tất ca: Bị DISABLED kèm lý do rõ ràng khi 0 ảnh hoặc có ảnh RUNNING (BR-CASE-01).
  *   Khi bấm hoàn tất -> Mở Modal xác nhận tổng kết trạng thái từng ảnh (SCR-C05 / MSG-12).
@@ -52,6 +54,8 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
   const [currentCase, setCurrentCase] = useState<MockCase | undefined>(() => findCaseById(caseId));
   const [notesText, setNotesText] = useState(currentCase?.notes ?? '');
@@ -61,20 +65,58 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
       : '',
   );
 
+  const [isLoading, setIsLoading] = useState(true);
+
   React.useEffect(() => {
-    return subscribeDoctorStore(() => {
+    let isMounted = true;
+
+    const loadFromStorage = async () => {
+      try {
+        const stored = await CaseRepository.getCaseById(ownerId, caseId);
+        if (isMounted && stored) {
+          setCurrentCase(stored);
+          if (stored.notes !== undefined) {
+            setNotesText(stored.notes);
+            if (stored.notesSavedAt) {
+              setNotesSaveStatus(
+                t('doctor_detail.case_notes_saved_prefix', { time: stored.notesSavedAt }),
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[CaseDetailScreen] Lỗi nạp ca bệnh từ kho mã hóa:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadFromStorage();
+
+    const unsubRepo = subscribeCaseRepository(() => {
+      loadFromStorage();
+    });
+    const unsubMock = subscribeDoctorStore(() => {
       const updated = findCaseById(caseId);
-      setCurrentCase(updated);
-      if (updated && updated.notes !== undefined) {
-        setNotesText(updated.notes);
-        if (updated.notesSavedAt) {
-          setNotesSaveStatus(
-            t('doctor_detail.case_notes_saved_prefix', { time: updated.notesSavedAt }),
-          );
+      if (isMounted && updated) {
+        setCurrentCase(updated);
+        if (updated.notes !== undefined) {
+          setNotesText(updated.notes);
+          if (updated.notesSavedAt) {
+            setNotesSaveStatus(
+              t('doctor_detail.case_notes_saved_prefix', { time: updated.notesSavedAt }),
+            );
+          }
         }
       }
     });
-  }, [caseId, t]);
+
+    return () => {
+      isMounted = false;
+      unsubRepo();
+      unsubMock();
+    };
+  }, [caseId, ownerId, t]);
 
   const [showAddImageSheet, setShowAddImageSheet] = useState(false);
   const [showCompleteConfirmModal, setShowCompleteConfirmModal] = useState(false);
@@ -88,7 +130,16 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
     onClose?: () => void;
   }>({ visible: false, title: '', body: '' });
 
-  // Xử lý khi không tìm thấy ca bệnh
+  // Đang tải dữ liệu từ kho lưu trữ
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
+        <TopBar title={t('doctor_detail.case_detail_title')} type="stack" onBackPress={onBack} />
+      </View>
+    );
+  }
+
+  // Xử lý khi không tìm thấy ca bệnh sau khi nạp xong
   if (!currentCase) {
     return (
       <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
@@ -119,9 +170,9 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
         ? 'Ca bệnh đã được hoàn tất trước đó.'
         : undefined;
 
-  // Xử lý lưu nhận xét tạm
-  const handleSaveNotes = () => {
-    updateCaseNotes(currentCase.id, notesText);
+  // Xử lý lưu nhận xét và mã hóa xuống kho lưu trữ
+  const handleSaveNotes = async () => {
+    await CaseRepository.updateCaseNotes(ownerId, currentCase.id, notesText);
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setNotesSaveStatus(t('doctor_detail.case_notes_saved_prefix', { time: timeStr }));
@@ -141,14 +192,14 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   };
 
   // Hoàn tất ca bệnh
-  const handleConfirmComplete = () => {
+  const handleConfirmComplete = async () => {
     setShowCompleteConfirmModal(false);
-    const res = completeCase(currentCase.id);
+    const res = await CaseRepository.completeCase(ownerId, currentCase.id);
     if (res.success) {
       setNoticeDialog({
         visible: true,
         title: 'Hoàn tất ca bệnh thành công',
-        body: `Ca bệnh ${currentCase.caseCode} đã được hoàn tất. Dữ liệu đã lưu tạm trong phiên mô phỏng; có thể mất khi khởi động lại app.`,
+        body: `Ca bệnh ${currentCase.caseCode} đã được hoàn tất và lưu trữ an toàn trong kho mã hóa.`,
       });
     } else {
       setNoticeDialog({
@@ -160,9 +211,9 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   };
 
   // Chuyển ca vào thùng rác
-  const handleTrashCase = () => {
+  const handleTrashCase = async () => {
     setShowTrashConfirmDialog(false);
-    trashCase(currentCase.id);
+    await CaseRepository.trashCase(ownerId, currentCase.id);
     setNoticeDialog({
       visible: true,
       title: t('label.thung_rac'),

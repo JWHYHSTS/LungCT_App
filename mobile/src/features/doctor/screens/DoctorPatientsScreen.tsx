@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../../ui/theme';
 import {
@@ -12,7 +12,9 @@ import {
   StatusBadge,
   TopBar,
 } from '../../../ui/components';
-import { getMockPatients, subscribeDoctorStore } from '../../../mocks';
+import { getMockPatients, subscribeDoctorStore, type MockPatient } from '../../../mocks';
+import { PatientRepository, subscribePatientRepository } from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 import { PATIENT_FILTER_DECISION } from '../../../config/ui-decisions';
 
 export interface DoctorPatientsScreenProps {
@@ -26,21 +28,52 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
 }) => {
   const { theme } = useTheme();
   const { colors, spacing } = theme;
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
-  const [patients, setPatients] = useState(getMockPatients());
+  const [patients, setPatients] = useState<MockPatient[]>(() => getMockPatients());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(PATIENT_FILTER_DECISION.defaultChip);
 
-  React.useEffect(() => {
-    return subscribeDoctorStore(() => {
-      setPatients(getMockPatients());
+  // Nạp dữ liệu bệnh nhân từ Local Storage mã hóa
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        const storedPatients = await PatientRepository.getPatientsForUI(ownerId, true);
+        if (isMounted && storedPatients && storedPatients.length > 0) {
+          setPatients(storedPatients);
+        }
+      } catch (err) {
+        console.warn('[DoctorPatientsScreen] Lỗi đọc dữ liệu lưu trữ cục bộ:', err);
+      }
+    };
+
+    loadData();
+
+    // Lắng nghe thay đổi từ cả PatientRepository và Mock Store
+    const unsubRepo = subscribePatientRepository(() => {
+      loadData();
     });
-  }, []);
+    const unsubMock = subscribeDoctorStore(() => {
+      loadData();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubRepo();
+      unsubMock();
+    };
+  }, [ownerId]);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
     title: string;
     body: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirm?: () => void;
   }>({
     visible: false,
     title: '',
@@ -57,6 +90,13 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
 
   const filteredPatients = useMemo(() => {
     return patients.filter((patient) => {
+      // 1. Phân biệt bệnh nhân đang hoạt động và bệnh nhân trong thùng rác
+      if (selectedFilter === 'trashed') {
+        if (!patient.isTrashed) return false;
+      } else {
+        if (patient.isTrashed) return false;
+      }
+
       const q = searchQuery.trim().toLowerCase();
       const matchQuery =
         !q || patient.code.toLowerCase().includes(q) || patient.fullName.toLowerCase().includes(q);
@@ -177,12 +217,31 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
               type="patient"
               leadingIcon="patients"
               badges={
-                patient.syncStatus === 'pending' ? (
+                patient.isTrashed ? (
+                  <StatusBadge label="Đã xóa" tone="danger" icon="trash" />
+                ) : patient.syncStatus === 'pending' ? (
                   <StatusBadge label="Chờ gửi" tone="warning" icon="sync" />
                 ) : undefined
               }
               onPress={() => {
-                if (onNavigateToDetail) {
+                if (patient.isTrashed) {
+                  // Mở hộp thoại xác nhận khôi phục
+                  setDialogNotice({
+                    visible: true,
+                    title: 'Khôi phục bệnh nhân',
+                    body: `Bạn có muốn khôi phục hồ sơ ${patient.fullName} (${patient.code}) trở lại danh sách hoạt động không?`,
+                    confirmLabel: 'Khôi phục',
+                    cancelLabel: 'Hủy',
+                    onConfirm: async () => {
+                      closeNotice();
+                      try {
+                        await PatientRepository.restorePatient(ownerId, patient.id);
+                      } catch (err: any) {
+                        console.warn('[DoctorPatientsScreen] Lỗi khôi phục:', err);
+                      }
+                    },
+                  });
+                } else if (onNavigateToDetail) {
                   onNavigateToDetail(patient.id);
                 } else {
                   showFeatureNotice(
@@ -204,6 +263,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             padding: spacing.md,
             backgroundColor: colors.bg.surface,
             borderTopColor: colors.border.default,
+            gap: spacing.xs,
           },
         ]}
       >
@@ -221,15 +281,23 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             }
           }}
         />
+
       </View>
 
       <Dialog
         visible={dialogNotice.visible}
-        type="default"
+        type={dialogNotice.onConfirm ? 'default' : 'default'}
         title={dialogNotice.title}
         body={dialogNotice.body}
-        confirmLabel="Đã hiểu"
-        onConfirm={closeNotice}
+        confirmLabel={dialogNotice.confirmLabel || 'Đã hiểu'}
+        cancelLabel={dialogNotice.cancelLabel || (dialogNotice.onConfirm ? 'Hủy' : undefined)}
+        onConfirm={() => {
+          if (dialogNotice.onConfirm) {
+            dialogNotice.onConfirm();
+          } else {
+            closeNotice();
+          }
+        }}
         onCancel={closeNotice}
       />
     </View>

@@ -8,7 +8,10 @@ import java.util.Collections
 
 class LungCtNativePackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-    return listOf(LungCtPipelineModule(reactContext))
+    return listOf(
+      LungCtPipelineModule(reactContext),
+      NativeCryptoVaultModule(reactContext)
+    )
   }
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {

@@ -7,14 +7,15 @@ Do thư mục `mobile/android/` bị Git bỏ qua (`.gitignore`) để tránh l�
 ## 1. Danh sách tệp
 
 - `LungCtPipelineModule.kt`: React Native Module viết bằng Kotlin, triển khai toàn bộ pipeline tiền xử lý ảnh (Pillow Nearest Resampling, chuẩn hóa FP32), chạy suy luận song song qua ONNX Runtime Android & LiteRT (TensorFlow Lite), và hỗ trợ giải mã từ URI `content://` hoặc đường dẫn tệp.
-- `LungCtNativePackage.kt`: Đăng ký `LungCtPipelineModule` vào hệ thống React Package.
+- `NativeCryptoVaultModule.kt`: React Native Module viết bằng Kotlin triển khai Android Keystore System (`AndroidKeyStore`) quản lý khóa AES-256 phần cứng và mã hóa chứng thực AES-256-GCM.
+- `LungCtNativePackage.kt`: Đăng ký cả `LungCtPipelineModule` và `NativeCryptoVaultModule` vào hệ thống React Package.
 - `MainApplication.kt`: Mẫu đăng ký gói native vào danh sách package của ứng dụng Expo/React Native.
 - `build.gradle`: Cấu hình build cấp ứng dụng (`mobile/android/app/build.gradle`), bao gồm:
   - ONNX Runtime Android: `com.microsoft.onnxruntime:onnxruntime-android:1.31.0`
   - TensorFlow Lite (LiteRT): `com.google.ai.edge.litert:litert-api:1.4.0` và `litert:1.4.0`
   - Cờ liên kết JNI: `useLegacyPackaging = true`
   - Cờ không nén tài nguyên mô hình: `noCompress 'tflite', 'onnx', 'data'`
-- `proguard-rules.pro`: Quy tắc bảo vệ (keep rules) cho ProGuard/R8 khi build Release APK: giữ lại các lớp `ai.onnxruntime.**`, `org.tensorflow.lite.**`, và `com.anonymous.mobile.LungCtPipelineModule`.
+- `proguard-rules.pro`: Quy tắc bảo vệ (keep rules) cho ProGuard/R8 khi build Release APK: giữ lại các lớp `ai.onnxruntime.**`, `org.tensorflow.lite.**`, `com.anonymous.mobile.LungCtPipelineModule`, và `com.anonymous.mobile.NativeCryptoVaultModule`.
 - `gradle.properties`: Cấu hình JVM, Hermes engine, và AndroidX.
 
 ## 2. Quy trình tái tạo sau khi chạy `npx expo prebuild`
@@ -31,6 +32,7 @@ Do thư mục `mobile/android/` bị Git bỏ qua (`.gitignore`) để tránh l�
    Copy-Item mobile\native-templates\android\proguard-rules.pro mobile\android\app\proguard-rules.pro
    Copy-Item mobile\native-templates\android\gradle.properties mobile\android\gradle.properties
    Copy-Item mobile\native-templates\android\LungCtPipelineModule.kt mobile\android\app\src\main\java\com\anonymous\mobile\LungCtPipelineModule.kt
+   Copy-Item mobile\native-templates\android\NativeCryptoVaultModule.kt mobile\android\app\src\main\java\com\anonymous\mobile\NativeCryptoVaultModule.kt
    Copy-Item mobile\native-templates\android\LungCtNativePackage.kt mobile\android\app\src\main\java\com\anonymous\mobile\LungCtNativePackage.kt
    Copy-Item mobile\native-templates\android\MainApplication.kt mobile\android\app\src\main\java\com\anonymous\mobile\MainApplication.kt
    ```

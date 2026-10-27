@@ -72,6 +72,7 @@ export const PATIENT_FILTER_DECISION = {
     { key: 'all', label: 'Tất cả' },
     { key: 'draft', label: 'Có ca nháp' },
     { key: 'unsynced', label: 'Chưa đồng bộ' },
+    { key: 'trashed', label: 'Thùng rác' },
   ] as const,
   defaultChip: 'all',
 } as const;
@@ -101,6 +102,7 @@ export const CASE_FILTER_DECISION = {
     { key: 'draft', label: 'Nháp' },
     { key: 'completed', label: 'Hoàn tất' },
     { key: 'partial', label: 'Một phần' },
+    { key: 'trashed', label: 'Thùng rác' },
   ] as const,
   defaultChip: 'all',
 } as const;

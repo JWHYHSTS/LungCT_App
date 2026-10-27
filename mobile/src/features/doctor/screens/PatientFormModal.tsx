@@ -11,12 +11,15 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import { AppText, Button, Dialog, TextField, TopBar } from '../../../ui/components';
 import { PATIENT_FORM_DECISION } from '../../../config/ui-decisions';
-import { addMockPatient, findPatientByCode } from '../../../mocks';
+import { addMockPatient, findPatientByCode, findPatientById, updateMockPatient } from '../../../mocks';
+import { PatientRepository } from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 
 import i18n from '../../../i18n';
 
 export interface PatientFormModalProps {
   visible?: boolean;
+  initialPatientId?: string;
   onClose: () => void;
   onSuccess: (newPatientId: string) => void;
 }
@@ -127,10 +130,15 @@ export const validateDateOfBirth = (
  * - Kiểm tra lỗi: Mã bệnh nhân đã tồn tại, Ngày sinh không hợp lệ hoặc trong tương lai.
  * - Khi có thay đổi dữ liệu mà bấm Đóng/Back: Hiển thị Dialog "Bỏ thông tin chưa lưu?".
  */
-export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onSuccess }) => {
+export const PatientFormModal: React.FC<PatientFormModalProps> = ({
+  initialPatientId,
+  onClose,
+  onSuccess,
+}) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
+  const isEditMode = Boolean(initialPatientId);
 
   const [code, setCode] = useState('');
   const [fullName, setFullName] = useState('');
@@ -152,13 +160,45 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onS
     body: string;
   }>({ visible: false, title: '', body: '' });
 
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
+
+  // Nạp dữ liệu bệnh nhân ban đầu nếu ở chế độ Sửa (Edit Mode)
+  React.useEffect(() => {
+    if (!initialPatientId) return;
+
+    let isMounted = true;
+    const fetchPatientData = async () => {
+      try {
+        const stored = await PatientRepository.getPatientById(ownerId, initialPatientId);
+        const p = stored || findPatientById(initialPatientId);
+        if (p && isMounted) {
+          setCode(p.code);
+          setFullName(p.fullName);
+          setDob(p.dob);
+          setGender(p.gender);
+          setPhone(p.phone || '');
+          setSymptoms(p.symptoms || '');
+        }
+      } catch (err) {
+        console.warn('[PatientFormModal] Lỗi nạp thông tin để sửa:', err);
+      }
+    };
+
+    fetchPatientData();
+    return () => {
+      isMounted = false;
+    };
+  }, [initialPatientId, ownerId]);
+
   // Kiểm tra xem form đã có dữ liệu chưa để cảnh báo khi rời đi
   const isDirty =
-    code.trim().length > 0 ||
-    fullName.trim().length > 0 ||
-    dob.trim().length > 0 ||
-    phone.trim().length > 0 ||
-    symptoms.trim().length > 0;
+    !isEditMode &&
+    (code.trim().length > 0 ||
+      fullName.trim().length > 0 ||
+      dob.trim().length > 0 ||
+      phone.trim().length > 0 ||
+      symptoms.trim().length > 0);
 
   const handleClose = () => {
     if (isDirty) {
@@ -168,17 +208,19 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onS
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newErrors: { code?: string; fullName?: string; dob?: string } = {};
 
-    // 1. Kiểm tra Mã bệnh nhân
+    // 1. Kiểm tra Mã bệnh nhân (chỉ kiểm tra khi tạo mới)
     const trimmedCode = code.trim().toUpperCase();
-    if (!trimmedCode) {
-      newErrors.code = t('doctor_detail.validation_code_required');
-    } else if (!PATIENT_FORM_DECISION.codePattern.test(trimmedCode)) {
-      newErrors.code = t('doctor_detail.validation_code_pattern');
-    } else if (findPatientByCode(trimmedCode)) {
-      newErrors.code = t('doctor_detail.validation_code_exists');
+    if (!isEditMode) {
+      if (!trimmedCode) {
+        newErrors.code = t('doctor_detail.validation_code_required');
+      } else if (!PATIENT_FORM_DECISION.codePattern.test(trimmedCode)) {
+        newErrors.code = t('doctor_detail.validation_code_pattern');
+      } else if (findPatientByCode(trimmedCode)) {
+        newErrors.code = t('doctor_detail.validation_code_exists');
+      }
     }
 
     // 2. Kiểm tra Họ tên
@@ -200,27 +242,80 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onS
       return;
     }
 
-    // Lưu tạm thời vào Mock Store
-    const created = addMockPatient({
-      code: trimmedCode,
-      fullName: trimmedName,
-      dob: dob.trim(),
-      age: dobValidation.age ?? 0,
-      gender,
-      phone: phone.trim() || undefined,
-      symptoms: symptoms.trim() || undefined,
-    });
+    try {
+      if (isEditMode && initialPatientId) {
+        // CẬP NHẬT BỆNH NHÂN ĐÃ CÓ
+        await PatientRepository.updatePatient(ownerId, initialPatientId, {
+          fullName: trimmedName,
+          dob: dob.trim(),
+          gender,
+          phone: phone.trim() || undefined,
+          symptoms: symptoms.trim() || undefined,
+        });
 
-    setNoticeDialog({
-      visible: true,
-      title: t('doctor_detail.patient_save_btn'),
-      body: `Hồ sơ ${created.fullName} (${created.code}) đã được lưu tạm trong phiên mô phỏng; dữ liệu có thể mất khi khởi động lại app.`,
-    });
+        updateMockPatient(initialPatientId, {
+          fullName: trimmedName,
+          dob: dob.trim(),
+          age: dobValidation.age ?? 0,
+          gender,
+          phone: phone.trim() || undefined,
+          symptoms: symptoms.trim() || undefined,
+        });
+
+        setNoticeDialog({
+          visible: true,
+          title: 'Cập nhật thành công',
+          body: `Hồ sơ ${trimmedName} (${code}) đã được cập nhật và lưu trữ an toàn trong kho mã hóa.`,
+        });
+      } else {
+        // TẠO MỚI BỆNH NHÂN
+        await PatientRepository.addPatient(ownerId, {
+          code: trimmedCode,
+          fullName: trimmedName,
+          dob: dob.trim(),
+          gender,
+          phone: phone.trim() || undefined,
+          symptoms: symptoms.trim() || undefined,
+        });
+
+        const created = addMockPatient({
+          code: trimmedCode,
+          fullName: trimmedName,
+          dob: dob.trim(),
+          age: dobValidation.age ?? 0,
+          gender,
+          phone: phone.trim() || undefined,
+          symptoms: symptoms.trim() || undefined,
+        });
+
+        setNoticeDialog({
+          visible: true,
+          title: t('doctor_detail.patient_save_btn'),
+          body: `Hồ sơ ${created.fullName} (${created.code}) đã được lưu trữ có bảo vệ bằng mã hóa an toàn của tài khoản.`,
+        });
+      }
+    } catch (storageErr: any) {
+      console.error('[PatientFormModal] Lỗi lưu trữ:', storageErr);
+      const isMissingNative =
+        storageErr?.message?.includes('NATIVE_CRYPTO_UNAVAILABLE') ||
+        storageErr?.message?.includes('NativeCryptoVaultModule');
+
+      setNoticeDialog({
+        visible: true,
+        title: isEditMode ? 'Không thể cập nhật hồ sơ' : 'Không thể lưu hồ sơ bệnh nhân',
+        body: isMissingNative
+          ? 'CẢNH BÁO AN TOÀN: Module mã hóa phần cứng an toàn (Android Keystore) chưa sẵn sàng trên bản build này. Ứng dụng từ chối lưu dữ liệu bệnh nhân ở trạng thái chưa được mã hóa để bảo vệ an toàn thông tin y tế.'
+          : `Lỗi lưu trữ: ${storageErr?.message || 'Không thể ghi dữ liệu xuống bộ nhớ cục bộ.'}`,
+      });
+    }
   };
 
   const handleConfirmNotice = () => {
+    const isError = noticeDialog.title.includes('Không thể');
     setNoticeDialog({ visible: false, title: '', body: '' });
-    onSuccess(code.trim().toUpperCase());
+    if (!isError) {
+      onSuccess(isEditMode && initialPatientId ? initialPatientId : code.trim().toUpperCase());
+    }
   };
 
   const genderOptions = [
@@ -235,7 +330,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onS
       style={[styles.container, { backgroundColor: colors.bg.app }]}
     >
       <TopBar
-        title={t('doctor_detail.patient_form_title')}
+        title={isEditMode ? 'Sửa thông tin bệnh nhân' : t('doctor_detail.patient_form_title')}
         type="modal"
         onClosePress={handleClose}
       />
@@ -249,7 +344,9 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onS
           color={colors.text.secondary}
           style={{ marginBottom: spacing.xs }}
         >
-          {t('doctor_detail.patient_form_desc')}
+          {isEditMode
+            ? 'Cập nhật thông tin hành chính của bệnh nhân. Mã bệnh nhân không thể thay đổi.'
+            : t('doctor_detail.patient_form_desc')}
         </AppText>
 
         {/* Mã bệnh nhân */}
@@ -257,14 +354,17 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onS
           label={t('doctor_detail.patient_code_label')}
           value={code}
           onChangeText={(val) => {
-            setCode(val);
-            if (errors.code) setErrors((prev) => ({ ...prev, code: undefined }));
+            if (!isEditMode) {
+              setCode(val);
+              if (errors.code) setErrors((prev) => ({ ...prev, code: undefined }));
+            }
           }}
           placeholder={t('doctor_detail.patient_code_placeholder')}
-          helper={t('doctor_detail.patient_code_helper')}
+          helper={isEditMode ? 'Mã định danh bệnh nhân cố định không được phép chỉnh sửa.' : t('doctor_detail.patient_code_helper')}
           error={errors.code}
+          editable={!isEditMode}
           autoCapitalize="characters"
-          style={{ marginBottom: spacing.sm }}
+          style={{ marginBottom: spacing.sm, opacity: isEditMode ? 0.7 : 1 }}
         />
 
         {/* Họ tên */}
@@ -357,7 +457,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({ onClose, onS
         />
 
         <Button
-          label={t('doctor_detail.patient_save_btn')}
+          label={isEditMode ? 'Lưu thay đổi' : t('doctor_detail.patient_save_btn')}
           variant="primary"
           size="L"
           onPress={handleSave}

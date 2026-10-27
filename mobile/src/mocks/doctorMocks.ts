@@ -389,6 +389,30 @@ export const addMockPatient = (
   return newPatient;
 };
 
+export const updateMockPatient = (
+  patientId: string,
+  data: Partial<
+    Omit<MockPatient, 'id' | 'code' | 'caseCount' | 'lastCaseDate' | 'hasDraftCase' | 'isMock'>
+  >,
+): MockPatient | null => {
+  let updatedPatient: MockPatient | null = null;
+  patientsStore = patientsStore.map((p) => {
+    if (p.id === patientId) {
+      updatedPatient = {
+        ...p,
+        ...data,
+      };
+      return updatedPatient;
+    }
+    return p;
+  });
+
+  if (updatedPatient) {
+    notify();
+  }
+  return updatedPatient;
+};
+
 export const createMockCaseForPatient = (patient: MockPatient): MockCase => {
   const year = new Date().getFullYear();
   const randomNum = Math.floor(1000 + Math.random() * 9000);
