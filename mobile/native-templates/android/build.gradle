@@ -127,7 +127,12 @@ android {
         }
     }
     androidResources {
-        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+        def skipBundleModels = (findProperty('skipBundleModels') ?: 'false').toBoolean()
+        if (skipBundleModels) {
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~:*.tflite:*.onnx:*.data'
+        } else {
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
         noCompress 'tflite', 'onnx', 'data'
     }
 }

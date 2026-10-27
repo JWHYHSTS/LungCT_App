@@ -338,14 +338,14 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               pred.resultId,
-              pred.ownerId,
+              ownerId,
               pred.imageId,
               pred.label,
               JSON.stringify(pred.scores),
               pred.durationMs || 0,
               pred.modelVersion || 'v1.0',
               pred.state,
-              pred.createdAt,
+              pred.finishedAt || pred.startedAt || new Date().toISOString(),
               encryptedPayload,
             ]
           );

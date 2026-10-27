@@ -20,6 +20,7 @@ htmlcov/
 # Mobile build outputs & caches
 # Android
 mobile/android/.gradle/
+mobile/native-templates/android/.gradle/
 mobile/android/build/
 mobile/android/app/build/
 *.keystore

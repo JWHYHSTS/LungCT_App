@@ -139,20 +139,32 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
 
     // 1. Nạp ViT ONNX + data
     if (!vitOnnxFile.exists() || vitOnnxFile.length() == 0L) {
-      reactContext.assets.open("models/vit_cls.onnx").use { input ->
-        FileOutputStream(vitOnnxFile).use { output -> input.copyTo(output) }
+      try {
+        reactContext.assets.open("models/vit_cls.onnx").use { input ->
+          FileOutputStream(vitOnnxFile).use { output -> input.copyTo(output) }
+        }
+      } catch (e: Exception) {
+        // Assets có thể không tồn tại nếu đã được nạp trước đó vào filesDir
       }
     }
     if (!vitDataFile.exists() || vitDataFile.length() == 0L) {
-      reactContext.assets.open("models/vit_cls.onnx.data").use { input ->
-        FileOutputStream(vitDataFile).use { output -> input.copyTo(output) }
+      try {
+        reactContext.assets.open("models/vit_cls.onnx.data").use { input ->
+          FileOutputStream(vitDataFile).use { output -> input.copyTo(output) }
+        }
+      } catch (e: Exception) {
+        // Assets có thể không tồn tại nếu đã được nạp trước đó vào filesDir
       }
     }
 
     // 2. Nạp Fusion TFLite
     if (!fusionFile.exists() || fusionFile.length() == 0L) {
-      reactContext.assets.open("models/fusion_model.tflite").use { input ->
-        FileOutputStream(fusionFile).use { output -> input.copyTo(output) }
+      try {
+        reactContext.assets.open("models/fusion_model.tflite").use { input ->
+          FileOutputStream(fusionFile).use { output -> input.copyTo(output) }
+        }
+      } catch (e: Exception) {
+        // Assets có thể không tồn tại nếu đã được nạp trước đó vào filesDir
       }
     }
 
