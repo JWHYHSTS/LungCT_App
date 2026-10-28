@@ -11,7 +11,7 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import java.io.File
-import android.database.sqlite.SQLiteDatabase
+import net.zetetic.database.sqlcipher.SQLiteDatabase
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
@@ -39,7 +39,8 @@ import javax.crypto.spec.SecretKeySpec
  *   (Lưu ý: Mức độ bảo vệ phần cứng phụ thuộc vào thiết bị thực tế: có thể là TEE, StrongBox Keymaster,
  *   hoặc Software Keymaster trên các thiết bị cũ/máy ảo; KHÔNG tự ý khẳng định là TEE/StrongBox nếu chưa kiểm chứng qua KeyInfo).
  * - Thực thi mã hóa chứng thực AES-256-GCM với IV 96-bit sinh ngẫu nhiên cho mỗi lần mã hóa và Authentication Tag 128-bit.
- * - Xử lý chặt chẽ các trường hợp biên: mất khóa, sai khóa (AEADBadTagException), dữ liệu bị sửa đổi (tamper).
+ * - Triển khai cơ sở dữ liệu mã hóa toàn bộ tệp nhị phân cấp trang (Page-level Full Database Encryption) bằng SQLCipher (`net.zetetic.database.sqlcipher.SQLiteDatabase`).
+ * - Xử lý chuyển đổi an toàn (Zero Data Loss Migration) từ SQLite plaintext cũ sang database mã hóa SQLCipher.
  * - Cô lập dữ liệu theo từng định danh tài khoản bác sĩ (`ownerId`).
  */
 class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext) :
@@ -48,11 +49,13 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
   companion object {
     private const val ANDROID_KEYSTORE_PROVIDER = "AndroidKeyStore"
     private const val KEY_ALIAS_PREFIX = "LungCt_Doctor_VaultKey_"
+    private const val DB_KEY_RECORD_PREFIX = "LungCt_EncDbKey_Record_"
     private const val GCM_IV_LENGTH = 12 // 96 bits theo khuyến nghị NIST SP 800-38D
     private const val GCM_TAG_LENGTH = 128 // 128 bits
     private const val PBKDF2_ITERATIONS = 100000
     private const val PBKDF2_KEY_LENGTH = 256 // 32 bytes
     private const val SYSTEM_PEPPER = "LungCt_Hardware_Pepper_2026_SecureVault"
+    private const val DB_SHARED_PREFS = "lungct_secure_vault_prefs"
   }
 
   override fun getName(): String = "NativeCryptoVaultModule"
@@ -176,6 +179,33 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
     }
   }
 
+  private fun encryptWithKeyInternal(secretKey: SecretKey, plaintext: String, formatPrefix: String): String {
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+    val iv = cipher.iv
+    val cipherBytes = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
+    val ivBase64 = Base64.encodeToString(iv, Base64.NO_WRAP)
+    val cipherBase64 = Base64.encodeToString(cipherBytes, Base64.NO_WRAP)
+    return "$formatPrefix:$ivBase64:$cipherBase64"
+  }
+
+  private fun decryptWithKeyInternal(secretKey: SecretKey, ciphertextMessage: String): String {
+    val parts = ciphertextMessage.split(":")
+    if (parts.size != 6) {
+      throw IllegalArgumentException("Định dạng bản tin mã hóa không hợp lệ (số trường: ${parts.size} != 6).")
+    }
+
+    val iv = Base64.decode(parts[4], Base64.NO_WRAP)
+    val encryptedBytes = Base64.decode(parts[5], Base64.NO_WRAP)
+
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+
+    val decryptedBytes = cipher.doFinal(encryptedBytes)
+    return String(decryptedBytes, Charsets.UTF_8)
+  }
+
   @ReactMethod
   fun encryptData(ownerId: String, plaintext: String, useKeystore: Boolean, promise: Promise) {
     try {
@@ -190,17 +220,8 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
         deriveFallbackKey(ownerId, null)
       }
 
-      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-      // GCM Mode yêu cầu cipher tự sinh IV ngẫu nhiên trong init(ENCRYPT_MODE, key)
-      cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-      val iv = cipher.iv
-
-      val cipherBytes = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
-      val ivBase64 = Base64.encodeToString(iv, Base64.NO_WRAP)
-      val cipherBase64 = Base64.encodeToString(cipherBytes, Base64.NO_WRAP)
-
       val formatPrefix = if (useKeystore) "ENC:KEYSTORE:AES-GCM:v1" else "ENC:PBKDF2:AES-GCM:v1"
-      val result = "$formatPrefix:$ivBase64:$cipherBase64"
+      val result = encryptWithKeyInternal(secretKey, plaintext, formatPrefix)
       promise.resolve(result)
     } catch (e: Exception) {
       promise.reject("ENCRYPTION_ERROR", "Lỗi mã hóa dữ liệu cục bộ: ${e.message}", e)
@@ -216,12 +237,8 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
       }
 
       val parts = ciphertextMessage.split(":")
-      // Định dạng mong đợi: ENC:KEYSTORE:AES-GCM:v1:<ivBase64>:<cipherBase64> (tổng cộng 6 parts)
       if (parts.size != 6) {
-        promise.reject(
-          "INVALID_FORMAT",
-          "Định dạng bản tin mã hóa không hợp lệ (số trường: ${parts.size} != 6)."
-        )
+        promise.reject("INVALID_FORMAT", "Định dạng bản tin mã hóa không hợp lệ (số trường: ${parts.size} != 6).")
         return
       }
 
@@ -234,35 +251,15 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
         return
       }
 
-      val iv = try {
-        Base64.decode(parts[4], Base64.NO_WRAP)
-      } catch (e: Exception) {
-        promise.reject("INVALID_IV", "IV không đúng định dạng Base64.")
-        return
-      }
-
-      val encryptedBytes = try {
-        Base64.decode(parts[5], Base64.NO_WRAP)
-      } catch (e: Exception) {
-        promise.reject("INVALID_CIPHERTEXT", "Ciphertext không đúng định dạng Base64.")
-        return
-      }
-
       val secretKey = if (isKeystore) {
         getKeystoreKeyForDecryption(ownerId)
       } else {
         deriveFallbackKey(ownerId, null)
       }
 
-      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-      val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
-      cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-
-      val decryptedBytes = cipher.doFinal(encryptedBytes)
-      val plaintext = String(decryptedBytes, Charsets.UTF_8)
+      val plaintext = decryptWithKeyInternal(secretKey, ciphertextMessage)
       promise.resolve(plaintext)
     } catch (e: AEADBadTagException) {
-      // Bắt lỗi giải mã khi sai khóa hoặc dữ liệu bị sửa đổi (Auth Tag mismatch)
       promise.reject(
         "AUTH_TAG_FAILED",
         "Giải mã thất bại: Khóa không đúng hoặc dữ liệu đã bị can thiệp trái phép (AEAD Tag mismatch).",
@@ -278,24 +275,47 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
   }
 
   // =========================================================================
-  // TẦNG CƠ SỞ DỮ LIỆU SQLITE NATIVE BẢO VỆ BẰNG ANDROID KEYSTORE (AES-GCM)
+  // TẦNG CƠ SỞ DỮ LIỆU SQLCIPHER NATIVE: MÃ HÓA CẤP TRANG BẰNG ANDROID KEYSTORE
   // =========================================================================
 
   private var sqliteDb: SQLiteDatabase? = null
   private var currentDbOwnerId: String? = null
 
+  /**
+   * Truy xuất hoặc sinh mật khẩu CSDL SQLCipher (32 ký tự Hex hoặc 256-bit key)
+   * được bảo vệ nghiêm ngặt bằng khóa Android Keystore Master Key của chính bác sĩ.
+   */
   @Synchronized
-  private fun getOrOpenSqlite(ownerId: String): SQLiteDatabase {
-    if (sqliteDb != null && sqliteDb!!.isOpen && currentDbOwnerId == ownerId) {
-      return sqliteDb!!
+  private fun getOrCreateSqlcipherPassphrase(ownerId: String): String {
+    val prefs = reactContext.getSharedPreferences(DB_SHARED_PREFS, Context.MODE_PRIVATE)
+    val prefKey = DB_KEY_RECORD_PREFIX + ownerId.replace("[^a-zA-Z0-9_]".toRegex(), "_")
+    val encryptedRecord = prefs.getString(prefKey, null)
+
+    val masterKey = getOrCreateKeystoreKeyForEncryption(ownerId)
+
+    if (encryptedRecord != null) {
+      try {
+        return decryptWithKeyInternal(masterKey, encryptedRecord)
+      } catch (e: Exception) {
+        // Nếu không giải mã được bằng masterKey hiện tại, giữ nguyên không xóa đè
+        throw IllegalStateException("CORRUPTED_DB_PASSPHRASE: Không thể giải mã passphrase của CSDL SQLCipher: ${e.message}", e)
+      }
     }
 
-    sqliteDb?.close()
-    val dbFile = reactContext.getDatabasePath("lungct_secure_${ownerId.replace("[^a-zA-Z0-9_]".toRegex(), "_")}.db")
-    dbFile.parentFile?.mkdirs()
+    // Sinh khóa ngẫu nhiên 32 bytes (256 bits) cho SQLCipher
+    val randomBytes = ByteArray(32)
+    java.security.SecureRandom().nextBytes(randomBytes)
+    val rawPassphrase = Base64.encodeToString(randomBytes, Base64.NO_WRAP)
 
-    val db = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
-    // Tạo cấu trúc bảng chuẩn quan hệ nếu chưa tồn tại
+    val encryptedNewRecord = encryptWithKeyInternal(masterKey, rawPassphrase, "ENC:KEYSTORE:AES-GCM:v1")
+    prefs.edit().putString(prefKey, encryptedNewRecord).apply()
+    return rawPassphrase
+  }
+
+  /**
+   * Tạo bảng quan hệ chuẩn nếu chưa tồn tại
+   */
+  private fun createDatabaseTables(db: SQLiteDatabase) {
     db.execSQL("""
       CREATE TABLE IF NOT EXISTS secure_patients (
         patient_id TEXT PRIMARY KEY,
@@ -358,6 +378,197 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
         updated_at TEXT NOT NULL
       );
     """.trimIndent())
+  }
+
+  /**
+   * Kiểm tra xem tệp CSDL trên đĩa là SQLite chuẩn (Plaintext header) hay đã được mã hóa SQLCipher
+   */
+  private fun isDatabasePlaintext(dbFile: File): Boolean {
+    if (!dbFile.exists() || dbFile.length() < 16) return false
+    val header = ByteArray(16)
+    try {
+      java.io.FileInputStream(dbFile).use { it.read(header) }
+      val headerStr = String(header, Charsets.US_ASCII)
+      return headerStr.startsWith("SQLite format 3")
+    } catch (e: Exception) {
+      return false
+    }
+  }
+
+  /**
+   * Di chuyển an toàn từ SQLite plaintext sang CSDL mã hóa SQLCipher (Zero Data Loss Migration)
+   */
+  private fun migratePlaintextDbToSqlcipher(plainDbFile: File, encDbFile: File, passphrase: String) {
+    if (!plainDbFile.exists()) return
+
+    // 1. Mở CSDL plaintext bằng Android standard SQLite (read-only)
+    val standardPlainDb = android.database.sqlite.SQLiteDatabase.openDatabase(
+      plainDbFile.absolutePath,
+      null,
+      android.database.sqlite.SQLiteDatabase.OPEN_READONLY
+    )
+
+    // 2. Mở hoặc tạo mới CSDL SQLCipher
+    val sqlcipherDb = SQLiteDatabase.openOrCreateDatabase(encDbFile.absolutePath, passphrase, null, null, null)
+    createDatabaseTables(sqlcipherDb)
+
+    sqlcipherDb.beginTransaction()
+    try {
+      // Di chuyển secure_patients
+      standardPlainDb.rawQuery("SELECT * FROM secure_patients", null).use { cursor ->
+        val cols = cursor.columnNames
+        while (cursor.moveToNext()) {
+          val sql = "INSERT OR REPLACE INTO secure_patients (${cols.joinToString(",")}) VALUES (${cols.map { "?" }.joinToString(",")})"
+          val args = Array<Any?>(cols.size) { i ->
+            when (cursor.getType(i)) {
+              android.database.Cursor.FIELD_TYPE_NULL -> null
+              android.database.Cursor.FIELD_TYPE_INTEGER -> cursor.getLong(i)
+              android.database.Cursor.FIELD_TYPE_FLOAT -> cursor.getDouble(i)
+              android.database.Cursor.FIELD_TYPE_STRING -> cursor.getString(i)
+              android.database.Cursor.FIELD_TYPE_BLOB -> cursor.getBlob(i)
+              else -> cursor.getString(i)
+            }
+          }
+          sqlcipherDb.execSQL(sql, args)
+        }
+      }
+
+      // Di chuyển secure_cases
+      standardPlainDb.rawQuery("SELECT * FROM secure_cases", null).use { cursor ->
+        val cols = cursor.columnNames
+        while (cursor.moveToNext()) {
+          val sql = "INSERT OR REPLACE INTO secure_cases (${cols.joinToString(",")}) VALUES (${cols.map { "?" }.joinToString(",")})"
+          val args = Array<Any?>(cols.size) { i ->
+            when (cursor.getType(i)) {
+              android.database.Cursor.FIELD_TYPE_NULL -> null
+              android.database.Cursor.FIELD_TYPE_INTEGER -> cursor.getLong(i)
+              android.database.Cursor.FIELD_TYPE_FLOAT -> cursor.getDouble(i)
+              android.database.Cursor.FIELD_TYPE_STRING -> cursor.getString(i)
+              android.database.Cursor.FIELD_TYPE_BLOB -> cursor.getBlob(i)
+              else -> cursor.getString(i)
+            }
+          }
+          sqlcipherDb.execSQL(sql, args)
+        }
+      }
+
+      // Di chuyển secure_predictions
+      try {
+        standardPlainDb.rawQuery("SELECT * FROM secure_predictions", null).use { cursor ->
+          val cols = cursor.columnNames
+          while (cursor.moveToNext()) {
+            val sql = "INSERT OR REPLACE INTO secure_predictions (${cols.joinToString(",")}) VALUES (${cols.map { "?" }.joinToString(",")})"
+            val args = Array<Any?>(cols.size) { i ->
+              when (cursor.getType(i)) {
+                android.database.Cursor.FIELD_TYPE_NULL -> null
+                android.database.Cursor.FIELD_TYPE_INTEGER -> cursor.getLong(i)
+                android.database.Cursor.FIELD_TYPE_FLOAT -> cursor.getDouble(i)
+                android.database.Cursor.FIELD_TYPE_STRING -> cursor.getString(i)
+                android.database.Cursor.FIELD_TYPE_BLOB -> cursor.getBlob(i)
+                else -> cursor.getString(i)
+              }
+            }
+            sqlcipherDb.execSQL(sql, args)
+          }
+        }
+      } catch (e: Exception) {
+        // Bỏ qua nếu bảng predictions chưa có trong db cũ
+      }
+
+      // Di chuyển secure_metadata
+      try {
+        standardPlainDb.rawQuery("SELECT * FROM secure_metadata", null).use { cursor ->
+          val cols = cursor.columnNames
+          while (cursor.moveToNext()) {
+            val sql = "INSERT OR REPLACE INTO secure_metadata (${cols.joinToString(",")}) VALUES (${cols.map { "?" }.joinToString(",")})"
+            val args = Array<Any?>(cols.size) { i ->
+              when (cursor.getType(i)) {
+                android.database.Cursor.FIELD_TYPE_NULL -> null
+                android.database.Cursor.FIELD_TYPE_INTEGER -> cursor.getLong(i)
+                android.database.Cursor.FIELD_TYPE_FLOAT -> cursor.getDouble(i)
+                android.database.Cursor.FIELD_TYPE_STRING -> cursor.getString(i)
+                android.database.Cursor.FIELD_TYPE_BLOB -> cursor.getBlob(i)
+                else -> cursor.getString(i)
+              }
+            }
+            sqlcipherDb.execSQL(sql, args)
+          }
+        }
+      } catch (e: Exception) {
+        // Bỏ qua nếu metadata chưa có
+      }
+
+      // Ghi nhận trạng thái hoàn tất SQLCipher migration vào metadata
+      val nowIso = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+        timeZone = java.util.TimeZone.getTimeZone("UTC")
+      }.format(java.util.Date())
+      sqlcipherDb.execSQL("INSERT OR REPLACE INTO secure_metadata (meta_key, meta_value, updated_at) VALUES (?, ?, ?)",
+        arrayOf("sqlcipher_file_encryption_status", "ACTIVE_FULL_ENCRYPTED", nowIso))
+
+      sqlcipherDb.setTransactionSuccessful()
+    } finally {
+      sqlcipherDb.endTransaction()
+      sqlcipherDb.close()
+      standardPlainDb.close()
+    }
+
+    // Bảo tồn bản sao lưu an toàn của file cũ trước khi đổi tên
+    val backupPlainFile = File(plainDbFile.parentFile, plainDbFile.name + ".plaintext.bak")
+    if (!backupPlainFile.exists()) {
+      plainDbFile.copyTo(backupPlainFile, overwrite = true)
+    }
+
+    // Bảo vệ bản sao lưu: Tự động mã hóa tệp sao lưu thành .encrypted.bak bằng Keystore Master Key (AES-256-GCM)
+    // Giữ nguyên bản sao lưu gốc backupPlainFile (.plaintext.bak), KHÔNG xóa hoặc ghi đè
+    try {
+      val backupEncFile = File(plainDbFile.parentFile, plainDbFile.name + ".encrypted.bak")
+      if (!backupEncFile.exists() && backupPlainFile.exists()) {
+        val masterKey = getOrCreateKeystoreKeyForEncryption(currentDbOwnerId ?: "system_migration")
+        val rawPlainBytes = backupPlainFile.readBytes()
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, masterKey)
+        val iv = cipher.iv
+        val encryptedBytes = cipher.doFinal(rawPlainBytes)
+
+        java.io.FileOutputStream(backupEncFile).use { fos ->
+          // Ghi header 4 bytes magic LCBK (LungCT Backup) + 1 byte IV length + IV + Ciphertext
+          fos.write("LCBK".toByteArray(Charsets.US_ASCII))
+          fos.write(iv.size)
+          fos.write(iv)
+          fos.write(encryptedBytes)
+        }
+      }
+    } catch (e: Exception) {
+      android.util.Log.w("NativeCryptoVault", "Không thể sinh bản sao lưu mã hóa: ${e.message}")
+    }
+  }
+
+  @Synchronized
+  private fun getOrOpenSqlite(ownerId: String): SQLiteDatabase {
+    if (sqliteDb != null && sqliteDb!!.isOpen && currentDbOwnerId == ownerId) {
+      return sqliteDb!!
+    }
+
+    sqliteDb?.close()
+    val cleanOwnerId = ownerId.replace("[^a-zA-Z0-9_]".toRegex(), "_")
+    val dbFile = reactContext.getDatabasePath("lungct_secure_${cleanOwnerId}.db")
+    dbFile.parentFile?.mkdirs()
+
+    val passphrase = getOrCreateSqlcipherPassphrase(ownerId)
+
+    // Kiểm tra migration nếu file hiện tại là plaintext SQLite
+    if (dbFile.exists() && isDatabasePlaintext(dbFile)) {
+      val tempEncFile = File(dbFile.parentFile, "lungct_secure_${cleanOwnerId}_encrypted.db")
+      migratePlaintextDbToSqlcipher(dbFile, tempEncFile, passphrase)
+      // Thay thế file cũ bằng file đã mã hóa toàn bộ trang
+      if (tempEncFile.exists()) {
+        dbFile.delete()
+        tempEncFile.renameTo(dbFile)
+      }
+    }
+
+    val db = SQLiteDatabase.openOrCreateDatabase(dbFile.absolutePath, passphrase, null, null, null)
+    createDatabaseTables(db)
 
     sqliteDb = db
     currentDbOwnerId = ownerId
@@ -372,10 +583,11 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
         putBoolean("success", true)
         putString("ownerId", ownerId)
         putString("databasePath", reactContext.getDatabasePath("lungct_secure_${ownerId.replace("[^a-zA-Z0-9_]".toRegex(), "_")}.db").absolutePath)
+        putString("encryptionEngine", "SQLCipher-4.6.1-FullPageEncryption")
       }
       promise.resolve(map)
     } catch (e: Exception) {
-      promise.reject("DB_OPEN_ERROR", "Lỗi mở cơ sở dữ liệu SQLite bảo mật: ${e.message}", e)
+      promise.reject("DB_OPEN_ERROR", "Lỗi mở cơ sở dữ liệu SQLCipher bảo mật: ${e.message}", e)
     }
   }
 
@@ -384,14 +596,14 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
     try {
       val db = getOrOpenSqlite(ownerId)
       if (args != null && args.size() > 0) {
-        val bindArgs = Array<Any>(args.size()) { i ->
+        val bindArgs = Array<Any?>(args.size()) { i ->
           when (args.getType(i)) {
             com.facebook.react.bridge.ReadableType.String -> args.getString(i)
             com.facebook.react.bridge.ReadableType.Number -> args.getDouble(i)
             com.facebook.react.bridge.ReadableType.Boolean -> if (args.getBoolean(i)) 1 else 0
-            com.facebook.react.bridge.ReadableType.Null -> null as Any?
+            com.facebook.react.bridge.ReadableType.Null -> null
             else -> args.getString(i)
-          } ?: ""
+          }
         }
         db.execSQL(sql, bindArgs)
       } else {
@@ -450,4 +662,3 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
     }
   }
 }
-

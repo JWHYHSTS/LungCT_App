@@ -25,3 +25,9 @@
 
 # Native Module
 -keep class com.anonymous.mobile.LungCtPipelineModule { *; }
+-keep class com.anonymous.mobile.NativeCryptoVaultModule { *; }
+
+# SQLCipher keep rules
+-keep class net.zetetic.database.sqlcipher.** { *; }
+-keep interface net.zetetic.database.sqlcipher.** { *; }
+-keepclassmembers class net.zetetic.database.sqlcipher.** { *; }

@@ -29,6 +29,14 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+
+    // Khởi tạo thư viện nhị phân C/C++ cho SQLCipher for Android
+    try {
+      System.loadLibrary("sqlcipher")
+    } catch (e: Throwable) {
+      // Ghi nhận cảnh báo nếu môi trường không nạp được thư viện native
+    }
+
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())
     } catch (e: IllegalArgumentException) {

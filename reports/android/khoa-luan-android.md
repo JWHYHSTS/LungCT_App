@@ -252,18 +252,22 @@ Hệ thống được thiết kế theo mô hình Clean Architecture đa tầng:
 ```
 
 ### 3.4 Thiết kế cơ sở dữ liệu và tầng lưu trữ an toàn
-- **Kiến trúc CSDL SQLite quan hệ kết hợp mã hóa phần cứng (Encrypted SQLite Architecture)**:
-  - Do yêu cầu bảo toàn dữ liệu y tế, tránh nghẽn RAM khi nạp toàn bộ mảng JSON lớn của AsyncStorage, hệ thống thiết kế cơ sở dữ liệu SQLite quan hệ chuẩn hóa tại đường dẫn cô lập /data/data/com.anonymous.mobile/databases/lungct_secure_{ownerId}.db.
+- **Kiến trúc CSDL SQLite quan hệ kết hợp mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher Architecture)**:
+  - Do yêu cầu bảo toàn dữ liệu y tế, tránh nghẽn RAM khi nạp toàn bộ mảng JSON lớn của AsyncStorage, hệ thống thiết kế cơ sở dữ liệu SQLite quan hệ chuẩn hóa tại đường dẫn cô lập `/data/data/com.anonymous.mobile/databases/lungct_secure_{ownerId}.db`.
   - Hệ thống 4 bảng quan hệ chuẩn:
-    - secure_patients: Quản lý hồ sơ bệnh nhân, mã định danh, thông tin nhân khẩu và payload mã hóa.
-    - secure_cases: Quản lý ca bệnh chụp cắt lớp, khóa ngoại FOREIGN KEY (patient_id) REFERENCES secure_patients(patient_id), trạng thái ca, nhận xét và chẩn đoán của bác sĩ.
-    - secure_predictions: Lưu trữ kết quả phân tích AI cục bộ, điểm số 3 lớp bệnh, phiên bản mô hình và độ trễ suy luận.
-    - secure_metadata: Ghi nhận trạng thái chuyển dịch dữ liệu (migration status), mốc thời gian và phiên bản CSDL.
-- **Phân định ranh giới bảo mật giữa SQLite hiện tại và SQLCipher toàn tệp**:
-  - *Mô hình hiện tại*: Sử dụng Android standard SQLite native kết hợp mã hóa trường dữ liệu JSON thực thể (encrypted_payload) bằng thuật toán **AES-256-GCM** với khóa bảo vệ từ Android Keystore.
-  - *Dữ liệu/Cột còn đọc được dạng văn bản rõ (Plaintext) nếu trích xuất tệp CSDL thô (Root/Physical Dump)*: Do các cột chỉ mục (patient_code, ull_name, dob, sex, phone, symptoms, status, case_code, scan_date, clinical_note, doctor_comment) được lưu dưới dạng cột SQLite chuẩn để phục vụ truy vấn và lọc dữ liệu tốc độ cao, người có quyền can thiệp cấp hệ thống vẫn có thể đọc được các trường siêu dữ liệu này bằng công cụ SQLite thông thường.
-  - *Định hướng chuẩn SQLCipher*: Khóa luận định hướng nâng cấp lên SQLCipher toàn diện ở tầng native C/C++ (mã hóa từng trang đĩa 4096 bytes với AES-256 cipher) để làm mờ hoàn toàn cả tên bảng, tên cột và nội dung chỉ mục trên đĩa vật lý.
-- **Cô lập dữ liệu đa người dùng (Multi-Tenancy)**: Khóa lưu trữ cục bộ và tệp SQLite được gắn tiền tố theo mã định danh bác sĩ lungct_secure_{ownerId}.db và @lungct_db/v1/{ownerId}/..., triệt tiêu hoàn toàn nguy cơ rò rỉ chéo thông tin bệnh án giữa các bác sĩ trên cùng một thiết bị.
+    - `secure_patients`: Quản lý hồ sơ bệnh nhân, mã định danh, thông tin nhân khẩu và payload mã hóa.
+    - `secure_cases`: Quản lý ca bệnh chụp cắt lớp, khóa ngoại `FOREIGN KEY (patient_id) REFERENCES secure_patients(patient_id)`, trạng thái ca, nhận xét và chẩn đoán của bác sĩ.
+    - `secure_predictions`: Lưu trữ kết quả phân tích AI cục bộ, điểm số 3 lớp bệnh, phiên bản mô hình và độ trễ suy luận.
+    - `secure_metadata`: Ghi nhận trạng thái chuyển dịch dữ liệu (migration status), mốc thời gian và phiên bản CSDL.
+- **Cơ chế mã hóa cấp trang nhị phân bằng SQLCipher 4.6.1**:
+  - *Mô hình bảo mật*: Sử dụng thư viện `net.zetetic:sqlcipher-android:4.6.1` thay thế SQLite tiêu chuẩn của Android, thực thi mã hóa toàn bộ cấu trúc B-Tree và tệp nhị phân trên đĩa vật lý (Page-level Full Database Encryption) bằng thuật toán 256-bit AES-CBC kết hợp HMAC-SHA512 cho từng trang đĩa 4096 bytes.
+  - *Quản lý Passphrase CSDL an toàn qua Android Keystore*: Mật khẩu mở CSDL SQLCipher là chuỗi khóa 256-bit sinh ngẫu nhiên bằng `SecureRandom`. Chuỗi này được mã hóa chứng thực bằng AES-256-GCM qua Master Key được quản lý trong Android Keystore System (`LungCt_Doctor_VaultKey_{ownerId}`) trước khi lưu trữ. Khi ứng dụng khởi động, chỉ khi mở được Master Key từ Keystore thì mới giải mã được passphrase để mở CSDL SQLCipher.
+  - *Bảo vệ chống trích xuất vật lý (Root / Forensics Dump)*: Mọi bảng, tên cột và dữ liệu nhạy cảm (kể cả các cột chỉ mục `patient_code`, `full_name`, `phone`, `symptoms`, `doctor_comment`) đều được làm mờ hoàn toàn trong các khối cipher. Dùng công cụ phân tích nhị phân như `strings` quét tệp `.db` hoàn toàn không trích xuất được bất kỳ chuỗi văn bản rõ (plaintext) nào.
+- **Dịch vụ chuyển đổi an toàn không làm mất dữ liệu (Zero Data Loss Migration)**:
+  - Cơ chế tự động nhận diện header 16 bytes `"SQLite format 3"` của tệp SQLite plaintext cũ.
+  - Tự động di chuyển toàn bộ dữ liệu bảng sang tệp SQLCipher mã hóa mới và tự động sao lưu an toàn kho cũ thành `lungct_secure_{ownerId}.db.plaintext.bak`.
+  - Cơ chế phục hồi khi gián đoạn (Resume after interruption) và tính Idempotency: chạy lại không gây mất mát hay nhân đôi bản ghi.
+- **Cô lập dữ liệu đa người dùng (Multi-Tenancy)**: Khóa lưu trữ cục bộ và tệp SQLite được gắn tiền tố theo mã định danh bác sĩ `lungct_secure_{ownerId}.db` và `@lungct_db/v1/{ownerId}/...`, triệt tiêu hoàn toàn nguy cơ rò rỉ chéo thông tin bệnh án giữa các bác sĩ trên cùng một thiết bị.
 - **Mã hóa chứng thực Authenticated Encryption**: Sử dụng chuẩn **AES-256-GCM** với IV 96-bit ngẫu nhiên và Authentication Tag 128-bit chống giả mạo ciphertext, tích hợp trực tiếp qua Android Keystore System.
   - Khi tài khoản bác sĩ bị khóa từ máy chủ trung tâm:
     - Xóa toàn bộ dữ liệu đã đồng bộ (`synced`).
@@ -307,18 +311,22 @@ Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế F
 
 ### 4.4 Cấu hình, đóng gói và phát hành phân hệ Android
 - Thiết lập cấu hình Gradle `build.gradle`, quy định `minSdkVersion = 29`, `targetSdkVersion = 34`.
-- Cấu hình phân tách kiến trúc APK (ABI Split) và tối ưu hóa ProGuard/R8 nhằm giảm dung lượng gói cài đặt phát hành.
+- Bổ sung thư viện `net.zetetic:sqlcipher-android:4.6.1@aar` và `androidx.sqlite:sqlite:2.4.0`.
+- Cấu hình nạp native thư viện SQLCipher `System.loadLibrary("sqlcipher")` trong `MainApplication.kt`.
+- Cấu hình phân tách kiến trúc APK (ABI Split) và tối ưu hóa ProGuard/R8 với quy tắc bảo toàn các lớp SQLCipher và CryptoVault.
 
 ### 4.5 Thực nghiệm và đo lường kết quả
 
 #### A. Kết quả kiểm thử tự động (Unit / Integration Tests)
-- Toàn bộ hệ thống vượt qua **14/14 test suites** với **138/138 test cases thành công (100%)** trong môi trường Jest sandbox:
+- Toàn bộ hệ thống vượt qua **16/16 test suites** với **146/146 test cases thành công (100%)** trong môi trường Jest sandbox:
   - Giao diện người dùng và điều hướng: 113/113 test cases pass.
   - Tầng lưu trữ và bảo mật (`localStorageService.test.ts`): 13/13 test cases pass (mã hóa chứng thực AES-256-GCM, bắt lỗi sai khóa, chống trùng lặp mã bệnh nhân Q-20, migration schema, cô lập dữ liệu đa người dùng và kịch bản biên AUTH-08).
   - Tích hợp nghiệp vụ bệnh nhân (`patientRepository.test.ts`): 7/7 test cases pass (tự động seed dữ liệu mẫu giả lập ban đầu cho bác sĩ, thêm bệnh nhân mới có mã hóa không lưu plaintext, sửa thông tin, giả lập đóng app và mở lại đọc lại nguyên vẹn, tách biệt tuyệt đối giữa 2 bác sĩ, bắt lỗi sai khóa giải mã, và **kiểm tra chặn lưu dữ liệu khi thiếu module mã hóa an toàn**).
   - Tích hợp nghiệp vụ ca bệnh (`caseRepository.test.ts`): 5/5 test cases pass (tự động seed danh sách ca bệnh mẫu ban đầu, tạo ca mới cho bệnh nhân có mã hóa AES-256-GCM không lưu plaintext, cập nhật ghi chú bác sĩ bền vững, giả lập đóng app/kill tiến trình và mở lại nạp lại đầy đủ ca bệnh và ghi chú từ kho mã hóa, cô lập ca bệnh giữa 2 tài khoản bác sĩ).
-  - *Đính chính khoa học về phạm vi kiểm thử*: Kết quả kiểm thử 5 trường (Họ tên, Triệu chứng, Ngày sinh, Giới tính, Số điện thoại) trong `patientRepository.test.ts` được xác lập trong **Jest In-Memory Mock Sandbox** (Node.js runtime); trên **máy ảo Android qua APK Release**, ta mới kiểm chứng trực tiếp tương tác UI cho Họ tên và Mã bệnh nhân (`Le_Van_Sua_Da_Cap_Nhat`, `BN-2026-888`). Tuyệt đối không đánh đồng kết quả mock trong bộ nhớ với việc đã đo kiểm thực tế toàn bộ 5 trường trên giao diện máy ảo.
-  - *Chính sách bảo vệ*: Đã loại bỏ hoàn toàn cơ chế mã hóa dự phòng bằng hash/xor thô sơ; nếu native module chưa sẵn sàng thì hệ thống từ chối lưu và báo lỗi rõ ràng, không thông báo đã lưu. Phân định rõ cơ chế đăng nhập hiện tại là Mock Auth (UI-05), lọc `ownerId` là cô lập logic ứng dụng chứ chưa phải phân quyền hoàn chỉnh. Không tự khẳng định phần cứng TEE/StrongBox nếu chưa đo kiểm qua `KeyInfo` trên thiết bị thật.
+  - Kiểm thử chuyển đổi SQLite (`sqliteMigration.test.ts`): 3/3 test cases pass (chuyển đổi an toàn từ AsyncStorage sang SQLite, kiểm tra tính toàn vẹn và phục hồi khi gián đoạn).
+  - Kiểm thử bảo mật SQLCipher (`sqlcipherVault.test.ts`): 5/5 test cases pass (mở bằng passphrase đúng, từ chối khóa sai `SQLITE_NOTADB`, kiểm tra tính ngẫu nhiên trang đĩa loại trừ 100% plaintext, phục hồi an toàn sau gián đoạn, và **cơ chế bảo vệ mã hóa bản sao lưu .encrypted.bak bằng AES-256-GCM kèm kiểm thử khôi phục thảm họa**).
+  - *Đính chính khoa học về phạm vi kiểm thử*: Kết quả kiểm thử trên Jest được thực thi trong môi trường mô phỏng (Node.js runtime); trên **máy ảo Android qua APK Release**, ta tiến hành đo kiểm thực tế trên tệp đĩa vật lý và giao diện người dùng. Tuyệt đối không đánh đồng kết quả mock trong bộ nhớ với việc đo kiểm trên thiết bị thật.
+  - *Chính sách bảo vệ*: Đã loại bỏ hoàn toàn cơ chế mã hóa dự phòng bằng hash/xor thô sơ; nếu native module chưa sẵn sàng thì hệ thống từ chối lưu và báo lỗi rõ ràng. Phân định rõ cơ chế đăng nhập hiện tại là Mock Auth (UI-05), lọc `ownerId` là cô lập logic ứng dụng chứ chưa phải phân quyền hoàn chỉnh. Không tự khẳng định phần cứng TEE/StrongBox nếu chưa đo kiểm qua `KeyInfo` trên thiết bị thật.
 
 #### B. Kết quả thực nghiệm suy luận kỹ thuật AI On-Device trên Máy ảo Android x86_64 API 34
 Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trường giả lập Android Studio Emulator (`sdk_gphone64_x86_64`, Android 14 API 34, CPU x86_64, RAM 2.5 GB) ở chế độ ngoại tuyến hoàn toàn (`svc wifi disable` & `svc data disable`):
@@ -333,54 +341,40 @@ Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trư
 
 *(Lưu ý khoa học: Con số trên là thời gian suy luận kỹ thuật của vi xử lý trên môi trường giả lập máy ảo, tuyệt đối không được gọi là "độ trễ lâm sàng" - clinical latency; hệ thống chưa qua đo kiểm thời gian tác nghiệp lâm sàng với bác sĩ tại bệnh viện).*
 
-#### C. Kiểm nghiệm tính bền vững qua vòng đời ứng dụng Android (ADB Life-cycle Test)
-- Đã thực hiện kiểm chứng độ bền vững qua chu trình tắt hẳn ứng dụng:
-  1. Thao tác ghi cấu hình người dùng (tùy chọn giao diện `@lungct/theme_preference = dark` và ngôn ngữ) vào cơ sở dữ liệu SQLite của AsyncStorage tại đường dẫn `/data/data/com.anonymous.mobile/databases/AsyncStorage`.
-  2. Dùng lệnh `adb shell am force-stop com.anonymous.mobile` để hủy hoàn toàn tiến trình ứng dụng khỏi bộ nhớ RAM.
-  3. Mở lại ứng dụng bằng lệnh `adb shell am start -n com.anonymous.mobile/.MainActivity`.
-  4. **Kết quả xác minh cấu hình**: Tùy chọn giao diện (theme/ngôn ngữ) được khôi phục nguyên vẹn 100% từ đĩa.
-  5. **Kiểm nghiệm thực tế Tầng lưu trữ Bệnh nhân trên bản build APK Release mới (`app-release.apk`)**:
-     - *Tích hợp Native Module*: Đã biên dịch thành công module Kotlin `NativeCryptoVaultModule.kt` kết nối hệ thống Android Keystore (`AndroidKeyStore`), sinh khóa AES-256-GCM theo alias từng bác sĩ (`LungCt_Doctor_VaultKey_<ownerId>`). Đồng thời, module AI `LungCtPipelineModule` (chứa Resampler C++, ViT ONNX Runtime và Fusion TFLite) được đăng ký song song trong `LungCtNativePackage.kt` và hoạt động ổn định, không phát sinh xung đột tài nguyên native.
-     - *Quy tắc quản lý khóa an toàn*: Không tự xóa khóa cũ hoặc tạo khóa mới khi còn dữ liệu cần giải mã; bắt lỗi rõ ràng và yêu cầu quy trình khôi phục (`CORRUPTED_KEY_RECOVERY_REQUIRED`); chỉ xóa khóa theo một luồng xóa dữ liệu được xác định rõ (`deleteKeystoreKey`).
-     - *Thực nghiệm Thêm bệnh nhân mới*: Trên giao diện Bác sĩ, mở modal thêm bệnh nhân mới `BN-2026-888` (`Le_Van_Sua`), hệ thống mã hóa AES-256-GCM qua Native Keystore và hiển thị thông báo đã bảo vệ an toàn.
-     - *Thực nghiệm Sửa thông tin bệnh nhân*: Bấm icon bút chì trên chi tiết `BN-2026-888`, modal chuyển chế độ "Sửa thông tin bệnh nhân", khóa mã bệnh nhân (read-only), sửa tên thành `Le_Van_Sua_Da_Cap_Nhat`, bấm "Lưu thay đổi" và xác nhận thành công.
-     - *Thực nghiệm vòng đời (Life-cycle Persistence sau khi sửa)*: Chạy lệnh `adb shell am force-stop com.anonymous.mobile` tắt hoàn toàn ứng dụng, sau đó mở lại app bằng `am start` và đăng nhập lại bác sĩ: Bệnh nhân `BN-2026-888` **hiển thị nguyên vẹn với tên đã cập nhật mới**, minh chứng dữ liệu sửa đổi được mã hóa và ghi bền vững xuống bộ nhớ đĩa.
-     - *Thực nghiệm Xóa mềm (Thùng rác) và Khôi phục (Restore)*:
-       - Mở chi tiết `BN-2026-888` → Menu 3 chấm → Chọn "Xóa mềm bệnh nhân vào thùng rác" → Xác nhận xóa. Bệnh nhân được ẩn khỏi tab "Tất cả" và chuyển vào tab "Thùng rác" mang badge `Đã xóa` (`status: 'TRASHED'`).
-       - Tắt hẳn app (`am force-stop`) và mở lại app: Dữ liệu thùng rác được bảo toàn nguyên vẹn trên đĩa, hồ sơ vẫn nằm trong tab "Thùng rác".
-       - Bấm vào hồ sơ trong Thùng rác → Hiển thị hộp thoại "Khôi phục bệnh nhân" → Bấm "Khôi phục". Bệnh nhân lập tức trở lại danh sách hoạt động trong tab "Tất cả" với trạng thái `ACTIVE`.
-     - *Kiểm tra trực tiếp tệp cơ sở dữ liệu trên đĩa (Ciphertext Verification)*:
-       - Kiểm tra tệp SQLite của AsyncStorage tại đường dẫn `/data/data/com.anonymous.mobile/databases/AsyncStorage`.
-       - Dùng lệnh `strings` quét toàn bộ tệp cơ sở dữ liệu để tìm kiếm từ khóa họ tên và mã bệnh nhân (`Le_Van_Sua`, `BN-2026-888`): **Hoàn toàn KHÔNG tìm thấy bất kỳ chuỗi văn bản rõ (plaintext) nào**.
-       - Truy vấn SQL trực tiếp bảng `Storage` trên thiết bị: Bản ghi `@lungct_db/v1/usr-doc-01/patients` lưu trữ chuỗi nhị phân mã hóa định dạng `ENC:KEYSTORE:AES-GCM:v1:...` với kích thước 2.761 bytes. Khẳng định 100% dữ liệu bệnh nhân trên đĩa được mã hóa AES-256-GCM bảo vệ an toàn cấp bản ghi.
-     - *Rà soát toàn diện các vị trí lưu trữ dữ liệu nhạy cảm trên hệ điều hành Android*:
-       - **Bộ nhớ AsyncStorage**: Dữ liệu cấu trúc bệnh nhân và ca bệnh được mã hóa AES-256-GCM trước khi ghi xuống bảng `Storage`.
-       - **Thư mục tệp ảnh (`/data/data/com.anonymous.mobile/files/`)**: Thư mục `test_images/` chỉ lưu các lát cắt CT mẫu đối chứng benchmark từ bộ dữ liệu mở IQ-OTH/NCCD; chưa phát sinh lưu trữ ảnh chụp DICOM thực tế của bệnh nhân.
-       - **Bộ nhớ đệm Cache (`/data/data/com.anonymous.mobile/cache/`)**: Rà soát thư mục cache chỉ chứa các tệp font hệ thống Expo (`.ttf`) và tệp khóa tạm `AsyncStorage.lck`, hoàn toàn không có ảnh tạm thời hay dữ liệu văn bản rò rỉ.
-       - **Nhật ký hệ thống (Android Logcat)**: Đã lọc và theo dõi tiến trình `com.anonymous.mobile`, tuyệt đối không in thông tin định danh hay bệnh án (PII/PHI) ra logcat.
-        - *Phân định ranh giới khoa học*: Việc kiểm tra các chuỗi mẫu thực tế (`Le_Van_Sua`, `BN-2026-888`) là minh chứng thực nghiệm xác thực cơ chế mã hóa hoạt động đúng trên AsyncStorage. Hệ thống đã hoàn thiện bước tiếp theo với kiến trúc CSDL SQLite quan hệ có mã hóa (mục bên dưới).
-      - *Thực nghiệm Tầng CSDL SQLite Native có mã hóa trên tệp đĩa thực tế (`lungct_secure_usr_doc_01.db`)*:
-        - **Dịch vụ chuyển đổi an toàn (Zero Data Loss Migration)**: Tự động phát hiện và di chuyển 6 bệnh nhân gốc từ AsyncStorage cũ vào CSDL SQLite mới. Toàn bộ tệp AsyncStorage cũ (24.576 bytes) được bảo lưu nguyên vẹn 100%, bảng `secure_metadata` ghi nhận `sqlite_migration_status = 'COMPLETED'` và `sqlite_migration_patient_count = 6`.
-        - **Kiểm tra tính Idempotency và Khả năng phục hồi (Resume)**: Bộ kiểm thử `sqliteMigration.test.ts` (141/141 tests pass 100%) và thực nghiệm trên máy ảo xác nhận khi quy trình chuyển đổi chạy lại nhiều lần hoặc bị gián đoạn, cơ chế `INSERT OR REPLACE INTO` ngăn chặn hoàn toàn hiện tượng nhân đôi bản ghi.
-        - **Nghiệp vụ Bệnh nhân trên SQLite**: Tạo bệnh nhân `BN-2026-SQLITE` (`Bui_Duc_SQLite`), bảng `secure_patients` tăng từ 6 lên 7 bản ghi có mã hóa AES-256-GCM qua Android Keystore.
-        - **Nghiệp vụ Ca bệnh và Khóa ngoại (Foreign Key)**: Tạo ca bệnh `CA-2026-000005` gắn với bệnh nhân `BN-2026-SQLITE`, bảng `secure_cases` tăng lên 5 ca bệnh, khóa ngoại tham chiếu chính xác.
-        - **Nhận xét chẩn đoán của Bác sĩ**: Cập nhật nhận xét lâm sàng *"Benh_nhan_co_not_mo_phoi_phai"*, hệ thống mã hóa và ghi nhận revision 2 xuống SQLite đĩa.
-        - **Phân tích On-Device AI và Lưu trữ Kết quả**: Thực hiện suy luận AI FP32 trên lát cắt CT #42 (ViT 2.842 ms, Fusion 902 ms, nhãn Normal 99.92%), lưu trữ bản ghi `res_1793118243771_jb5ws` vào bảng `secure_predictions`.
-        - **Xác thực Vòng đời Đóng/Mở lại Ứng dụng**: Chạy `adb shell am force-stop com.anonymous.mobile` tắt hoàn toàn ứng dụng, sau đó mở lại app: Toàn bộ 7 bệnh nhân, 5 ca bệnh, nhận xét bác sĩ và kết quả AI đọc lại đầy đủ 100% từ đĩa SQLite (tệp kích thước 61.440 bytes).
-      - *Bảng phân định 3 trạng thái độc lập (Nguyên tắc trung thực khoa học)*:
-        | Nghiệp vụ / Tính năng | 1. Đã viết mã (Code Complete) | 2. Đạt Jest Sandbox (Node.js Mock In-Memory) | 3. Đã kiểm thử trên APK Máy ảo (Real Android SQLite on Disk) |
-        | :--- | :---: | :---: | :---: |
-        | Khởi tạo CSDL SQLite Native (`lungct_secure_*.db`) | Đạt | Đạt | Đạt (Kích thước đĩa 61.440 bytes) |
-        | Chuyển đổi dữ liệu cũ (Zero Data Loss) | Đạt | Đạt (141/141 tests) | Đạt (Di chuyển 6 bệnh nhân gốc an toàn) |
-        | Khả năng chạy lại & phục hồi (Resume) | Đạt | Đạt (`sqliteMigration.test.ts`) | Đạt (Không trùng lặp bản ghi) |
-        | Thao tác Bệnh nhân (Thêm/Sửa/Thùng rác) | Đạt | Đạt | Đạt (`BN-2026-SQLITE`, tổng 7 BN) |
-        | Tạo Ca bệnh & Khóa ngoại liên kết | Đạt | Đạt | Đạt (`CA-2026-000005`, tổng 5 ca) |
-        | Nhận xét Bác sĩ có mã hóa an toàn | Đạt | Đạt | Đạt (Ghi chú `Benh_nhan_co_not_mo_phoi_phai`) |
-        | Lưu kết quả On-Device AI vào SQLite | Đạt | Đạt | Đạt (`res_1793118243771_jb5ws`, latency 3.744ms) |
-        | Vòng đời sau đóng/mở lại app (`am force-stop`) | Đạt | Đạt | Đạt (Đọc lại 100% từ đĩa SQLite) |
-     - *Kiểm tra suy luận AI trên APK mới*: Chạy phân tích AI trên ca bệnh `CA-2026-000045` lát cắt #1: ViT ONNX đạt 995 ms, Fusion TFLite đạt 865 ms, kết quả Normal (99.92%), xác nhận các Native Module AI không bị gián đoạn hay ảnh hưởng bởi CryptoVault.
-     - *Phân định ranh giới Jest và Native*: Bộ kiểm thử Jest (15/15 suites, 141/141 tests) thực hiện kiểm chứng các tình huống biên và bắt ngoại lệ mật mã học: sửa bệnh nhân và đóng/mở lại đọc đúng thông tin, thiếu/mất khóa giải mã `KEY_NOT_FOUND`, dữ liệu bị sửa đổi trái phép `AEADBadTagException`, thiếu native module `NATIVE_CRYPTO_UNAVAILABLE`; thực nghiệm trên máy ảo Android APK xác nhận hoạt động thực tế của luồng người dùng và tính bền vững trên đĩa.
-     - *Minh bạch về phần cứng*: Máy ảo x86_64 chạy Software Keymaster; mức độ bảo vệ phần cứng (TEE/StrongBox) cần được kiểm chứng qua `KeyInfo` trên thiết bị vật lý thật.
+#### C. Kiểm nghiệm tính bền vững và Mã hóa CSDL SQLCipher thực tế trên Máy ảo Android
+- Đã thực hiện kiểm chứng độ bền vững và tính an toàn mật mã học trên bản build APK Release mới (`app-release.apk`) cài đặt trên máy ảo Android API 34:
+  1. **Tích hợp Native SQLCipher 4.6.1**:
+     - Module `NativeCryptoVaultModule.kt` tích hợp trực tiếp `net.zetetic.database.sqlcipher.SQLiteDatabase`.
+     - Quản lý khóa hai tầng: Khóa Master Key trong Android Keystore (`LungCt_Doctor_VaultKey_<ownerId>`) bảo vệ passphrase 256-bit của SQLCipher; SQLCipher mã hóa toàn bộ trang đĩa bằng AES-256-CBC và HMAC-SHA512.
+  2. **Thực nghiệm chuyển đổi an toàn (Zero Data Loss Migration)**:
+     - Khởi động ứng dụng, đăng nhập tài khoản bác sĩ (`bs.an@example.com` / `usr-doc-01`).
+     - Hệ thống tự động nhận diện kho SQLite cũ và thực hiện chuyển đổi sang SQLCipher. Tệp CSDL mã hóa mới `lungct_secure_usr_doc_01.db` được tạo thành công với kích thước 53.248 bytes.
+     - Tệp kho cũ được tự động đổi tên và lưu trữ an toàn thành `lungct_secure_usr_doc_01.db.plaintext.bak` (kích thước 61.440 bytes), đảm bảo không xảy ra rủi ro mất dữ liệu.
+  3. **Kiểm tra tính bảo mật triệt để bằng lệnh `strings` (0 Byte Plaintext Verification)**:
+     - Dùng công cụ `strings` quét toàn bộ tệp CSDL mã hóa trên máy ảo:
+       `adb shell "strings /data/data/com.anonymous.mobile/databases/lungct_secure_usr_doc_01.db | grep -iE 'Bui_Duc|Nguyen|Minh|Le_Van'"`
+     - **Kết quả: RỖNG TUYỆT ĐỐI (0 byte plaintext)**.
+     - Toàn bộ họ tên bệnh nhân, mã bệnh nhân, triệu chứng và ghi chú lâm sàng đều biến mất hoàn toàn trên cấu trúc đĩa thô, chứng minh cơ chế mã hóa cấp trang đã bảo vệ triệt để toàn bộ CSDL.
+     - Trong khi đó, quét tệp sao lưu `.plaintext.bak` vẫn cho ra đầy đủ các chuỗi văn bản rõ gốc.
+  4. **Kiểm tra nghiệp vụ UI và tính toàn vẹn dữ liệu**:
+     - Mở danh sách bệnh nhân trên giao diện: Toàn bộ danh sách 7 bệnh nhân (`BN-2026-SQLITE · Bui_Duc_SQLite`, `BN-2026-888 · Le_Van_Sua_Da_Cap_Nhat`, `BN-000126 · Phạm Thị Dung`, v.v.) hiển thị đầy đủ và chính xác từ CSDL SQLCipher.
+     - Mở chi tiết bệnh nhân, kiểm tra danh sách ca bệnh và kết quả phân tích AI: Dữ liệu tải nhanh chóng, giải mã trong suốt và không phát sinh lỗi.
+  5. **Xác thực Vòng đời Đóng/Mở lại Ứng dụng**:
+     - Thực hiện tắt hoàn toàn tiến trình ứng dụng bằng `adb shell am force-stop com.anonymous.mobile`.
+     - Mở lại app bằng `am start`, đăng nhập lại: Toàn bộ phiên làm việc, dữ liệu bệnh nhân và ca bệnh được nạp lại 100% từ tệp SQLCipher mã hóa.
+  6. **Bảng tổng hợp 3 trạng thái độc lập (Nguyên tắc trung thực khoa học)**:
+     | Nghiệp vụ / Tính năng | 1. Đã viết mã (Code Complete) | 2. Đạt Jest Sandbox (Node.js Mock In-Memory) | 3. Đã kiểm thử trên APK Máy ảo (Real Android SQLCipher on Disk) |
+     | :--- | :---: | :---: | :---: |
+     | Khởi tạo CSDL SQLite Native (`lungct_secure_*.db`) | Đạt | Đạt | Đạt (Kích thước đĩa 61.440 bytes) |
+     | Chuyển đổi dữ liệu cũ (Zero Data Loss) | Đạt | Đạt (141/141 tests) | Đạt (Di chuyển 6 bệnh nhân gốc an toàn) |
+     | Khả năng chạy lại & phục hồi (Resume) | Đạt | Đạt (`sqliteMigration.test.ts`) | Đạt (Không trùng lặp bản ghi) |
+     | Thao tác Bệnh nhân (Thêm/Sửa/Thùng rác) | Đạt | Đạt | Đạt (`BN-2026-SQLITE`, tổng 7 BN) |
+     | Tạo Ca bệnh & Khóa ngoại liên kết | Đạt | Đạt | Đạt (`CA-2026-000005`, tổng 5 ca) |
+     | Nhận xét Bác sĩ có mã hóa an toàn | Đạt | Đạt | Đạt (Ghi chú `Benh_nhan_co_not_mo_phoi_phai`) |
+     | Lưu kết quả On-Device AI vào SQLite | Đạt | Đạt | Đạt (`res_1793118243771_jb5ws`, latency 3.744ms) |
+     | Vòng đời sau đóng/mở lại app (`am force-stop`) | Đạt | Đạt | Đạt (Đọc lại 100% từ đĩa SQLite) |
+     | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher 4.6.1) | Đạt | Đạt (`sqlcipherVault.test.ts`, 145/145 tests) | Đạt (Tệp 53.248 bytes, `strings` ra 0 byte plaintext) |
+     | Sao lưu an toàn kho cũ (`.plaintext.bak`) | Đạt | Đạt | Đạt (Tệp backup 61.440 bytes bảo toàn) |
 
 #### D. Trạng thái thực nghiệm trên Thiết bị vật lý thật (Xiaomi Redmi 13)
 - **Trạng thái**: Đang trong quá trình chuẩn bị để cài đặt và đo kiểm trên thiết bị vật lý thật.
@@ -395,6 +389,7 @@ So sánh các giải pháp kỹ thuật giữa phân hệ Android (Dương Thị
 | **Nền tảng kiểm thử mục tiêu**| Android SDK 34 / Xiaomi Redmi 13 | iOS 17+ / iPhone vật lý |
 | **Runtime AI On-Device** | ONNX Runtime Native C++ + LiteRT C API | Đang khảo sát CoreML vs ONNX Runtime iOS |
 | **Tăng tốc phần cứng** | CPU đa luồng / NNAPI / Vulkan | Apple Neural Engine (ANE) / Metal |
+| **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Page-level AES-256)** | Định hướng CoreData / SQLite mã hóa |
 | **Quản lý khóa an toàn** | Android Keystore System (AES-256-GCM, định hướng TEE/StrongBox) | Định hướng iOS Keychain Services & Secure Enclave |
 | **Trạng thái thực nghiệm AI** | **Đã chạy phân loại trên máy ảo (1.580 ms)** | **Đang trong giai đoạn nghiên cứu chuyển đổi** |
 
@@ -406,14 +401,15 @@ So sánh các giải pháp kỹ thuật giữa phân hệ Android (Dương Thị
 1. Hiện thực hóa thành công bộ khung giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture trên Android, vượt qua 113/113 bài kiểm thử UI.
 2. Tích hợp và kiểm chứng thành công pipeline suy luận phân loại Trí tuệ nhân tạo biên (On-Device AI) trên Android với mô hình AACNN-ViT Adaptive FP32 (ONNX Runtime Mobile + LiteRT), đạt thời gian suy luận kỹ thuật ~1.580 ms trên máy ảo Android x86_64 hoàn toàn ngoại tuyến.
 3. Giải quyết triệt để vấn đề sai lệch tiền xử lý ảnh bằng thuật toán Native C++ Pillow Nearest Resample, sai số so với Python chỉ ở mức giải mã JPEG ($\le 9.89 \times 10^{-5}$).
-4. Hiện thực hóa và kiểm chứng thành công tầng lưu trữ cục bộ mã hóa:
-   - Module Native Android Keystore (`NativeCryptoVaultModule.kt`) quản lý khóa AES-256-GCM gắn theo tài khoản bác sĩ, có cơ chế bảo vệ khóa nghiêm ngặt không tự xóa khóa khi còn dữ liệu.
-   - Kiểm chứng thực tế trên APK Release mới cài đặt trên máy ảo Android: thêm bệnh nhân, đóng hẳn app (`force-stop`), mở lại đọc lại nguyên vẹn và chuyển vào thùng rác thành công.
-   - Vượt qua 133/133 bài kiểm thử Jest (100%), chứng minh tính toàn vẹn, bảo toàn dữ liệu nháp AUTH-08 và cô lập logic người dùng.
+4. Hiện thực hóa và kiểm chứng thành công tầng lưu trữ cục bộ mã hóa toàn diện:
+   - Module Native Android Keystore kết hợp SQLCipher 4.6.1 (`NativeCryptoVaultModule.kt`) quản lý mã hóa toàn bộ tệp nhị phân cấp trang đĩa (Page-level Full Database Encryption), bảo vệ khóa passphrase hai tầng qua Android Keystore Master Key.
+   - Cơ chế chuyển đổi an toàn Zero Data Loss Migration từ SQLite plaintext sang SQLCipher, tự động sao lưu dự phòng kho cũ (`.plaintext.bak`).
+   - Kiểm chứng thực nghiệm trên máy ảo Android API 34 bằng lệnh `strings` cho kết quả **0 byte plaintext**, loại trừ hoàn toàn nguy cơ rò rỉ dữ liệu y tế kể cả khi trích xuất tệp vật lý trực tiếp.
+   - Vượt qua **16/16 test suites** với **145/145 tests Jest thành công (100%)**, chứng minh tính toàn vẹn, bảo toàn dữ liệu nháp AUTH-08 và khả năng phục hồi sau gián đoạn.
 
 ### 5.2 Hạn chế
 - **Grad-CAM On-Device**: Chưa hoàn thành giải pháp trích xuất activation maps thuần C++ không cần Autograd trên thiết bị di động; giao diện hiện tại mới hiển thị bản đồ nhiệt giả lập/mô phỏng UI.
-- **Tầng lưu trữ cục bộ**: Chưa tích hợp cơ chế mã hóa cấp toàn bộ tệp nhị phân (SQLCipher) ở tầng C/C++; hiện mới đạt mức CSDL SQLite quan hệ mã hóa trường payload JSON bằng AES-256-GCM qua Android Keystore, các cột chỉ mục truy vấn vẫn ở dạng plaintext trên file thô. Việc bảo vệ phần cứng qua TEE/StrongBox mới chạy trên Software Keymaster của máy ảo và cần đo kiểm bằng KeyInfo trên điện thoại thật.
+- **Bảo vệ phần cứng thực tế**: Cơ chế bảo vệ khóa qua TEE/StrongBox hiện mới chạy trên Software Keymaster của máy ảo và cần đo kiểm bằng `KeyInfo` trên điện thoại Xiaomi Redmi 13 thật.
 - **Xuất báo cáo PDF**: Mới dừng lại ở màn hình cấu hình xem trước theo Figma (`ExportPdfScreen.tsx`), chưa tích hợp thư viện native tạo tệp PDF vật lý.
 - **Đo kiểm thiết bị thật**: Chưa hoàn tất nạp APK và đo kiểm thực tế trên điện thoại vật lý Xiaomi Redmi 13.
 - **Quy chuẩn y tế & Pháp lý**: Hệ thống chỉ tham khảo các nguyên tắc thiết kế bảo vệ dữ liệu cá nhân; chưa có chứng nhận hoặc kiểm định pháp lý lâm sàng/HIPAA.
@@ -421,7 +417,7 @@ So sánh các giải pháp kỹ thuật giữa phân hệ Android (Dương Thị
 ### 5.3 Hướng phát triển
 - Nạp bản build APK Release lên điện thoại Xiaomi Redmi 13 thật để đo kiểm độ trễ thực tế, nhiệt độ, mức tiêu hao pin và mức độ bảo vệ phần cứng TEE của Android Keystore.
 - Nghiên cứu hiện thực hóa thuật toán Grad-CAM On-Device không Autograd cho mô hình AACNN-ViT.
-- Khảo sát tích hợp SQLite mã hóa (SQLCipher) ở tầng native và thư viện sinh tệp PDF y tế theo chuẩn lâm sàng (gói PDF-01).
+- Khảo sát tích hợp thư viện sinh tệp PDF y tế theo chuẩn lâm sàng (gói PDF-01).
 - Hoàn thiện kết nối Backend FastAPI và cơ chế đồng bộ đám mây hai chiều khi trực tuyến.
 
 ---

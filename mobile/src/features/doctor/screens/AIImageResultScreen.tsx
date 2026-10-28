@@ -228,6 +228,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           preprocessingVersion: 'Libyuv-Bilinear-v1',
           executionSource: 'LOCAL',
           mode: 'REAL',
+          // eslint-disable-next-line react-hooks/purity
           startedAt: new Date(Date.now() - (result.latency.totalInferenceMs || 1000)).toISOString(),
           finishedAt: new Date().toISOString(),
           durationMs: result.latency.totalInferenceMs,
