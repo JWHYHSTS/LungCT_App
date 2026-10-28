@@ -3,94 +3,134 @@
 
 > **Mục tiêu bài học**:
 > - Hiểu rõ sự khác biệt giữa mô hình biên dịch tĩnh của C++ và mô hình thông dịch/JIT của TypeScript/JavaScript.
-> - Làm quen với hệ thống kiểu tĩnh của TypeScript từ góc nhìn của lập trình viên C++.
-> - Nắm bắt khái niệm bất đồng bộ (Asynchronous), Vòng lặp sự kiện (Event Loop), Promise và `async`/`await`.
+> - Làm quen với hệ thống kiểu tĩnh của TypeScript từ góc nhìn của lập trình viên C++ (không cần biết trước kiến thức web nâng cao).
+> - Nắm bắt khái niệm bất đồng bộ (Asynchronous) qua ví dụ đời thường dễ hiểu: Thẻ rung gọi cà phê (Promise) và Đợi phục vụ (`async`/`await`).
 > - Hiểu cách React Native xây dựng giao diện từ các hàm thành phần (Functional Components), Props và State.
 
 ---
 
 ## 💡 1. BẢNG SO SÁNH KHÁI NIỆM: C++ VS TYPESCRIPT / REACT NATIVE
 
-| Khái niệm trong C++ | Khái niệm tương đương trong TypeScript / React | Sự khác biệt cốt lõi cần lưu ý |
+| Khái niệm trong C++ cơ bản | Khái niệm tương đương trong TypeScript / React | Sự khác biệt cốt lõi người mới cần lưu ý |
 | :--- | :--- | :--- |
-| `int`, `float`, `double` | `number` | TypeScript gom tất cả số nguyên và số thực thành kiểu `number` (chuẩn IEEE 754 64-bit float). Không có `int` riêng! |
-| `std::string`, `char*` | `string` | Chuỗi trong TypeScript là bất biến (immutable), được bọc trong nháy đơn `'...'` hoặc template string `` `...` ``. |
-| `bool` | `boolean` | Giá trị chỉ có `true` hoặc `false`. Lưu ý các giá trị "truthy" và "falsy" khi viết câu điều kiện. |
-| `void*`, con trỏ thô | `any` hoặc `unknown` | `any` bỏ qua kiểm tra kiểu (nguy hiểm, giống ép kiểu bừa bãi); `unknown` an toàn hơn, bắt buộc phải kiểm tra kiểu trước khi dùng. |
-| `nullptr` | `null` và `undefined` | `null` là giá trị rỗng được gán chủ động; `undefined` là biến chưa được khởi tạo hoặc thuộc tính không tồn tại. |
-| `struct`, `class` (dữ liệu) | `interface` hoặc `type` | Chỉ dùng để kiểm tra kiểu lúc biên dịch (compile-time); khi chuyển thành JavaScript sẽ biến mất hoàn toàn (zero runtime overhead). |
-| Mảng tĩnh `int arr[10]` | Mảng động `number[]` hoặc `Array<number>` | Mảng trong TypeScript co giãn tự động giống `std::vector<T>` trong C++, hỗ trợ các hàm cực mạnh như `.map()`, `.filter()`. |
-| Con trỏ hàm / Lambda `std::function` | Arrow Function `(param) => { ... }` | Cú pháp viết hàm ngắn gọn, tự động giữ ngữ cảnh con trỏ `this`. |
-| Luồng thực thi đa luồng `std::thread` | Bất đồng bộ đơn luồng (`async`/`await`, Event Loop) | JavaScript chạy trên một luồng chính duy nhất (Single-threaded). Các tác vụ I/O, mạng, đọc đĩa được đẩy ra hàng đợi sự kiện. |
+| `int`, `float`, `double` | `number` | TypeScript gom tất cả số nguyên và số thực thành kiểu `number` (chuẩn 64-bit float). Không có kiểu `int` riêng biệt! |
+| `std::string`, `char[]` | `string` | Chuỗi trong TypeScript là bất biến (immutable), được bọc trong nháy đơn `'...'` hoặc dấu huyền `` `...${bien}...` `` để ghép chuỗi. |
+| `bool` | `boolean` | Giá trị chỉ có `true` hoặc `false`. Cần lưu ý các giá trị coi như sai (falsy): `0`, `""`, `null`, `undefined`, `NaN`. |
+| Con trỏ `NULL` / `nullptr` | `null` và `undefined` | `null`: Bạn chủ động gán biến là rỗng; `undefined`: Biến vừa khai báo nhưng chưa được gán giá trị nào cả. |
+| `struct SinhVien { ... }` | `interface Patient { ... }` | Dùng để định nghĩa khuôn mẫu dữ liệu lúc viết mã; khi dịch ra JavaScript để chạy trên app, `interface` sẽ tự động biến mất hoàn toàn. |
+| Mảng tĩnh `int arr[10]` | Mảng co giãn `number[]` | Mảng trong TypeScript tự động tăng giảm kích thước, hỗ trợ sẵn các hàm duyệt mảng như `.map()` (biến đổi), `.filter()` (lọc phần tử). |
+| Con trỏ hàm / Hàm truyền vào hàm | Arrow Function `(x) => { ... }` | Cú pháp viết hàm ngắn gọn: dấu `=>` thay cho việc khai báo tên hàm rườm rà. |
+| Đơn luồng tuần tự (Chờ đọc đĩa) | Bất đồng bộ (`async` / `await`) | Không làm đơ ứng dụng khi đang đọc ảnh nặng hoặc truy vấn cơ sở dữ liệu. |
 
 ---
 
-## 🧩 2. CƠ CHẾ BẤT ĐỒNG BỘ: TỪ `std::future` ĐẾN `Promise` VÀ `async/await`
+## ☕ 2. GIẢI THÍCH BẤT ĐỒNG BỘ: VÍ DỤ "THẺ RUNG GỌI CÀ PHÊ"
 
-### Trong C++:
-Khi đọc một tệp từ đĩa hoặc gọi mạng, nếu bạn gọi hàm đồng bộ, luồng hiện tại sẽ **bị chặn cứng (blocking)**:
+Nếu bạn chỉ mới học C++ cơ bản (lập trình màn hình console đen trắng), toàn bộ mã lệnh chạy tuần tự từ trên xuống dưới:
 ```cpp
-// C++ Blocking call
-std::string data = ReadDatabaseSync("usr-doc-01"); // Luồng giao diện bị đơ đến khi đọc xong!
+// Tư duy tuần tự trong C++ cơ bản:
+std::cout << "1. Bắt đầu đọc ảnh CT từ đĩa...\n";
+DocTepAnhNang("anh_ct_phoi.jpg"); // Hàm này chạy mất 2 giây -> MÀN HÌNH ĐƠ CỨNG 2 GIÂY!
+std::cout << "2. Đọc xong, hiển thị lên màn hình!\n";
 ```
-Để không bị đơ giao diện, C++ phải tạo một thread mới:
-```cpp
-std::future<std::string> fut = std::async(std::launch::async, ReadDatabaseSync, "usr-doc-01");
-// Phải quản lý thread, lock, mutex... rất phức tạp
-```
+Nếu áp dụng cách này lên điện thoại di động: **Trong 2 giây đó, người dùng chạm vào màn hình sẽ không có phản hồi gì, nút bấm bị đơ, hệ điều hành Android sẽ hiện cảnh báo "Ứng dụng không phản hồi (ANR)" và buộc đóng app!**
 
-### Trong TypeScript / React Native:
-Toàn bộ giao diện di động chạy trên **JS Thread**. Nếu bạn chặn JS Thread quá 16ms, ứng dụng sẽ bị tụt khung hình (giật lag, đơ nút bấm). Do đó, 100% tác vụ I/O, Database, Mạng và AI đều là **Bất đồng bộ (Non-blocking)** qua `Promise`:
+### Giải pháp trong TypeScript: "Thẻ rung gọi cà phê" (Promise)
+Hãy tưởng tượng bạn đi mua trà sữa hoặc cà phê:
+1. Bạn gọi món và trả tiền tại quầy thu ngân.
+2. Thu ngân không bắt bạn đứng chôn chân tại quầy để đợi pha xong, mà đưa cho bạn một **chiếc thẻ rung báo hiệu**. Chiếc thẻ rung này trong lập trình gọi là một **`Promise` (Lời hứa)**.
+3. Trong lúc chiếc thẻ chưa rung, bạn có thể tự do đi tìm bàn ngồi, lướt web, nghe nhạc (Ứng dụng di động vẫn mượt mà, người dùng bấm nút back, cuộn trang bình thường).
+4. Khi nước pha xong, thẻ rung lên: Bạn cầm thẻ quay lại lấy ly nước (Dữ liệu đã sẵn sàng).
 
 ```typescript
-// Hàm trả về một Promise (giống như std::future trong C++)
-async function getPatients(ownerId: string): Promise<PatientEntity[]> {
-  // Từ khóa 'await' tạm dừng hàm này lại, nhường luồng cho giao diện vẽ tiếp
-  // Khi nào CSDL đọc xong, hàm sẽ tự động chạy tiếp từ điểm này!
-  const data = await cryptoVault.querySecureSqlAsync(ownerId, "SELECT * FROM patients");
-  return data;
+// 1. Hàm đọc ảnh trả về một "Chiếc thẻ rung" (Promise)
+function docAnhCTAsync(duongDan: string): Promise<string> {
+  // Trả về lời hứa: Hệ thống sẽ đọc file ngầm, khi xong sẽ báo
+}
+
+// 2. Cách dùng trong thực tế với async / await:
+async function xuLyChanDoan() {
+  console.log("1. Gửi yêu cầu đọc ảnh...");
+  
+  // Từ khóa 'await' có nghĩa là: "Tạm dừng đoạn mã này lại đợi ly cà phê pha xong,
+  // nhưng KHÔNG ĐƯỢC làm đơ ứng dụng, để luồng chính tiếp tục vẽ giao diện!"
+  const duLieuAnh = await docAnhCTAsync("anh_ct.jpg");
+  
+  console.log("2. Đã có ảnh, bắt đầu chạy AI!");
 }
 ```
 
 > [!IMPORTANT]
-> **Quy tắc vàng cho người học C++**:
-> - Bất cứ hàm nào có từ khóa `async` thì kết quả trả về luôn được bọc trong một `Promise<T>`.
-> - Muốn lấy giá trị thực từ `Promise`, bạn **bắt buộc phải dùng từ khóa `await`** trước lời gọi hàm, hoặc dùng `.then()`.
-> - Từ khóa `await` chỉ được phép viết bên trong một hàm có khai báo `async`.
+> **2 Quy tắc bắt buộc ghi nhớ**:
+> 1. Hàm nào có chữ `async` ở đầu thì giá trị nó trả về luôn là một `Promise`.
+> 2. Muốn "đợi" kết quả của một `Promise` mà không làm đơ app, đặt chữ `await` trước tên hàm đó. Từ khóa `await` chỉ được đứng trong hàm có chữ `async`.
 
 ---
 
-## 🎨 3. TƯ DUY COMPONENT TRONG REACT NATIVE
+## 🎨 3. TƯ DUY GIAO DIỆN REACT NATIVE: "GIAO DIỆN LÀ BẢN VẼ CỦA DỮ LIỆU"
 
-Trong C++ GUI (như Qt hoặc Win32 API), bạn thường tạo một cửa sổ và gọi hàm sửa đổi trực tiếp (Imperative Programming):
+Trong lập trình C++ cổ điển, nếu muốn đổi chữ trên nút bấm, bạn phải tìm đúng nút đó và ra lệnh:
 ```cpp
-// C++ Imperative GUI: Ra lệnh trực tiếp
-button->SetText("Lưu kết quả");
-button->SetColor(RED);
+nutBam->SetText("Đang phân tích...");
+nutBam->SetColor(GRAY);
 ```
 
-Trong React Native, bạn lập trình theo tư duy **Khai báo (Declarative Programming)**: Giao diện là một hàm số nhận đầu vào là Dữ liệu (`State` và `Props`) để trả về hình ảnh hiển thị:
-$$\text{UI} = f(\text{State}, \text{Props})$$
+Trong React Native, bạn **không bao giờ ra lệnh trực tiếp cho nút bấm**. Thay vào đó, bạn quản lý một biến trạng thái gọi là **`State`**:
 
 ```typescript
-// Component là một hàm trả về mã JSX (giống như HTML)
-export const SaveButton = ({ isLoading, onPress }: { isLoading: boolean; onPress: () => void }) => {
+import React, { useState } from 'react';
+import { View, Button, Text } from 'react-native';
+
+export const NutChanDoan = () => {
+  // Khai báo biến trạng thái: dangChay (true/false)
+  const [dangChay, setDangChay] = useState(false);
+
+  const bamNut = async () => {
+    setDangChay(true); // 1. Đổi trạng thái sang "Đang chạy" -> Giao diện TỰ ĐỘNG vẽ lại chữ "Đang chạy..."
+    await chayMoHinhAI(); // 2. Đợi AI suy luận ngầm
+    setDangChay(false); // 3. Xong việc -> Giao diện TỰ ĐỘNG vẽ lại chữ "Bắt đầu chẩn đoán"
+  };
+
   return (
     <Button 
-      title={isLoading ? "Đang lưu..." : "Lưu kết quả"}
-      disabled={isLoading}
-      onPress={onPress}
+      title={dangChay ? "Đang chạy mô hình AI..." : "Bắt đầu chẩn đoán"} 
+      disabled={dangChay}
+      onPress={bamNut}
     />
   );
 };
 ```
 
-Khi trạng thái `isLoading` đổi từ `false` sang `true`, React sẽ **tự động vẽ lại (re-render)** nút bấm với dòng chữ "Đang lưu...". Bạn không cần phải tìm con trỏ của nút bấm để gọi lệnh cập nhật thủ công!
-
 ---
 
-## 📝 4. BÀI TẬP TỰ LUYỆN TẬP TƯ DUY
+## 📝 4. BÀI TẬP TỰ LUYỆN TẬP VÀ ĐÁP ÁN
 
-1. **Câu hỏi 1**: Tại sao trong file [`AIImageResultScreen.tsx`](file:///c:/Users/thudi/OneDrive/Desktop/LungCT_Workspace/LungCT_DoAn/mobile/src/features/doctor/screens/AIImageResultScreen.tsx), khi tính toán thời gian `startedAt` và `finishedAt`, chúng ta không thể dùng một biến toàn cục C++ tĩnh `static int timer`?
-   - *Gợi ý trả lời*: Vì trong React Native, mỗi lần màn hình hiển thị hoặc chuyển đổi trạng thái, component sẽ được gọi lại. Sử dụng biến trạng thái cục bộ của lượt chạy (`runSessionId`, `timestamp`) giúp đảm bảo tính cô lập và tránh việc hai lần phân tích AI bị ghi đè dữ liệu lên nhau.
-2. **Câu hỏi 2**: Viết một interface TypeScript mô tả một ca bệnh phổi (`LungCase`) gồm: mã ca bệnh (chuỗi), độ tuổi (số), triệu chứng (danh sách chuỗi), và trạng thái đã duyệt (đúng/sai).
+### Bài tập 1: Khai báo cấu trúc dữ liệu
+Hãy viết một `interface` bằng TypeScript đặt tên là `ThongTinBenhNhan` gồm các thông tin:
+- Mã bệnh nhân (`maBN`): chuỗi ký tự.
+- Tuổi (`tuoi`): số nguyên.
+- Có tiền sử hút thuốc lá hay không (`hutThuoc`): đúng/sai.
+- Danh sách triệu chứng (`trieuChung`): mảng các chuỗi ký tự.
+
+<details>
+<summary>👉 Nhấn vào đây để xem đáp án Bài tập 1</summary>
+
+```typescript
+export interface ThongTinBenhNhan {
+  maBN: string;
+  tuoi: number;
+  hutThuoc: boolean;
+  trieuChung: string[]; // hoặc Array<string>
+}
+```
+</details>
+
+### Bài tập 2: Giải thích cơ chế luồng
+Tại sao khi gọi hàm suy luận AI `runNativePipelineFromFilePath(path)` trong [`AIImageResultScreen.tsx`](file:///c:/Users/thudi/OneDrive/Desktop/LungCT_Workspace/LungCT_DoAn/mobile/src/features/doctor/screens/AIImageResultScreen.tsx), chúng ta bắt buộc phải dùng `await`? Điều gì sẽ xảy ra nếu ta bỏ quên chữ `await`?
+
+<details>
+<summary>👉 Nhấn vào đây để xem đáp án Bài tập 2</summary>
+
+- **Khi có `await`**: JavaScript sẽ đợi tiến trình native C++ (ONNX Runtime + LiteRT) chạy xong lát cắt và trả về kết quả dự đoán thực tế (xác suất Lành tính, Ác tính).
+- **Nếu bỏ quên `await`**: Biến nhận kết quả sẽ chỉ nhận một đối tượng `Promise` rỗng (chiếc thẻ rung chưa có nước). Ứng dụng sẽ ngay lập tức chạy dòng code tiếp theo khi mô hình AI chưa tính toán xong, dẫn đến việc lấy dữ liệu xác suất bị `undefined` và gây lỗi sập app (Crash).
+</details>

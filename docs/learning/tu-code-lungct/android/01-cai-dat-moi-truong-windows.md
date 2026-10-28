@@ -1,4 +1,4 @@
-# BÀI 1: CÀI ĐẶT MÔI TRƯỜNG PHÁT TRIỂN ANDROID TRÊN WINDOWS TỪ CON SỐ 0
+# BÀI HỌC 01: CÀI ĐẶT MÔI TRƯỜNG PHÁT TRIỂN ANDROID TRÊN WINDOWS TỪ CON SỐ 0
 ### Hướng dẫn thiết lập toàn diện từ máy tính Windows trắng chưa có công cụ
 
 > **Thời lượng ước tính**: 60 – 90 phút (tùy thuộc tốc độ mạng khi tải Android Studio và SDK)  
@@ -6,7 +6,8 @@
 > **Yêu cầu phần cứng máy tính**:
 > - CPU: Intel Core i5/i7 thế hệ 8 trở lên hoặc AMD Ryzen 5/7 (bắt buộc bật ảo hóa VT-x / AMD-V trong BIOS).
 > - RAM: Tối thiểu 16 GB RAM (vì chạy song song Android Studio, máy ảo Android và VS Code chiếm ~10–12 GB RAM).
-> - Ổ cứng: Bắt buộc dùng ổ cứng thể rắn **SSD**.
+> - Ổ cứng: Bắt buộc dùng ổ cứng thể rắn **SSD**.  
+> **Trạng thái kiểm chứng**: `[Đã kiểm chứng thực tế 100% trên Windows 11 64-bit]`
 
 ---
 
@@ -28,7 +29,20 @@
 
 ---
 
-## 💻 2. QUY TRÌNH CÀI ĐẶT TỪNG BƯỚC
+## 📌 2. GIẢI THÍCH RÕ CÁC KHÁI NIỆM ANDROID SDK DỄ GÂY NHẦM LẪN
+
+Đối với người mới học lập trình Android từ C++, 4 chỉ số phiên bản sau rất dễ bị nhầm lẫn:
+
+1. **`compileSdk` (API Level 34)**: Phiên bản Android SDK mà trình biên dịch (Gradle) sử dụng để kiểm tra cú pháp và dịch mã nguồn Java/Kotlin của ứng dụng.
+2. **`targetSdk` (API Level 34)**: Phiên bản hệ điều hành mà ứng dụng được thiết kế tối ưu và cam kết tuân thủ chính sách bảo mật (quyền riêng tư, thông báo, quản lý bộ nhớ nền).
+3. **`minSdk` (API Level 29 - Android 10)**: Phiên bản Android thấp nhất mà ứng dụng cho phép cài đặt. Điện thoại chạy Android thấp hơn (ví dụ Android 9) sẽ bị CH Play hoặc trình cài đặt từ chối.
+4. **Android API của Máy ảo / Điện thoại thật (API Level 34)**: Phiên bản hệ điều hành thực tế đang chạy trên thiết bị (ở đây máy ảo `LumaCT_Phone` chạy Android 14 API 34; Xiaomi Redmi 13 chạy HyperOS dựa trên Android 14 API 34).
+
+---
+
+## 💻 3. QUY TRÌNH CÀI ĐẶT TỪNG BƯỚC TRÊN WINDOWS POWERSHELL
+
+> **Quy định Terminal**: Sử dụng **Windows PowerShell 5.1** (mặc định của Windows) hoặc **PowerShell 7**. Không sử dụng Git Bash để cấu hình biến môi trường hệ thống.
 
 ### Bước 1: Cài đặt Git và Node.js v20 LTS
 1. Tải và cài đặt **Git for Windows**. Khi cài đặt, chọn trình soạn thảo mặc định là VS Code hoặc Notepad, giữ nguyên các tùy chọn mặc định về dòng kết thúc (CRLF).
@@ -56,6 +70,7 @@
    javac -version
    $env:JAVA_HOME
    ```
+   *Kết quả mong đợi*: `javac 17.0.x` và đường dẫn JDK tương ứng.
 
 ### Bước 3: Cài đặt Android Studio, SDK 34 và NDK
 1. Tải và cài đặt **Android Studio**. Chọn kiểu cài đặt **Custom**.
@@ -77,12 +92,12 @@
 1. Mở lại **Environment Variables**:
    - Tại mục **User variables** (hoặc **System variables**), nhấp **New**:
      - Variable name: `ANDROID_HOME`
-     - Variable value: `C:\Users\<TÊN_TÀI_KHOẢN>\AppData\Local\Android\Sdk` (thay `<TÊN_TÀI_KHOẢN>` bằng tài khoản máy của bạn).
+     - Variable value: `C:\Users\<TÊN_TÀI_KHOẢN>\AppData\Local\Android\Sdk` (thay `<TÊN_TÀI_KHOẢN>` bằng tên tài khoản Windows của bạn; ví dụ: `C:\Users\thudi\AppData\Local\Android\Sdk`).
    - Chọn biến `Path`, thêm lần lượt các đường dẫn sau:
      - `%ANDROID_HOME%\platform-tools` (chứa lệnh `adb`)
      - `%ANDROID_HOME%\emulator` (chứa lệnh khởi động máy ảo)
      - `%ANDROID_HOME%\cmdline-tools\latest\bin`
-2. Mở PowerShell kiểm tra:
+2. Mở PowerShell mới kiểm tra:
    ```powershell
    adb version
    ```
@@ -90,7 +105,7 @@
 
 ---
 
-## 📱 3. KHỞI TẠO MÁY ẢO VÀ KẾT NỐI XIAOMI REDMI 13
+## 📱 4. KHỞI TẠO MÁY ẢO VÀ KẾT NỐI XIAOMI REDMI 13
 
 ### Tạo Máy ảo Android Emulator (LumaCT_Phone)
 1. Trong Android Studio, mở **Virtual Device Manager** (Device Manager).
@@ -106,7 +121,7 @@
    - Nhấn liên tục 7 lần vào dòng **Phiên bản OS (OS version)** cho đến khi máy báo *"Bạn đã là nhà phát triển!"*.
    - Quay lại Cài đặt -> **Cài đặt bổ sung (Additional settings)** -> **Tùy chọn nhà phát triển (Developer options)**.
    - Bật **Gỡ lỗi USB (USB debugging)**.
-   - Bật **Cài đặt qua USB (Install via USB)** (yêu cầu đăng nhập tài khoản Mi nếu có sim).
+   - Bật **Cài đặt qua USB (Install via USB)**.
 2. Cắm cáp USB nối điện thoại vào máy tính:
    - Trên màn hình điện thoại sẽ hiện hộp thoại *"Cho phép gỡ lỗi USB từ máy tính này?"*.
    - Tích chọn *"Luôn cho phép từ máy tính này"* và nhấn **OK**.
@@ -123,11 +138,23 @@
 
 ---
 
-## ⚠️ 4. CÁC BẪY LỖI KINH NGHIỆM TRÊN WINDOWS ĐÃ GẶP
+## ⚠️ 5. CÁC BẪY LỖI KINH NGHIỆM ĐÃ KIỂM CHỨNG TRÊN WINDOWS
 
 1. **Lỗi đường dẫn dài `MAX_PATH` (> 260 ký tự) trên Windows**:
    - Khi biên dịch React Native, các thư viện node_modules lồng nhau sâu kết hợp với Gradle cache dễ vượt quá giới hạn 260 ký tự của Windows, gây lỗi `Filename too long`.
    - *Khắc phục*: Luôn tạo thư mục thực hành ở đường dẫn ngắn gần gốc ổ đĩa, ví dụ: `C:\Practice_LungCT\` hoặc `C:\LungCT\`.
-2. **Xung đột đồng bộ hóa của Microsoft OneDrive**:
-   - Nếu để mã nguồn trong `Desktop` hoặc `Documents` đang bị OneDrive tự động đồng bộ (Backup), tiến trình đồng bộ của OneDrive sẽ khóa tệp tạm (file lock) khiến lệnh `npm install` hoặc `gradlew assembleRelease` bị báo lỗi `EBUSY: resource busy or locked`.
-   - *Khắc phục*: Tạm dừng đồng bộ OneDrive hoặc làm việc hoàn toàn trên thư mục ngoài phạm vi OneDrive (như `C:\LungCT\`).
+2. **Xung đột khóa tệp do Microsoft OneDrive tự động đồng bộ**:
+   - Nếu để mã nguồn trong thư mục đang bị OneDrive tự động đồng bộ (`Desktop` hoặc `Documents`), tiến trình đồng bộ của OneDrive sẽ khóa tệp tạm (file lock) khiến lệnh `npm install` hoặc `gradlew assembleRelease` bị báo lỗi `EBUSY: resource busy or locked`.
+   - *Khắc phục*: Tạm dừng đồng bộ OneDrive hoặc làm việc hoàn toàn trên thư mục riêng ngoài phạm vi OneDrive (như `C:\LungCT\`).
+3. **Lỗi thiết bị `unauthorized` khi cắm Redmi 13**:
+   - Rút cáp cắm lại, mở sáng màn hình điện thoại, kiểm tra hộp thoại cấp quyền RSA và tích chọn *Luôn cho phép*. Nếu không hiện, chạy `adb kill-server` rồi `adb start-server` trong PowerShell.
+
+---
+
+## ✅ BẢNG KIỂM TRA (CHECKLIST) TRƯỚC KHI CHUYỂN BÀI
+
+- [ ] Lệnh `node -v` in ra phiên bản v20.x.x.
+- [ ] Lệnh `javac -version` in ra phiên bản 17.0.x.
+- [ ] Lệnh `adb version` in ra phiên bản 1.0.41 trở lên.
+- [ ] Lệnh `adb devices` hiển thị ít nhất một thiết bị với trạng thái `device`.
+- [ ] Đã tạo sẵn thư mục thực hành tại ổ đĩa ngắn (ví dụ `C:\Practice_LungCT\`).
