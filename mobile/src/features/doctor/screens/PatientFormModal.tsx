@@ -11,7 +11,12 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import { AppText, Button, Dialog, TextField, TopBar } from '../../../ui/components';
 import { PATIENT_FORM_DECISION } from '../../../config/ui-decisions';
-import { addMockPatient, findPatientByCode, findPatientById, updateMockPatient } from '../../../mocks';
+import {
+  addMockPatient,
+  findPatientByCode,
+  findPatientById,
+  updateMockPatient,
+} from '../../../mocks';
 import { PatientRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 
@@ -360,7 +365,11 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
             }
           }}
           placeholder={t('doctor_detail.patient_code_placeholder')}
-          helper={isEditMode ? 'Mã định danh bệnh nhân cố định không được phép chỉnh sửa.' : t('doctor_detail.patient_code_helper')}
+          helper={
+            isEditMode
+              ? 'Mã định danh bệnh nhân cố định không được phép chỉnh sửa.'
+              : t('doctor_detail.patient_code_helper')
+          }
           error={errors.code}
           editable={!isEditMode}
           autoCapitalize="characters"

@@ -116,7 +116,10 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       const legacyEncrypted = `ENC:v1:${checksum}:${legacyCipher}`;
 
       const decrypted = CryptoVault.decrypt(legacyEncrypted, rawKey);
-      expect(JSON.parse(decrypted)).toEqual({ patientCode: 'BN-OLD-01', note: 'Hồ sơ tạo từ bản cũ' });
+      expect(JSON.parse(decrypted)).toEqual({
+        patientCode: 'BN-OLD-01',
+        note: 'Hồ sơ tạo từ bản cũ',
+      });
     });
   });
 
@@ -360,7 +363,9 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       // Ghi đè vào storage
       const keys = (storage as any).getKeys(DOC_A);
       const patients = await (storage as any).readEncryptedTable(DOC_A, keys.patients);
-      const updatedPatients = patients.map((p: any) => (p.patientId === pSynced.patientId ? { ...p, syncState: 'synced' } : p));
+      const updatedPatients = patients.map((p: any) =>
+        p.patientId === pSynced.patientId ? { ...p, syncState: 'synced' } : p,
+      );
       await (storage as any).writeEncryptedTable(DOC_A, keys.patients, updatedPatients);
 
       const pDraft = await storage.createPatient(DOC_A, {
@@ -379,7 +384,9 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
         clinicalNote: 'Ca bệnh cũ đã đồng bộ lên cloud',
       });
       const cases = await (storage as any).readEncryptedTable(DOC_A, keys.cases);
-      const updatedCases = cases.map((c: any) => (c.caseId === cSynced.caseId ? { ...c, syncState: 'synced' } : c));
+      const updatedCases = cases.map((c: any) =>
+        c.caseId === cSynced.caseId ? { ...c, syncState: 'synced' } : c,
+      );
       await (storage as any).writeEncryptedTable(DOC_A, keys.cases, updatedCases);
 
       const cDraft = await storage.createCase(DOC_A, {
@@ -428,7 +435,9 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       // Đánh dấu p1 đã đồng bộ
       const keys = (storage as any).getKeys(DOC_A);
       const patients = await (storage as any).readEncryptedTable(DOC_A, keys.patients);
-      const updatedPatients = patients.map((p: any) => (p.patientId === p1.patientId ? { ...p, syncState: 'synced' } : p));
+      const updatedPatients = patients.map((p: any) =>
+        p.patientId === p1.patientId ? { ...p, syncState: 'synced' } : p,
+      );
       await (storage as any).writeEncryptedTable(DOC_A, keys.patients, updatedPatients);
 
       // Tạo một bệnh nhân khác p2 đã đồng bộ và chỉ có ca đã đồng bộ (sẽ bị xóa sạch)
@@ -439,7 +448,9 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
         sex: 'FEMALE',
       });
       const patients2 = await (storage as any).readEncryptedTable(DOC_A, keys.patients);
-      const updatedPatients2 = patients2.map((p: any) => (p.patientId === p2.patientId ? { ...p, syncState: 'synced' } : p));
+      const updatedPatients2 = patients2.map((p: any) =>
+        p.patientId === p2.patientId ? { ...p, syncState: 'synced' } : p,
+      );
       await (storage as any).writeEncryptedTable(DOC_A, keys.patients, updatedPatients2);
 
       // Ca c1 gắn với p1 là NHÁP CHƯA ĐỒNG BỘ (pending)
@@ -457,7 +468,9 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
         clinicalNote: 'Ca cũ đã đồng bộ tuần trước',
       });
       const cases = await (storage as any).readEncryptedTable(DOC_A, keys.cases);
-      const updatedCases = cases.map((c: any) => (c.caseId === c2Synced.caseId ? { ...c, syncState: 'synced' } : c));
+      const updatedCases = cases.map((c: any) =>
+        c.caseId === c2Synced.caseId ? { ...c, syncState: 'synced' } : c,
+      );
       await (storage as any).writeEncryptedTable(DOC_A, keys.cases, updatedCases);
 
       // Kiểm tra trước khi khóa: có 2 bệnh nhân, 2 ca

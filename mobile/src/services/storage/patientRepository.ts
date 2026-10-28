@@ -12,10 +12,7 @@
 
 import { localStorageService } from './index';
 import { PatientEntity, CaseEntity } from './types';
-import {
-  MockPatient,
-  getMockPatients,
-} from '../../mocks/doctorMocks';
+import { MockPatient, getMockPatients } from '../../mocks/doctorMocks';
 
 type PatientChangeListener = () => void;
 const listeners: Set<PatientChangeListener> = new Set();

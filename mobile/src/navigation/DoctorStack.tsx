@@ -72,7 +72,9 @@ export const DoctorStack: React.FC = () => {
             patientId={route.params.patientId}
             onBack={() => navigation.goBack()}
             onNavigateToCaseDetail={(caseId) => navigation.navigate('CaseDetail', { caseId })}
-            onNavigateToEditPatient={(patientId) => navigation.navigate('PatientForm', { patientId })}
+            onNavigateToEditPatient={(patientId) =>
+              navigation.navigate('PatientForm', { patientId })
+            }
           />
         )}
       </Stack.Screen>

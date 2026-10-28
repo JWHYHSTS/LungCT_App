@@ -15,15 +15,7 @@ import {
   TextField,
   TopBar,
 } from '../../../ui/components';
-import {
-  findCaseById,
-  subscribeDoctorStore,
-  addImageToCase,
-  updateCaseNotes,
-  completeCase,
-  trashCase,
-  type MockCase,
-} from '../../../mocks';
+import { findCaseById, subscribeDoctorStore, addImageToCase, type MockCase } from '../../../mocks';
 import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 

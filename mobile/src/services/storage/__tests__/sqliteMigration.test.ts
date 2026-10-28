@@ -56,88 +56,92 @@ describe('SQLite Migration & Zero Data Loss Tests', () => {
       databasePath: `:memory:${DOC_ID}`,
     });
 
-    jest.spyOn(CryptoVault, 'querySecureSqlAsync').mockImplementation(async (_ownerId, sql, args = []) => {
-      if (sql.includes('FROM secure_metadata WHERE meta_key = ?')) {
-        const key = args[0];
-        if (mockSqliteDb.metadata[key]) {
-          return [{ meta_value: mockSqliteDb.metadata[key] }];
+    jest
+      .spyOn(CryptoVault, 'querySecureSqlAsync')
+      .mockImplementation(async (_ownerId, sql, args = []) => {
+        if (sql.includes('FROM secure_metadata WHERE meta_key = ?')) {
+          const key = args[0];
+          if (mockSqliteDb.metadata[key]) {
+            return [{ meta_value: mockSqliteDb.metadata[key] }];
+          }
+          return [];
+        }
+        if (sql.includes('SELECT * FROM secure_patients')) {
+          return mockSqliteDb.patients;
+        }
+        if (sql.includes('SELECT * FROM secure_cases')) {
+          return mockSqliteDb.cases;
         }
         return [];
-      }
-      if (sql.includes('SELECT * FROM secure_patients')) {
-        return mockSqliteDb.patients;
-      }
-      if (sql.includes('SELECT * FROM secure_cases')) {
-        return mockSqliteDb.cases;
-      }
-      return [];
-    });
+      });
 
-    jest.spyOn(CryptoVault, 'executeSecureSqlAsync').mockImplementation(async (_ownerId, sql, args = []) => {
-      if (sql.includes('INSERT OR REPLACE INTO secure_patients')) {
-        const patientId = args[0];
-        const existingIdx = mockSqliteDb.patients.findIndex((p) => p.patient_id === patientId);
-        const record = {
-          patient_id: args[0],
-          owner_id: args[1],
-          patient_code: args[2],
-          full_name: args[3],
-          dob: args[4],
-          sex: args[5],
-          phone: args[6],
-          symptoms: args[7],
-          status: args[8],
-          revision: args[9],
-          sync_state: args[10],
-          created_at: args[11],
-          updated_at: args[12],
-          trashed_at: args[13],
-          encrypted_payload: args[14],
-        };
-        if (existingIdx >= 0) {
-          mockSqliteDb.patients[existingIdx] = record;
-        } else {
-          mockSqliteDb.patients.push(record);
+    jest
+      .spyOn(CryptoVault, 'executeSecureSqlAsync')
+      .mockImplementation(async (_ownerId, sql, args = []) => {
+        if (sql.includes('INSERT OR REPLACE INTO secure_patients')) {
+          const patientId = args[0];
+          const existingIdx = mockSqliteDb.patients.findIndex((p) => p.patient_id === patientId);
+          const record = {
+            patient_id: args[0],
+            owner_id: args[1],
+            patient_code: args[2],
+            full_name: args[3],
+            dob: args[4],
+            sex: args[5],
+            phone: args[6],
+            symptoms: args[7],
+            status: args[8],
+            revision: args[9],
+            sync_state: args[10],
+            created_at: args[11],
+            updated_at: args[12],
+            trashed_at: args[13],
+            encrypted_payload: args[14],
+          };
+          if (existingIdx >= 0) {
+            mockSqliteDb.patients[existingIdx] = record;
+          } else {
+            mockSqliteDb.patients.push(record);
+          }
+          return true;
         }
-        return true;
-      }
 
-      if (sql.includes('INSERT OR REPLACE INTO secure_cases')) {
-        const caseId = args[0];
-        const existingIdx = mockSqliteDb.cases.findIndex((c) => c.case_id === caseId);
-        const record = {
-          case_id: args[0],
-          owner_id: args[1],
-          case_code: args[2],
-          patient_id: args[3],
-          scan_date: args[4],
-          status: args[5],
-          clinical_note: args[6],
-          doctor_comment: args[7],
-          revision: args[8],
-          sync_state: args[9],
-          created_at: args[10],
-          updated_at: args[11],
-          trashed_at: args[12],
-          encrypted_payload: args[13],
-        };
-        if (existingIdx >= 0) {
-          mockSqliteDb.cases[existingIdx] = record;
-        } else {
-          mockSqliteDb.cases.push(record);
+        if (sql.includes('INSERT OR REPLACE INTO secure_cases')) {
+          const caseId = args[0];
+          const existingIdx = mockSqliteDb.cases.findIndex((c) => c.case_id === caseId);
+          const record = {
+            case_id: args[0],
+            owner_id: args[1],
+            case_code: args[2],
+            patient_id: args[3],
+            scan_date: args[4],
+            status: args[5],
+            clinical_note: args[6],
+            doctor_comment: args[7],
+            revision: args[8],
+            sync_state: args[9],
+            created_at: args[10],
+            updated_at: args[11],
+            trashed_at: args[12],
+            encrypted_payload: args[13],
+          };
+          if (existingIdx >= 0) {
+            mockSqliteDb.cases[existingIdx] = record;
+          } else {
+            mockSqliteDb.cases.push(record);
+          }
+          return true;
         }
-        return true;
-      }
 
-      if (sql.includes('INSERT OR REPLACE INTO secure_metadata')) {
-        const key = args[0];
-        const val = args[1];
-        mockSqliteDb.metadata[key] = val;
-        return true;
-      }
+        if (sql.includes('INSERT OR REPLACE INTO secure_metadata')) {
+          const key = args[0];
+          const val = args[1];
+          mockSqliteDb.metadata[key] = val;
+          return true;
+        }
 
-      return true;
-    });
+        return true;
+      });
 
     storageService = new EncryptedLocalStorageService();
     await storageService.initialize();
@@ -202,7 +206,10 @@ describe('SQLite Migration & Zero Data Loss Tests', () => {
     const patientKey = `@lungct_db/v1/${DOC_ID}/patients`;
     const caseKey = `@lungct_db/v1/${DOC_ID}/cases`;
 
-    memoryStore[patientKey] = await CryptoVault.encryptAsync(DOC_ID, JSON.stringify(legacyPatients));
+    memoryStore[patientKey] = await CryptoVault.encryptAsync(
+      DOC_ID,
+      JSON.stringify(legacyPatients),
+    );
     memoryStore[caseKey] = await CryptoVault.encryptAsync(DOC_ID, JSON.stringify(legacyCases));
 
     // Thực hiện Migration
@@ -214,7 +221,9 @@ describe('SQLite Migration & Zero Data Loss Tests', () => {
     // KIỂM CHỨNG BẢO TOÀN DỮ LIỆU CŨ: AsyncStorage vẫn còn nguyên vẹn 100%
     expect(memoryStore[patientKey]).toBeDefined();
     expect(memoryStore[caseKey]).toBeDefined();
-    const rawRestoredPatients = JSON.parse(await CryptoVault.decryptAsync(DOC_ID, memoryStore[patientKey]));
+    const rawRestoredPatients = JSON.parse(
+      await CryptoVault.decryptAsync(DOC_ID, memoryStore[patientKey]),
+    );
     expect(rawRestoredPatients.length).toBe(2);
     expect(rawRestoredPatients[0].fullName).toBe('Nguyễn Văn Minh');
 
@@ -269,11 +278,15 @@ describe('SQLite Migration & Zero Data Loss Tests', () => {
     expect(c1.encrypted_payload).toBeDefined();
 
     // Đối chiếu giải mã payload của SQLite khớp 100% với entity ban đầu
-    const decryptedP1Payload = JSON.parse(await CryptoVault.decryptAsync(DOC_ID, p1.encrypted_payload));
+    const decryptedP1Payload = JSON.parse(
+      await CryptoVault.decryptAsync(DOC_ID, p1.encrypted_payload),
+    );
     expect(decryptedP1Payload.fullName).toBe('Nguyễn Văn Minh');
     expect(decryptedP1Payload.patientCode).toBe('BN-LEG-01');
 
-    const decryptedC1Payload = JSON.parse(await CryptoVault.decryptAsync(DOC_ID, c1.encrypted_payload));
+    const decryptedC1Payload = JSON.parse(
+      await CryptoVault.decryptAsync(DOC_ID, c1.encrypted_payload),
+    );
     expect(decryptedC1Payload.caseCode).toBe('CA-2026-000001');
     expect(decryptedC1Payload.doctorComment).toBe('Nốt mờ đáy phổi phải');
 
@@ -333,7 +346,10 @@ describe('SQLite Migration & Zero Data Loss Tests', () => {
     ];
 
     const patientKey = `@lungct_db/v1/${DOC_ID}/patients`;
-    memoryStore[patientKey] = await CryptoVault.encryptAsync(DOC_ID, JSON.stringify(legacyPatients));
+    memoryStore[patientKey] = await CryptoVault.encryptAsync(
+      DOC_ID,
+      JSON.stringify(legacyPatients),
+    );
 
     // Chạy lại quá trình migration
     const result = await storageService.migrateLegacyStorageToSqlite(DOC_ID);
@@ -342,7 +358,9 @@ describe('SQLite Migration & Zero Data Loss Tests', () => {
 
     // Không bị nhân đôi: vẫn chính xác 2 bệnh nhân nhờ INSERT OR REPLACE
     expect(mockSqliteDb.patients.length).toBe(2);
-    expect(mockSqliteDb.patients.find((p) => p.patient_id === 'pat_leg_01')?.full_name).toBe('Nguyễn Văn Minh (Cập nhật)');
+    expect(mockSqliteDb.patients.find((p) => p.patient_id === 'pat_leg_01')?.full_name).toBe(
+      'Nguyễn Văn Minh (Cập nhật)',
+    );
     expect(mockSqliteDb.metadata['sqlite_migration_status']).toBe('COMPLETED');
   });
 });

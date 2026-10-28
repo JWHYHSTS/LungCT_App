@@ -96,10 +96,7 @@ export interface ILocalStorageAdapter {
     ownerId: string,
     result: Omit<AIPredictionResultEntity, 'resultId'>,
   ): Promise<AIPredictionResultEntity>;
-  getLatestPrediction(
-    ownerId: string,
-    imageId: string,
-  ): Promise<AIPredictionResultEntity | null>;
+  getLatestPrediction(ownerId: string, imageId: string): Promise<AIPredictionResultEntity | null>;
 
   // === THỐNG KÊ (PROJECTION) ===
   getDoctorStats(ownerId: string): Promise<DoctorStatsProjection>;

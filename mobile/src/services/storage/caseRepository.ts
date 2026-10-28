@@ -49,10 +49,7 @@ function notifyCaseListeners() {
 /**
  * Chuyển đổi từ CaseEntity sang MockCase dùng trên UI
  */
-export function entityToMockCase(
-  entity: CaseEntity,
-  patient?: PatientEntity | null,
-): MockCase {
+export function entityToMockCase(entity: CaseEntity, patient?: PatientEntity | null): MockCase {
   // Lấy thêm thông tin ảnh nếu có sẵn từ mock store (để hiển thị lát cắt trong phiên)
   const mockExisting = findMockCaseById(entity.caseId);
   const images = mockExisting ? mockExisting.images : [];
@@ -66,8 +63,16 @@ export function entityToMockCase(
     }
   }
 
-  const patientName = patient ? patient.fullName : mockExisting ? mockExisting.patientName : 'Bệnh nhân';
-  const patientCode = patient ? patient.patientCode : mockExisting ? mockExisting.patientCode : 'BN-UNKNOWN';
+  const patientName = patient
+    ? patient.fullName
+    : mockExisting
+      ? mockExisting.patientName
+      : 'Bệnh nhân';
+  const patientCode = patient
+    ? patient.patientCode
+    : mockExisting
+      ? mockExisting.patientCode
+      : 'BN-UNKNOWN';
 
   return {
     id: entity.caseId,
@@ -77,13 +82,15 @@ export function entityToMockCase(
     patientCode,
     captureDate: captureDateStr,
     status: entity.status === 'COMPLETED' ? 'COMPLETED' : entity.isPartial ? 'PARTIAL' : 'DRAFT',
-    imageCount: images.length > 0 ? images.length : (mockExisting?.imageCount || 0),
+    imageCount: images.length > 0 ? images.length : mockExisting?.imageCount || 0,
     aiLabelSummary: mockExisting?.aiLabelSummary,
     aiScore: mockExisting?.aiScore,
     isPartial: entity.isPartial,
     syncStatus: entity.syncState,
-    notes: entity.doctorComment || entity.clinicalNote || (mockExisting?.notes || ''),
-    notesSavedAt: entity.updatedAt ? entity.updatedAt.substring(0, 16).replace('T', ' ') : mockExisting?.notesSavedAt,
+    notes: entity.doctorComment || entity.clinicalNote || mockExisting?.notes || '',
+    notesSavedAt: entity.updatedAt
+      ? entity.updatedAt.substring(0, 16).replace('T', ' ')
+      : mockExisting?.notesSavedAt,
     images,
     isTrashed: entity.status === 'TRASHED',
     isMock: true,

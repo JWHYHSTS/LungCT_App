@@ -281,7 +281,6 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             }
           }}
         />
-
       </View>
 
       <Dialog

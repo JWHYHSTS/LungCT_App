@@ -216,11 +216,13 @@ describe('PatientRepository & Storage Integration Tests', () => {
     try {
       jest.spyOn(CryptoVault, 'isNativeKeystoreAvailable').mockReturnValue(false);
 
-      const spyEncryptAsync = jest.spyOn(CryptoVault, 'encryptAsync').mockImplementation(async () => {
-        throw new Error(
-          'NATIVE_CRYPTO_UNAVAILABLE: Module mã hóa phần cứng an toàn (Android Keystore / NativeCryptoVaultModule) chưa được nạp. Hệ thống dừng thao tác lưu trữ để bảo vệ dữ liệu y tế; không lưu khi chưa được mã hóa an toàn.',
-        );
-      });
+      const spyEncryptAsync = jest
+        .spyOn(CryptoVault, 'encryptAsync')
+        .mockImplementation(async () => {
+          throw new Error(
+            'NATIVE_CRYPTO_UNAVAILABLE: Module mã hóa phần cứng an toàn (Android Keystore / NativeCryptoVaultModule) chưa được nạp. Hệ thống dừng thao tác lưu trữ để bảo vệ dữ liệu y tế; không lưu khi chưa được mã hóa an toàn.',
+          );
+        });
 
       await expect(
         PatientRepository.addPatient('doc-fail', {

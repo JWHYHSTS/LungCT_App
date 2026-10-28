@@ -17,7 +17,6 @@ import {
   findPatientById,
   getCasesByPatientId,
   subscribeDoctorStore,
-  createMockCaseForPatient,
   trashPatient,
   type MockPatient,
 } from '../../../mocks';
@@ -118,11 +117,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
-        <TopBar
-          title={t('doctor_detail.patient_detail_title')}
-          type="stack"
-          onBackPress={onBack}
-        />
+        <TopBar title={t('doctor_detail.patient_detail_title')} type="stack" onBackPress={onBack} />
       </View>
     );
   }
@@ -167,7 +162,10 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
     try {
       await PatientRepository.trashPatient(ownerId, patient.id);
     } catch (err) {
-      console.warn('[PatientDetailScreen] Không thể cập nhật trạng thái xóa mềm trong kho lưu trữ:', err);
+      console.warn(
+        '[PatientDetailScreen] Không thể cập nhật trạng thái xóa mềm trong kho lưu trữ:',
+        err,
+      );
     }
     setShowTrashConfirmDialog(false);
     setNoticeDialog({

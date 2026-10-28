@@ -40,9 +40,9 @@ export class CryptoVault {
   public static isNativeKeystoreAvailable(): boolean {
     return Boolean(
       Platform.OS === 'android' &&
-        NativeCryptoVaultModule &&
-        typeof NativeCryptoVaultModule.encryptData === 'function' &&
-        typeof NativeCryptoVaultModule.decryptData === 'function',
+      NativeCryptoVaultModule &&
+      typeof NativeCryptoVaultModule.encryptData === 'function' &&
+      typeof NativeCryptoVaultModule.decryptData === 'function',
     );
   }
 
@@ -217,8 +217,13 @@ export class CryptoVault {
   /**
    * Mở cơ sở dữ liệu SQLite bảo mật theo ownerId
    */
-  public static async openSecureDatabaseAsync(ownerId: string): Promise<{ success: boolean; databasePath: string }> {
-    if (this.isNativeKeystoreAvailable() && typeof NativeCryptoVaultModule.openSecureDatabase === 'function') {
+  public static async openSecureDatabaseAsync(
+    ownerId: string,
+  ): Promise<{ success: boolean; databasePath: string }> {
+    if (
+      this.isNativeKeystoreAvailable() &&
+      typeof NativeCryptoVaultModule.openSecureDatabase === 'function'
+    ) {
       return await NativeCryptoVaultModule.openSecureDatabase(ownerId);
     }
     return { success: true, databasePath: `:memory:${ownerId}` };
@@ -227,8 +232,15 @@ export class CryptoVault {
   /**
    * Thực thi câu lệnh SQL ghi (INSERT/UPDATE/DELETE/CREATE)
    */
-  public static async executeSecureSqlAsync(ownerId: string, sql: string, args: any[] = []): Promise<boolean> {
-    if (this.isNativeKeystoreAvailable() && typeof NativeCryptoVaultModule.executeSecureSql === 'function') {
+  public static async executeSecureSqlAsync(
+    ownerId: string,
+    sql: string,
+    args: any[] = [],
+  ): Promise<boolean> {
+    if (
+      this.isNativeKeystoreAvailable() &&
+      typeof NativeCryptoVaultModule.executeSecureSql === 'function'
+    ) {
       return await NativeCryptoVaultModule.executeSecureSql(ownerId, sql, args);
     }
     return true;
@@ -237,8 +249,15 @@ export class CryptoVault {
   /**
    * Thực thi truy vấn SQL đọc (SELECT)
    */
-  public static async querySecureSqlAsync<T = any>(ownerId: string, sql: string, args: any[] = []): Promise<T[]> {
-    if (this.isNativeKeystoreAvailable() && typeof NativeCryptoVaultModule.querySecureSql === 'function') {
+  public static async querySecureSqlAsync<T = any>(
+    ownerId: string,
+    sql: string,
+    args: any[] = [],
+  ): Promise<T[]> {
+    if (
+      this.isNativeKeystoreAvailable() &&
+      typeof NativeCryptoVaultModule.querySecureSql === 'function'
+    ) {
       return await NativeCryptoVaultModule.querySecureSql(ownerId, sql, args);
     }
     return [];
@@ -248,9 +267,54 @@ export class CryptoVault {
    * Đóng cơ sở dữ liệu SQLite
    */
   public static async closeSecureDatabaseAsync(): Promise<boolean> {
-    if (this.isNativeKeystoreAvailable() && typeof NativeCryptoVaultModule.closeSecureDatabase === 'function') {
+    if (
+      this.isNativeKeystoreAvailable() &&
+      typeof NativeCryptoVaultModule.closeSecureDatabase === 'function'
+    ) {
       return await NativeCryptoVaultModule.closeSecureDatabase();
     }
     return true;
+  }
+
+  /**
+   * Tạo bản sao lưu mã hóa (.encrypted.bak)
+   */
+  public static async createEncryptedBackupAsync(
+    ownerId: string,
+    sourceFilePath: string,
+    targetBackupPath: string,
+  ): Promise<{ success: boolean; backupPath: string; backupSize: number }> {
+    if (
+      this.isNativeKeystoreAvailable() &&
+      typeof NativeCryptoVaultModule.createEncryptedBackup === 'function'
+    ) {
+      return await NativeCryptoVaultModule.createEncryptedBackup(
+        ownerId,
+        sourceFilePath,
+        targetBackupPath,
+      );
+    }
+    return { success: true, backupPath: targetBackupPath, backupSize: 0 };
+  }
+
+  /**
+   * Giải mã khôi phục từ bản sao lưu mã hóa (.encrypted.bak)
+   */
+  public static async restoreEncryptedBackupAsync(
+    ownerId: string,
+    backupFilePath: string,
+    restoredFilePath: string,
+  ): Promise<{ success: boolean; restoredPath: string; restoredSize: number }> {
+    if (
+      this.isNativeKeystoreAvailable() &&
+      typeof NativeCryptoVaultModule.restoreEncryptedBackup === 'function'
+    ) {
+      return await NativeCryptoVaultModule.restoreEncryptedBackup(
+        ownerId,
+        backupFilePath,
+        restoredFilePath,
+      );
+    }
+    return { success: true, restoredPath: restoredFilePath, restoredSize: 0 };
   }
 }

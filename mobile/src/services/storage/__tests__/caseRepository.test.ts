@@ -13,7 +13,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CaseRepository, subscribeCaseRepository } from '../caseRepository';
 import { PatientRepository } from '../patientRepository';
-import { CryptoVault } from '../cryptoVault';
 
 const memoryStore: Record<string, string> = {};
 

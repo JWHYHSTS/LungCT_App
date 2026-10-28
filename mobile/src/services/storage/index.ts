@@ -12,4 +12,3 @@ export * from './caseRepository';
  * Singleton instance của Local Storage Service
  */
 export const localStorageService: ILocalStorageAdapter = new EncryptedLocalStorageService();
-

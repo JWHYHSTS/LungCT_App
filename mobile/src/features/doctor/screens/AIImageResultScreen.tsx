@@ -199,9 +199,16 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
       }
 
       setSelectedFileLabel(targetFile.name);
-      setSelectedImageUri(targetFile.path.startsWith('/') ? `file://${targetFile.path}` : targetFile.path);
+      setSelectedImageUri(
+        targetFile.path.startsWith('/') ? `file://${targetFile.path}` : targetFile.path,
+      );
 
+      // eslint-disable-next-line react-hooks/purity
+      const startRunTimestamp = Date.now();
       const result = await runNativePipelineFromFilePath(targetFile.path);
+      // eslint-disable-next-line react-hooks/purity
+      const finishRunTimestamp = Date.now();
+      const totalFlowDurationMs = Math.max(0, finishRunTimestamp - startRunTimestamp);
       setOnDeviceResult(result);
 
       // Lưu kết quả dự đoán vào kho lưu trữ mã hóa cục bộ
@@ -225,13 +232,12 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           label: mappedLabel,
           explanationStatus: result.gradcamAvailable ? 'PASS' : 'UNAVAILABLE',
           modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
-          preprocessingVersion: 'Libyuv-Bilinear-v1',
+          preprocessingVersion: 'Native-Pillow-Nearest-v1',
           executionSource: 'LOCAL',
           mode: 'REAL',
-          // eslint-disable-next-line react-hooks/purity
-          startedAt: new Date(Date.now() - (result.latency.totalInferenceMs || 1000)).toISOString(),
-          finishedAt: new Date().toISOString(),
-          durationMs: result.latency.totalInferenceMs,
+          startedAt: new Date(startRunTimestamp).toISOString(),
+          finishedAt: new Date(finishRunTimestamp).toISOString(),
+          durationMs: totalFlowDurationMs,
           state: 'CURRENT',
         });
       } catch (saveErr) {

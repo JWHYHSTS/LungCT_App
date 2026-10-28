@@ -57,7 +57,9 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
   /**
    * Kiểm tra và thực thi migration schema cho một bác sĩ cụ thể
    */
-  public async migrateSchemaIfNeeded(ownerId: string): Promise<{ fromVersion: number; toVersion: number }> {
+  public async migrateSchemaIfNeeded(
+    ownerId: string,
+  ): Promise<{ fromVersion: number; toVersion: number }> {
     this.ensureInitialized();
     const keys = this.getKeys(ownerId);
     const metaRaw = await AsyncStorage.getItem(keys.metadata);
@@ -69,7 +71,10 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
         const meta = JSON.parse(metaJson);
         currentVersion = meta.schemaVersion || 1;
       } catch (err) {
-        console.warn(`[LocalStorage] Không thể đọc metadata schema của ${ownerId}, gán mặc định v1:`, err);
+        console.warn(
+          `[LocalStorage] Không thể đọc metadata schema của ${ownerId}, gán mặc định v1:`,
+          err,
+        );
         currentVersion = 1;
       }
     }
@@ -115,7 +120,7 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
       const metaRows = await CryptoVault.querySecureSqlAsync(
         ownerId,
         'SELECT meta_value FROM secure_metadata WHERE meta_key = ?',
-        ['sqlite_migration_status']
+        ['sqlite_migration_status'],
       );
 
       if (metaRows && metaRows.length > 0 && metaRows[0].meta_value === 'COMPLETED') {
@@ -160,8 +165,8 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
             p.createdAt,
             p.updatedAt,
             p.trashedAt || null,
-            encryptedPayload
-          ]
+            encryptedPayload,
+          ],
         );
         migratedPatients++;
       }
@@ -191,8 +196,8 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
             c.createdAt,
             c.updatedAt,
             c.trashedAt || null,
-            encryptedPayload
-          ]
+            encryptedPayload,
+          ],
         );
         migratedCases++;
       }
@@ -202,17 +207,17 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
       await CryptoVault.executeSecureSqlAsync(
         ownerId,
         'INSERT OR REPLACE INTO secure_metadata (meta_key, meta_value, updated_at) VALUES (?, ?, ?)',
-        ['sqlite_migration_status', 'COMPLETED', nowIso]
+        ['sqlite_migration_status', 'COMPLETED', nowIso],
       );
       await CryptoVault.executeSecureSqlAsync(
         ownerId,
         'INSERT OR REPLACE INTO secure_metadata (meta_key, meta_value, updated_at) VALUES (?, ?, ?)',
-        ['sqlite_migration_patient_count', String(migratedPatients), nowIso]
+        ['sqlite_migration_patient_count', String(migratedPatients), nowIso],
       );
       await CryptoVault.executeSecureSqlAsync(
         ownerId,
         'INSERT OR REPLACE INTO secure_metadata (meta_key, meta_value, updated_at) VALUES (?, ?, ?)',
-        ['sqlite_migration_case_count', String(migratedCases), nowIso]
+        ['sqlite_migration_case_count', String(migratedCases), nowIso],
       );
 
       return {
@@ -232,7 +237,9 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
 
   private ensureInitialized() {
     if (!this.isInitialized) {
-      throw new Error('EncryptedLocalStorageService chưa được khởi tạo. Hãy gọi initialize() trước.');
+      throw new Error(
+        'EncryptedLocalStorageService chưa được khởi tạo. Hãy gọi initialize() trước.',
+      );
     }
   }
 
@@ -257,7 +264,11 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
    * Mã hóa và lưu mảng đối tượng xuống storage qua cơ chế mã hóa an toàn (Keystore / AES-256-GCM)
    * Đồng thời ghi đồng bộ vào SQLite Native Engine tương ứng với cấu trúc bảng
    */
-  private async writeEncryptedTable<T>(ownerId: string, storageKey: string, data: T[]): Promise<void> {
+  private async writeEncryptedTable<T>(
+    ownerId: string,
+    storageKey: string,
+    data: T[],
+  ): Promise<void> {
     this.ensureInitialized();
     const jsonStr = JSON.stringify(data);
     const cipherText = await CryptoVault.encryptAsync(ownerId, jsonStr);
@@ -293,7 +304,7 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
               p.updatedAt,
               p.trashedAt || null,
               encryptedPayload,
-            ]
+            ],
           );
         }
       } else if (storageKey === keys.cases) {
@@ -322,7 +333,7 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
               c.updatedAt,
               c.trashedAt || null,
               encryptedPayload,
-            ]
+            ],
           );
         }
       } else if (storageKey === keys.predictions) {
@@ -347,7 +358,7 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
               pred.state,
               pred.finishedAt || pred.startedAt || new Date().toISOString(),
               encryptedPayload,
-            ]
+            ],
           );
         }
       }
@@ -360,7 +371,10 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
   // BỆNH NHÂN (PATIENTS)
   // ==========================================
 
-  public async getPatients(ownerId: string, includeTrashed: boolean = false): Promise<PatientEntity[]> {
+  public async getPatients(
+    ownerId: string,
+    includeTrashed: boolean = false,
+  ): Promise<PatientEntity[]> {
     const keys = this.getKeys(ownerId);
     const all = await this.readEncryptedTable<PatientEntity>(ownerId, keys.patients);
     if (includeTrashed) return all;
@@ -378,7 +392,9 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
 
     // Kiểm tra trùng mã bệnh nhân theo từng bác sĩ (Q-20)
     const exists = patients.some(
-      (p) => p.status === 'ACTIVE' && p.patientCode.toLowerCase() === input.patientCode.trim().toLowerCase(),
+      (p) =>
+        p.status === 'ACTIVE' &&
+        p.patientCode.toLowerCase() === input.patientCode.trim().toLowerCase(),
     );
     if (exists) {
       throw new Error(`Mã bệnh nhân "${input.patientCode}" đã tồn tại trong danh sách của bạn.`);
@@ -386,7 +402,8 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
 
     const now = new Date().toISOString();
     const newPatient: PatientEntity = {
-      patientId: input.patientId || `pat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      patientId:
+        input.patientId || `pat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       ownerId,
       patientCode: input.patientCode.trim(),
       fullName: input.fullName.trim(),
@@ -658,7 +675,10 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
     const patients = await this.getPatients(ownerId, false);
     const cases = await this.getCases(ownerId, undefined, false);
     const keys = this.getKeys(ownerId);
-    const predictions = await this.readEncryptedTable<AIPredictionResultEntity>(ownerId, keys.predictions);
+    const predictions = await this.readEncryptedTable<AIPredictionResultEntity>(
+      ownerId,
+      keys.predictions,
+    );
 
     // Chỉ tính kết quả phân tích REAL hiện hành
     const realPreds = predictions.filter(
@@ -733,9 +753,18 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
     await this.writeEncryptedTable<CTImageEntity>(ownerId, keys.images, retainedImages);
 
     const retainedImageIdSet = new Set(retainedImages.map((img) => img.imageId));
-    const allPredictions = await this.readEncryptedTable<AIPredictionResultEntity>(ownerId, keys.predictions);
-    const retainedPredictions = allPredictions.filter((pred) => retainedImageIdSet.has(pred.imageId));
-    await this.writeEncryptedTable<AIPredictionResultEntity>(ownerId, keys.predictions, retainedPredictions);
+    const allPredictions = await this.readEncryptedTable<AIPredictionResultEntity>(
+      ownerId,
+      keys.predictions,
+    );
+    const retainedPredictions = allPredictions.filter((pred) =>
+      retainedImageIdSet.has(pred.imageId),
+    );
+    await this.writeEncryptedTable<AIPredictionResultEntity>(
+      ownerId,
+      keys.predictions,
+      retainedPredictions,
+    );
 
     return {
       purgedPatientsCount,

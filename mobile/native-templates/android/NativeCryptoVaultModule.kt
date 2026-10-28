@@ -661,4 +661,101 @@ class NativeCryptoVaultModule(private val reactContext: ReactApplicationContext)
       promise.reject("DB_CLOSE_ERROR", "Lỗi đóng cơ sở dữ liệu: ${e.message}", e)
     }
   }
+
+  /**
+   * Tạo bản sao lưu mã hóa (.encrypted.bak) từ một tệp cơ sở dữ liệu xác định
+   */
+  @ReactMethod
+  fun createEncryptedBackup(ownerId: String, sourceFilePath: String, targetBackupPath: String, promise: Promise) {
+    try {
+      val srcFile = File(sourceFilePath)
+      if (!srcFile.exists()) {
+        promise.reject("FILE_NOT_FOUND", "Không tìm thấy tệp nguồn để sao lưu: $sourceFilePath")
+        return
+      }
+
+      val targetFile = File(targetBackupPath)
+      targetFile.parentFile?.mkdirs()
+
+      val masterKey = getOrCreateKeystoreKeyForEncryption(ownerId)
+      val rawBytes = srcFile.readBytes()
+      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+      cipher.init(Cipher.ENCRYPT_MODE, masterKey)
+      val iv = cipher.iv
+      val cipherBytes = cipher.doFinal(rawBytes)
+
+      java.io.FileOutputStream(targetFile).use { fos ->
+        fos.write("LCBK".toByteArray(Charsets.US_ASCII))
+        fos.write(iv.size)
+        fos.write(iv)
+        fos.write(cipherBytes)
+      }
+
+      val map = Arguments.createMap().apply {
+        putBoolean("success", true)
+        putString("backupPath", targetFile.absolutePath)
+        putDouble("backupSize", targetFile.length().toDouble())
+      }
+      promise.resolve(map)
+    } catch (e: Exception) {
+      promise.reject("BACKUP_ENCRYPT_ERROR", "Lỗi tạo bản sao lưu mã hóa: ${e.message}", e)
+    }
+  }
+
+  /**
+   * Giải mã khôi phục tệp cơ sở dữ liệu từ bản sao lưu mã hóa (.encrypted.bak)
+   */
+  @ReactMethod
+  fun restoreEncryptedBackup(ownerId: String, backupFilePath: String, restoredFilePath: String, promise: Promise) {
+    try {
+      val backupFile = File(backupFilePath)
+      if (!backupFile.exists()) {
+        promise.reject("BACKUP_NOT_FOUND", "Không tìm thấy tệp sao lưu: $backupFilePath")
+        return
+      }
+
+      val restoredFile = File(restoredFilePath)
+      restoredFile.parentFile?.mkdirs()
+
+      val masterKey = getKeystoreKeyForDecryption(ownerId)
+      val allBytes = backupFile.readBytes()
+      if (allBytes.size < 5) {
+        promise.reject("INVALID_BACKUP", "Tệp sao lưu không đủ kích thước header tối thiểu.")
+        return
+      }
+
+      val magic = String(allBytes.sliceArray(0 until 4), Charsets.US_ASCII)
+      if (magic != "LCBK") {
+        promise.reject("INVALID_MAGIC", "Header magic của tệp sao lưu không hợp lệ: $magic")
+        return
+      }
+
+      val ivLen = allBytes[4].toInt() and 0xFF
+      if (allBytes.size < 5 + ivLen) {
+        promise.reject("INVALID_IV", "Kích thước IV vượt quá độ dài tệp sao lưu.")
+        return
+      }
+
+      val iv = allBytes.sliceArray(5 until (5 + ivLen))
+      val ciphertext = allBytes.sliceArray((5 + ivLen) until allBytes.size)
+
+      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+      val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
+      cipher.init(Cipher.DECRYPT_MODE, masterKey, spec)
+
+      val plainBytes = cipher.doFinal(ciphertext)
+      java.io.FileOutputStream(restoredFile).use { fos ->
+        fos.write(plainBytes)
+      }
+
+      val map = Arguments.createMap().apply {
+        putBoolean("success", true)
+        putString("restoredPath", restoredFile.absolutePath)
+        putDouble("restoredSize", restoredFile.length().toDouble())
+      }
+      promise.resolve(map)
+    } catch (e: Exception) {
+      promise.reject("RESTORE_ERROR", "Lỗi giải mã khôi phục bản sao lưu: ${e.message}", e)
+    }
+  }
 }
