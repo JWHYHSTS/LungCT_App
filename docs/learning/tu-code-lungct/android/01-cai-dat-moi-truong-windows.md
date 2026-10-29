@@ -151,6 +151,213 @@
 
 ---
 
+## 🎨 6. TỰ THAY TÊN VÀ LOGO ỨNG DỤNG (APP BRANDING & ICONS)
+
+Khi phát triển ứng dụng di động thực tế, việc thay đổi tên hiển thị (App Name) và biểu tượng (App Icon) là bước quan trọng để cá nhân hóa sản phẩm. Đối với người mới bắt đầu, đây là một trong những phần dễ gây nhầm lẫn nhất giữa **cấu hình Expo**, **cấu hình native Android**, và **cấu hình native iOS**.
+
+Mục này hướng dẫn chi tiết cách tự thay đổi toàn diện tên và icon từ mã nguồn của dự án LungCT.
+
+---
+
+### 6.1. Phân biệt các khái niệm cốt lõi: Tên hiển thị vs Định danh ứng dụng
+
+Trước khi sửa bất kỳ tệp nào, bạn cần phân biệt rõ ràng hai khái niệm hoàn toàn khác nhau:
+
+| Khái niệm | Ý nghĩa | Vị trí hiển thị | Có thể đổi tùy ý không? | Ví dụ trong LungCT |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tên hiển thị (App Name / Label)** | Chuỗi ký tự hiển thị dưới icon trên màn hình chính (Launcher) của điện thoại và trong trình quản lý ứng dụng. | Màn hình Home, App Drawer, thanh Recent Apps. | **Có**. Đổi bất kỳ lúc nào mà không ảnh hưởng tới dữ liệu hay việc cập nhật ứng dụng. | `LungCT` (trước đây là `mobile`) |
+| **Định danh gói ứng dụng (Application ID / Bundle Identifier)** | Tên định danh duy nhất toàn cầu của ứng dụng trên hệ điều hành Android và iOS. | Khóa định danh trong hệ điều hành, Google Play Console, App Store Connect, quyền hạn và thư mục lưu trữ CSDL sandbox. | **KHÔNG được tự tiện đổi**. Nếu đổi `applicationId`, hệ điều hành sẽ coi đây là một ứng dụng mới hoàn toàn, làm mất liên kết với CSDL SQLite cũ, không thể cài cập nhật đè (`install -r`). | Android: `com.anonymous.mobile`<br>iOS: `com.anonymous.mobile` |
+
+> [!WARNING]
+> Khi muốn đổi tên hiển thị thành `LungCT`, bạn **chỉ sửa App Name**, tuyệt đối **không thay đổi** `applicationId` trong `build.gradle` hay `package` trong `AndroidManifest.xml` nếu đang muốn giữ nguyên dữ liệu bệnh nhân hiện có.
+
+---
+
+### 6.2. Bản đồ tệp và thư mục lưu trữ ảnh & cấu hình
+
+Dưới đây là danh sách chính xác các tệp quản lý tên và biểu tượng ứng dụng:
+
+```
+LungCT_DoAn/
+├── mobile/
+│   ├── app.json                                 <-- [Cấu hình gốc Expo]: Khai báo tên và đường dẫn icon
+│   ├── assets/                                  <-- [Thư mục nguồn ảnh gốc]: Lưu ảnh thiết kế độ phân giải cao
+│   │   ├── icon.png                             <-- Icon vuông tiêu chuẩn (1024x1024 px, PNG)
+│   │   ├── splash-icon.png                      <-- Biểu tượng màn hình chào (512x512 px, PNG)
+│   │   ├── android-icon-foreground.png          <-- Lớp họa tiết phía trước Android (512x512 px, PNG trong suốt)
+│   │   ├── android-icon-background.png          <-- Lớp màu/hình nền Android (512x512 px, PNG #123047)
+│   │   └── android-icon-monochrome.png          <-- Lớp biểu tượng đơn sắc Android 13+ Themed Icons (512x512 px)
+│   ├── android/app/src/main/res/                <-- [Tài nguyên native Android đã biên dịch]:
+│   │   ├── values/strings.xml                   <-- [Chính]: Chứa chuỗi app_name native hiển thị ngoài Launcher
+│   │   ├── mipmap-anydpi-v26/                   <-- Adaptive Icon XML (Android 8.0 trở lên)
+│   │   │   ├── ic_launcher.xml                  <-- Định nghĩa ghép foreground + background dạng vuông/tròn
+│   │   │   └── ic_launcher_round.xml            <-- Định nghĩa icon tròn
+│   │   ├── mipmap-mdpi/                         <-- Mật độ chuẩn 1x (ic_launcher.webp 48x48, foreground 108x108)
+│   │   ├── mipmap-hdpi/                         <-- Mật độ cao 1.5x (ic_launcher.webp 72x72, foreground 162x162)
+│   │   ├── mipmap-xhdpi/                        <-- Mật độ rất cao 2x (ic_launcher.webp 96x96, foreground 216x216)
+│   │   ├── mipmap-xxhdpi/                       <-- Mật độ cực cao 3x (ic_launcher.webp 144x144, foreground 324x324)
+│   │   └── mipmap-xxxhdpi/                      <-- Mật độ siêu cao 4x (ic_launcher.webp 192x192, foreground 432x432)
+│   ├── native-templates/android/res/            <-- [Mẫu tái tạo]: Bảo toàn cấu hình strings và mipmap khi chạy prebuild
+│   └── scripts/
+│       └── generate_brand_icons.py              <-- Script Python tự động sinh toàn bộ mipmap WebP đúng chuẩn
+```
+
+---
+
+### 6.3. Kích thước, định dạng và Vùng an toàn (Safe Zone) của Icon
+
+#### Cơ chế Adaptive Icons từ Android 8.0 (API 26) trở lên:
+Android không dùng một bức ảnh vuông đơn lẻ để làm icon mà chia làm 2 lớp xếp chồng lên nhau:
+1. **Lớp nền (Background)**: Kích thước canvas chuẩn **108dp x 108dp** (ví dụ phủ màu `#123047`).
+2. **Lớp tiền cảnh (Foreground)**: Kích thước canvas chuẩn **108dp x 108dp**, nền trong suốt chứa hình vẽ chính (hai lá phổi).
+
+> [!IMPORTANT]
+> **Quy tắc Vùng an toàn (Safe Zone)**:
+> Mặc dù canvas là **108dp x 108dp**, nhưng hệ điều hành của các hãng (Samsung OneUI, Xiaomi HyperOS, Google Pixel) sẽ áp dụng các mặt nạ cắt (mask) khác nhau: hình tròn, hình vuông bo góc (squircle), hoặc giọt nước.
+> - **Đường kính vùng an toàn chỉ là 66dp ở chính giữa tâm** (chiếm khoảng 61% kích thước canvas).
+> - Nếu bạn vẽ hình vẽ vượt ra ngoài vòng tròn 66dp này, hình vẽ sẽ bị cắt lẹm mép ngoài trên các máy dùng Launcher hình tròn!
+> - Tỷ lệ an toàn khuyến nghị: Hình vẽ lá phổi nên nằm gọn trong khoảng **50% đến 58%** chiều rộng của ảnh để đảm bảo khi thu nhỏ trên màn hình chính vẫn thấy viền cách ly thoáng đãng và sắc nét.
+
+#### Bảng thông số mật độ mipmap chuẩn của Android:
+
+| Thư mục mipmap | Hệ số co giãn | Kích thước Icon truyền thống (Legacy) | Kích thước Lớp Foreground / Background (Adaptive) |
+| :--- | :---: | :---: | :---: |
+| `mipmap-mdpi` | 1.0x | 48 x 48 px | 108 x 108 px |
+| `mipmap-hdpi` | 1.5x | 72 x 72 px | 162 x 162 px |
+| `mipmap-xhdpi` | 2.0x | 96 x 96 px | 216 x 216 px |
+| `mipmap-xxhdpi` | 3.0x | 144 x 144 px | 324 x 324 px |
+| `mipmap-xxxhdpi` | 4.0x | 192 x 192 px | 432 x 432 px |
+
+---
+
+### 6.4. Hướng dẫn từng bước: Muốn đổi tên thì sửa dòng nào?
+
+Để đổi tên hiển thị của ứng dụng thành tên bạn muốn (ví dụ `LungCT`), bạn cần sửa ở 2 nơi:
+
+#### Bước 1: Sửa chuỗi native trong `mobile/android/app/src/main/res/values/strings.xml`
+Đây là nơi hệ điều hành Android thực sự đọc khi hiển thị tên app ngoài launcher.
+
+*Mã trước khi sửa:*
+```xml
+<resources>
+  <string name="app_name">mobile</string>
+</resources>
+```
+
+*Mã sau khi sửa (đổi thành LungCT):*
+```xml
+<resources>
+  <string name="app_name">LungCT</string>
+</resources>
+```
+
+#### Bước 2: Đồng bộ cấu hình trong `mobile/app.json`
+Để khi chạy Expo hoặc dựng lại cấu hình, tên không bị quay về mặc định:
+
+```json
+{
+  "expo": {
+    "name": "LungCT",
+    "slug": "lungct",
+    ...
+```
+
+---
+
+### 6.5. Hướng dẫn từng bước: Muốn đổi biểu tượng (Icon) thì làm thế nào?
+
+Bạn có 2 cách thực hiện:
+
+#### Cách 1: Sử dụng Script Python tự động sinh trọn bộ (Khuyên dùng)
+Dự án đã tích hợp sẵn script `mobile/scripts/generate_brand_icons.py` sử dụng thư viện `Pillow`. Bạn có thể thay đổi màu nền hoặc hình học trong script, sau đó chạy:
+
+```powershell
+python mobile/scripts/generate_brand_icons.py
+```
+*Kết quả mong đợi*:
+```
+Generated: mobile\assets\icon.png
+Generated: mobile\assets\splash-icon.png
+Generated: mobile\assets\android-icon-foreground.png
+Generated: mobile\assets\android-icon-background.png
+Generated: mobile\assets\android-icon-monochrome.png
+Generated: mobile\android\app\src\main\res\mipmap-mdpi (ic_launcher.webp, foreground, background)
+...
+Generated: mobile\android\app\src\main\res\mipmap-xxxhdpi (ic_launcher.webp, foreground, background)
+SUCCESS: Hoan tat sinh toan bo icon thuong hieu LungCT!
+```
+
+#### Cách 2: Tự vẽ ảnh bằng Photoshop / Figma và chép thủ công
+1. Chuẩn bị ảnh PNG kích thước `1024x1024 px` (đặt tên là `icon.png`), đưa hình vẽ chính vào tâm (trong vòng tròn đường kính 600 px).
+2. Chuẩn bị ảnh `android-icon-foreground.png` kích thước `512x512 px` (nền trong suốt).
+3. Chuẩn bị ảnh `android-icon-background.png` kích thước `512x512 px` (màu nền đậm `#123047`).
+4. Chép đè vào thư mục `mobile/assets/`.
+5. Tạo các tệp WebP co giãn theo tỷ lệ trong bảng ở mục 6.3 và chép vào các thư mục `mobile/android/app/src/main/res/mipmap-*/`.
+
+---
+
+### 6.6. Vì sao thay đổi icon native cần build lại APK mà không thể chỉ reload JavaScript?
+
+Nhiều người mới học React Native thắc mắc: *"Tại sao sửa giao diện màn hình bấm phím `r` trên Metro là thấy ngay, nhưng đổi icon và tên app thì reload JS không có tác dụng?"*.
+
+**Giải thích bản chất kỹ thuật**:
+1. **Mã nguồn JavaScript/TypeScript** (các file `.tsx`, `.ts`) được Metro Bundler đóng gói thành một file nhị phân bundle duy nhất (`index.android.bundle`). Khi bạn sửa code giao diện, Metro chỉ việc gửi gói bundle mới qua WebSocket tới máy ảo/điện thoại và ứng dụng tự render lại.
+2. **Icon và Tên ứng dụng** thuộc về **tài nguyên gốc của hệ điều hành Android (Android Native Resources)**. Khi bạn build ứng dụng, công cụ `aapt2` (Android Asset Packaging Tool) sẽ biên dịch các tệp ảnh trong `res/mipmap/` và chuỗi trong `res/values/strings.xml` thành bảng tài nguyên nhị phân `resources.arsc` và đóng gói cứng vào file APK.
+3. Khi bạn cài đặt ứng dụng vào điện thoại, Launcher của hệ điều hành Android (như Xiaomi System Launcher) sẽ truy cập trực tiếp vào tệp `resources.arsc` của tệp APK đã cài để lấy icon và nhãn hiển thị. Quá trình này diễn ra ở tầng hệ điều hành, hoàn toàn độc lập và không liên quan gì đến tiến trình chạy máy ảo JavaScript (Hermes/V8).
+4. Do đó, **bắt buộc phải chạy lệnh build lại APK và cài đặt cập nhật** thì Launcher của điện thoại mới nhận diện được bộ icon mới.
+
+---
+
+### 6.7. Cách xử lý khi Launcher điện thoại còn lưu icon cũ mà không được xóa dữ liệu
+
+Khi bạn cài bản build mới bằng lệnh `adb install -r`, một số Launcher (đặc biệt là Xiaomi HyperOS / MIUI Launcher hoặc Samsung OneUI Launcher) sử dụng cơ chế lưu đệm biểu tượng (Icon Cache) để tăng tốc độ cuộn trang. Dù file APK đã mang icon mới, Launcher vẫn có thể hiển thị icon mặc định cũ.
+
+> [!CAUTION]
+> **Tuyệt đối không gỡ cài đặt ứng dụng (Uninstall)** để sửa lỗi này! Việc gỡ ứng dụng sẽ xóa sạch toàn bộ cơ sở dữ liệu SQLite chứa hồ sơ bệnh nhân và ca bệnh đã lưu.
+
+**Các bước làm mới Icon Cache an toàn 100% dữ liệu:**
+
+1. **Cách 1: Khởi động lại Launcher hệ thống qua lệnh ADB (Nhanh nhất)**:
+   - Đối với điện thoại Xiaomi (Redmi 13):
+     ```powershell
+     adb -s qwpzbmbidecaaqqk shell am force-stop com.miui.home
+     ```
+     *(Lệnh này chỉ khởi động lại giao diện màn hình chính của Xiaomi, màn hình sẽ chớp nhẹ trong 1 giây để nạp lại toàn bộ icon mới, dữ liệu ứng dụng LungCT giữ nguyên vẹn).*
+   - Đối với máy ảo Google Pixel:
+     ```powershell
+     adb shell am force-stop com.google.android.apps.nexuslauncher
+     ```
+2. **Cách 2: Đổi chủ đề giao diện (Theme)**:
+   - Trên điện thoại, vào **Cài đặt** -> **Chủ đề (Themes)** -> Chọn lại chủ đề mặc định hoặc đổi một chủ đề khác rồi đổi lại. Thao tác này buộc hệ điều hành vẽ lại toàn bộ icon cache.
+3. **Cách 3: Khởi động lại điện thoại (Restart)**:
+   - Khởi động lại máy sẽ xóa sạch bộ nhớ tạm RAM của Launcher mà không chạm vào phân vùng lưu trữ ứng dụng.
+
+---
+
+### 6.8. Hướng dẫn đối với nền tảng iOS (Phân hệ macOS)
+
+> [!NOTE]
+> **Trạng thái kiểm chứng**: `[Chưa kiểm chứng trên phần cứng macOS vật lý]`.
+> Hướng dẫn dưới đây được tổng hợp và đối chiếu theo tài liệu chuẩn của Apple Developer Human Interface Guidelines và Xcode 15/16.
+
+1. **Nơi lưu trữ ảnh**:
+   - iOS quản lý icon thông qua danh mục tài nguyên **Asset Catalog**: `mobile/ios/mobile/Images.xcassets/AppIcon.appiconset/`.
+   - File cấu hình mô tả: `Contents.json`.
+2. **Kích thước ảnh**:
+   - Từ Xcode 14 trở lên, Apple đã đơn giản hóa: Bạn chỉ cần cung cấp **1 ảnh duy nhất kích thước 1024 x 1024 px** (định dạng PNG 24-bit không có kênh alpha trong suốt).
+   - Xcode sẽ tự động co giãn (downscale) ảnh này thành các kích thước phù hợp cho màn hình iPhone (60x60@2x, 60x60@3x), iPad, App Store và thanh thông báo.
+3. **Đổi tên hiển thị trên màn hình iPhone**:
+   - Mở tệp cấu hình `mobile/ios/mobile/Info.plist`.
+   - Tìm khóa `CFBundleDisplayName` và sửa giá trị thành `LungCT`:
+     ```xml
+     <key>CFBundleDisplayName</key>
+     <string>LungCT</string>
+     ```
+4. **Quy trình áp dụng**:
+   - Do chưa có máy tính macOS vật lý, nhóm ghi nhận cấu hình này theo chuẩn lý thuyết. Khi đưa lên Xcode trên macOS, chạy lệnh `pod install` trong thư mục `mobile/ios` và biên dịch bằng `xcodebuild`.
+
+---
+
 ## ✅ BẢNG KIỂM TRA (CHECKLIST) TRƯỚC KHI CHUYỂN BÀI
 
 - [ ] Lệnh `node -v` in ra phiên bản v20.x.x.
@@ -158,3 +365,5 @@
 - [ ] Lệnh `adb version` in ra phiên bản 1.0.41 trở lên.
 - [ ] Lệnh `adb devices` hiển thị ít nhất một thiết bị với trạng thái `device`.
 - [ ] Đã tạo sẵn thư mục thực hành tại ổ đĩa ngắn (ví dụ `C:\Practice_LungCT\`).
+- [ ] Đã hiểu rõ cách cấu hình tên `LungCT` trong `strings.xml` và `app.json`.
+- [ ] Đã hiểu vùng an toàn 66dp của Android Adaptive Icon để không bị cắt lẹm.
