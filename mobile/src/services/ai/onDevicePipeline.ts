@@ -18,6 +18,7 @@ export interface AvailableTestImage {
 export interface PickedImageResult {
   canceled: boolean;
   uri?: string;
+  filePath?: string;
   name?: string;
   size?: number;
 }
@@ -32,6 +33,17 @@ export async function pickImageFromDevice(): Promise<PickedImageResult> {
     throw new Error('LungCtPipelineModule.pickImageFromDevice chưa khả dụng trên nền tảng này.');
   }
   return await LungCtPipelineModule.pickImageFromDevice();
+}
+
+/**
+ * Chụp ảnh trực tiếp từ máy ảnh (Camera Intent)
+ * Lưu ảnh vào sandbox an toàn của ứng dụng (dicom_cases)
+ */
+export async function takePhotoWithCamera(): Promise<PickedImageResult> {
+  if (!LungCtPipelineModule || typeof LungCtPipelineModule.takePhotoWithCamera !== 'function') {
+    throw new Error('LungCtPipelineModule.takePhotoWithCamera chưa khả dụng trên nền tảng này.');
+  }
+  return await LungCtPipelineModule.takePhotoWithCamera();
 }
 
 /**

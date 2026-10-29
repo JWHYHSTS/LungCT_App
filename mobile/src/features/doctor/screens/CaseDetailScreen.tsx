@@ -18,7 +18,7 @@ import {
 import { findCaseById, subscribeDoctorStore, addImageToCase, type MockCase } from '../../../mocks';
 import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
-import { pickImageFromDevice } from '../../../services/ai/onDevicePipeline';
+import { pickImageFromDevice, takePhotoWithCamera } from '../../../services/ai/onDevicePipeline';
 
 export interface CaseDetailScreenProps {
   caseId: string;
@@ -174,37 +174,55 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   // Thêm ảnh từ Thư viện / Camera
   const handleSelectImageSource = async (source: 'gallery' | 'camera') => {
     setShowAddImageSheet(false);
-    if (source === 'gallery') {
-      try {
-        const picked = await pickImageFromDevice();
-        if (picked.canceled) {
-          return;
-        }
-        const added = addImageToCase(currentCase.id, 'gallery', 'pending');
-        if (added) {
-          setNoticeDialog({
-            visible: true,
-            title: 'Đã nạp tệp ảnh thực tế',
-            body: `Đã chọn tệp: ${picked.name ?? 'CT_Slice.jpg'}. Trạng thái ảnh được thiết lập chờ phân tích On-Device AI.`,
-          });
-        }
-        return;
-      } catch (err: any) {
-        // Fallback về ảnh mô phỏng nếu native picker không khả dụng (môi trường web/mock)
-        console.warn(
-          '[CaseDetailScreen] Native picker không khả dụng, chuyển sang chế độ mô phỏng:',
-          err,
-        );
-      }
-    }
+    try {
+      const picked =
+        source === 'camera' ? await takePhotoWithCamera() : await pickImageFromDevice();
 
-    const added = addImageToCase(currentCase.id, source, 'mock');
-    if (added) {
-      setNoticeDialog({
-        visible: true,
-        title: 'Đã thêm ảnh cắt lớp',
-        body: `[Mô phỏng] Đã nạp thành công ảnh lát cắt #${added.sliceNumber}. Dữ liệu đã lưu tạm trong phiên mô phỏng.`,
+      if (picked.canceled || !picked.uri) {
+        return;
+      }
+
+      // Đính kèm ảnh thực tế vào kho lưu trữ mã hóa SQLite
+      try {
+        await CaseRepository.attachCTImage(ownerId, currentCase.id, {
+          source: source === 'camera' ? 'CAMERA' : 'LIBRARY',
+          mimeType: 'image/jpeg',
+          localFileRef: picked.filePath || picked.uri,
+          originalFileName: picked.name,
+          byteSize: picked.size ? Math.round(picked.size) : undefined,
+        });
+      } catch (attachErr) {
+        console.warn('[CaseDetailScreen] Lỗi đính kèm ảnh vào repository:', attachErr);
+      }
+
+      const added = addImageToCase(currentCase.id, source, 'pending', {
+        uri: picked.uri,
+        filePath: picked.filePath,
+        originalFileName: picked.name,
       });
+
+      if (added) {
+        setNoticeDialog({
+          visible: true,
+          title: source === 'camera' ? 'Đã chụp ảnh CT thành công' : 'Đã nạp tệp ảnh thực tế',
+          body: `Đã nạp tệp: ${picked.name ?? 'CT_Slice.jpg'}.\nẢnh đã được lưu an toàn trong thư mục ứng dụng và sẵn sàng để phân tích On-Device AI.`,
+        });
+      }
+      return;
+    } catch (err: any) {
+      console.warn(
+        `[CaseDetailScreen] Lỗi ${source === 'camera' ? 'máy ảnh' : 'chọn ảnh'}:`,
+        err,
+      );
+      // Fallback chế độ mô phỏng nếu không chạy được native
+      const added = addImageToCase(currentCase.id, source, 'mock');
+      if (added) {
+        setNoticeDialog({
+          visible: true,
+          title: 'Đã thêm ảnh cắt lớp',
+          body: `[Mô phỏng] Đã nạp thành công ảnh lát cắt #${added.sliceNumber}. Dữ liệu đã lưu tạm trong phiên mô phỏng.`,
+        });
+      }
     }
   };
 
@@ -389,6 +407,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
                   index={idx + 1}
                   status={img.status}
                   aiClass={img.aiClass}
+                  thumbnail={img.uri ? { uri: img.uri } : undefined}
                   onPress={() => onNavigateToImageResult(currentCase.id, idx + 1)}
                 />
               </View>

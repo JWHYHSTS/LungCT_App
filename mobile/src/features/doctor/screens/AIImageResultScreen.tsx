@@ -183,29 +183,37 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
 
       setOnDeviceResult(null);
 
-      // Tìm tệp ảnh CT tương ứng từ danh sách tệp thiết bị sẵn có
-      const files = await getAvailableTestImages();
-      let targetFile: AvailableTestImage | undefined = files[0];
-      if (activeIndex === 2 && files.length >= 2) {
-        targetFile = files[1];
-      } else if (activeIndex >= 3 && files.length >= 3) {
-        targetFile = files[2];
+      // Ưu tiên tệp ảnh thực tế gắn liền với lát cắt nếu có
+      let targetPath: string | undefined = activeImage.filePath || activeImage.uri;
+      let targetName: string = activeImage.originalFileName || `Lát cắt #${activeImage.sliceNumber}`;
+
+      if (!targetPath) {
+        // Tìm tệp ảnh CT tương ứng từ danh sách tệp thiết bị sẵn có
+        const files = await getAvailableTestImages();
+        let targetFile: AvailableTestImage | undefined = files[0];
+        if (activeIndex === 2 && files.length >= 2) {
+          targetFile = files[1];
+        } else if (activeIndex >= 3 && files.length >= 3) {
+          targetFile = files[2];
+        }
+
+        if (!targetFile) {
+          throw new Error(
+            'Chưa tìm thấy tệp ảnh CT mẫu trên thiết bị (/sdcard/Download hoặc thư mục app). Vui lòng dùng nút "Chọn ảnh từ thiết bị để chạy AI" bên dưới.',
+          );
+        }
+        targetPath = targetFile.path;
+        targetName = targetFile.name;
       }
 
-      if (!targetFile) {
-        throw new Error(
-          'Chưa tìm thấy tệp ảnh CT mẫu trên thiết bị (/sdcard/Download hoặc thư mục app). Vui lòng dùng nút "Chọn ảnh từ thiết bị để chạy AI" bên dưới.',
-        );
-      }
-
-      setSelectedFileLabel(targetFile.name);
+      setSelectedFileLabel(targetName);
       setSelectedImageUri(
-        targetFile.path.startsWith('/') ? `file://${targetFile.path}` : targetFile.path,
+        targetPath.startsWith('/') ? `file://${targetPath}` : targetPath,
       );
 
       // eslint-disable-next-line react-hooks/purity
       const startRunTimestamp = Date.now();
-      const result = await runNativePipelineFromFilePath(targetFile.path);
+      const result = await runNativePipelineFromFilePath(targetPath);
       // eslint-disable-next-line react-hooks/purity
       const finishRunTimestamp = Date.now();
       const totalFlowDurationMs = Math.max(0, finishRunTimestamp - startRunTimestamp);
@@ -378,15 +386,21 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         {/* Khung hiển thị ảnh cắt lớp CT */}
         <View style={styles.canvasWrapper}>
           <CTImageView
-            key={selectedImageUri || activeImage.id}
-            imageSource={selectedImageUri ? { uri: selectedImageUri } : undefined}
-            showHeatmap={selectedImageUri ? false : showHeatmapLayer}
+            key={selectedImageUri || activeImage.uri || activeImage.id}
+            imageSource={
+              selectedImageUri
+                ? { uri: selectedImageUri }
+                : activeImage.uri
+                  ? { uri: activeImage.uri }
+                  : undefined
+            }
+            showHeatmap={selectedImageUri || activeImage.uri ? false : showHeatmapLayer}
             heatmapOpacity={camOpacity / 100}
             size={340}
             watermarkText={
               onDeviceResult
                 ? 'ON-DEVICE AI THỰC'
-                : selectedImageUri
+                : selectedImageUri || activeImage.uri
                   ? 'ẢNH TỪ THIẾT BỊ'
                   : activeImage.mockWatermark || 'ẢNH GIẢ LẬP'
             }

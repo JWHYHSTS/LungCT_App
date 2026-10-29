@@ -35,6 +35,9 @@ export interface MockCTImage {
   sliceNumber: number;
   source: 'gallery' | 'camera';
   status: CTImageStatus;
+  uri?: string;
+  filePath?: string;
+  originalFileName?: string;
   aiClass?: AIClass;
   scores?: {
     benign: number;
@@ -481,6 +484,11 @@ export const addImageToCase = (
   caseId: string,
   source: 'gallery' | 'camera',
   initialStatus: CTImageStatus = 'mock',
+  extraData?: {
+    uri?: string;
+    filePath?: string;
+    originalFileName?: string;
+  },
 ): MockCTImage | null => {
   let newImage: MockCTImage | null = null;
   casesStore = casesStore.map((c) => {
@@ -492,10 +500,16 @@ export const addImageToCase = (
         sliceNumber: 30 + nextIndex,
         source,
         status: initialStatus,
-        aiClass: 'Benign',
-        scores: { benign: 0.725, malignant: 0.185, normal: 0.09 },
-        hasGradCam: true,
-        mockWatermark: 'ẢNH GIẢ LẬP',
+        uri: extraData?.uri,
+        filePath: extraData?.filePath,
+        originalFileName: extraData?.originalFileName,
+        aiClass: initialStatus === 'pending' ? undefined : 'Benign',
+        scores:
+          initialStatus === 'pending'
+            ? undefined
+            : { benign: 0.725, malignant: 0.185, normal: 0.09 },
+        hasGradCam: initialStatus !== 'pending',
+        mockWatermark: initialStatus === 'pending' ? undefined : 'ẢNH GIẢ LẬP',
       };
       return {
         ...c,
