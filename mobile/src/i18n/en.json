@@ -652,5 +652,22 @@
     "theme_dark": "Dark",
     "theme_current_label": "Theme: {{theme}}",
     "settings_dialog_body_full": "Adjust application language and color theme (Light / Dark / System Default)."
+  },
+  "navigation": {
+    "tab_home": "Home",
+    "tab_patients": "Patients",
+    "tab_cases": "Cases",
+    "tab_stats": "Statistics",
+    "tab_profile": "Profile",
+    "sync_center": "Sync Center"
+  },
+  "common": {
+    "age_unit": "yrs",
+    "case_unit": "cases",
+    "item_unit": "items",
+    "latest": "latest"
+  },
+  "sync": {
+    "pending_count_sub": "pending changes to sync (Simulated)"
   }
 }

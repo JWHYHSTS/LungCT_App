@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import {
   Button,
@@ -26,6 +27,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   onNavigateToDetail,
   onNavigateToCreatePatient,
 }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing } = theme;
   const { user } = useAuth();
@@ -119,7 +121,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg.app }]}>
       <TopBar
-        title="Bệnh nhân"
+        title={t('navigation.tab_patients', 'Bệnh nhân')}
         type="root"
         rightActions={
           <View style={styles.topBarActions}>
@@ -151,7 +153,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
         <SearchField
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Tìm theo mã hoặc họ tên"
+          placeholder={t('ui.tim_theo_ma_hoac_ho_ten', 'Tìm theo mã hoặc họ tên')}
           onClear={() => setSearchQuery('')}
           style={{ marginVertical: spacing.xs }}
         />
@@ -163,10 +165,15 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
         >
           {PATIENT_FILTER_DECISION.chips.map((chip) => {
             const isSelected = selectedFilter === chip.key;
+            let translatedLabel: string = chip.label;
+            if (chip.key === 'all') translatedLabel = t('ui.tat_ca', 'Tất cả');
+            else if (chip.key === 'draft') translatedLabel = t('ui.co_ca_nhap', 'Có ca nháp');
+            else if (chip.key === 'unsynced') translatedLabel = t('ui.chua_ong_bo', 'Chưa đồng bộ');
+            else if (chip.key === 'trashed') translatedLabel = t('label.thung_rac', 'Thùng rác');
             return (
               <FilterChip
                 key={chip.key}
-                label={chip.label}
+                label={translatedLabel}
                 selected={isSelected}
                 onPress={() => setSelectedFilter(chip.key)}
                 style={{ marginRight: spacing.xs }}

@@ -214,7 +214,9 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
                   color: isModelError ? colors.status.danger.fg : colors.text.primary,
                 }}
               >
-                {isModelError ? 'Mô hình AI: Sự cố (MSG-09)' : 'Mô hình trên thiết bị: Sẵn sàng'}
+                {isModelError
+                  ? t('ui.mo_hinh_chua_san_sang', 'Mô hình AI: Sự cố (MSG-09)')
+                  : t('ui.mo_hinh_tren_thiet_bi_san_sang', 'Mô hình trên thiết bị: Sẵn sàng')}
               </AppText>
               <View style={[styles.mockBadge, { backgroundColor: colors.status.warning.bg }]}>
                 <AppText
@@ -224,20 +226,20 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
                     fontWeight: '600',
                   }}
                 >
-                  Mô phỏng
+                  {t('label.gia_lap', 'Mô phỏng')}
                 </AppText>
               </View>
             </View>
             <AppText variant="bodyS" style={{ color: colors.text.secondary, marginTop: 2 }}>
               {isModelError
-                ? 'Không thể thực hiện phân loại ảnh lúc này.'
-                : 'Phân tích AI chạy trên điện thoại, không cần mạng (Trạng thái mô phỏng)'}
+                ? t('ui.mo_hinh_phan_tich_chua_san_sang_tren_thiet_bi_na', 'Không thể thực hiện phân loại ảnh lúc này.')
+                : t('ui.adaptive_aacnnvit_phan_tich_khong_can_mang', 'Phân tích AI chạy trên điện thoại, không cần mạng')}
             </AppText>
           </View>
         </View>
 
         <Button
-          label="Tạo ca mới"
+          label={t('ui.tao_ca_moi', 'Tạo ca mới')}
           leadingIcon="case-add"
           variant="primary"
           disabled={isModelError}
@@ -248,7 +250,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
         <View style={styles.statsRow}>
           <View style={styles.statCardWrapper}>
             <StatCard
-              label="Ca nháp"
+              label={t('ui.ca_nhap', 'Ca nháp')}
               value={isEmpty ? '0' : String(pendingCases.length)}
               icon="draft"
               tone="warning"
@@ -256,7 +258,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
           </View>
           <View style={styles.statCardWrapper}>
             <StatCard
-              label="Hoàn tất tháng này"
+              label={t('ui.hoan_tat_thang_nay', 'Hoàn tất tháng này')}
               value={isEmpty ? '0' : String(completedCasesCount)}
               icon="success"
               tone="brand"
@@ -265,8 +267,8 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
         </View>
 
         <View style={styles.sectionHeader}>
-          <AppText variant="titleS">Ca cần xử lý</AppText>
-          <Button label="Xem tất cả" variant="tertiary" size="M" onPress={onNavigateToCases} />
+          <AppText variant="titleS">{t('ui.ca_can_xu_ly', 'Ca cần xử lý')}</AppText>
+          <Button label={t('doctor_detail.case_view_all', 'Xem tất cả')} variant="tertiary" size="M" onPress={onNavigateToCases} />
         </View>
 
         {isLoading ? (
@@ -323,8 +325,8 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
         )}
 
         <View style={[styles.sectionHeader, { marginTop: spacing.md }]}>
-          <AppText variant="titleS">Bệnh nhân gần đây</AppText>
-          <Button label="Xem tất cả" variant="tertiary" size="M" onPress={onNavigateToPatients} />
+          <AppText variant="titleS">{t('ui.benh_nhan_gan_ay', 'Bệnh nhân gần đây')}</AppText>
+          <Button label={t('doctor_detail.case_view_all', 'Xem tất cả')} variant="tertiary" size="M" onPress={onNavigateToPatients} />
         </View>
 
         {isLoading ? (
@@ -342,7 +344,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             ]}
           >
             <AppText variant="bodyM" style={{ color: colors.text.secondary, textAlign: 'center' }}>
-              Chưa có hồ sơ bệnh nhân nào.
+              {t('ui.khong_tim_thay_benh_nhan', 'Chưa có hồ sơ bệnh nhân nào.')}
             </AppText>
           </View>
         ) : (
@@ -350,7 +352,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             <ListRow
               key={patient.id}
               title={`${patient.code} · ${patient.fullName}`}
-              subtitle={`${patient.age} tuổi · ${patient.gender} · ${patient.caseCount} ca · gần nhất ${patient.lastCaseDate}`}
+              subtitle={`${patient.age} ${t('common.age_unit', 'tuổi')} · ${patient.gender} · ${patient.caseCount} ${t('common.case_unit', 'ca')} · ${t('common.latest', 'gần nhất')} ${patient.lastCaseDate}`}
               type="patient"
               leadingIcon="patients"
               onPress={() => onNavigateToPatientDetail?.(patient.id)}
@@ -362,7 +364,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
 
       <BottomSheet
         visible={isSelectPatientSheetVisible}
-        title="Chọn bệnh nhân cho ca mới"
+        title={t('ui.chon_benh_nhan_cho_ca_moi', 'Chọn bệnh nhân cho ca mới')}
         onClose={() => setIsSelectPatientSheetVisible(false)}
       >
         <ScrollView style={{ maxHeight: 340 }}>
@@ -405,7 +407,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
           ))}
 
           <Button
-            label="+ Thêm bệnh nhân mới"
+            label={t('ui.them_benh_nhan', '+ Thêm bệnh nhân mới')}
             variant="secondary"
             onPress={() => {
               setIsSelectPatientSheetVisible(false);

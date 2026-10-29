@@ -48,7 +48,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg.app }]}>
-      <TopBar title="Tôi" type="root" />
+      <TopBar title={t('navigation.tab_profile', 'Tôi')} type="root" />
 
       <ScrollView
         contentContainerStyle={[styles.content, { padding: spacing.md }]}
@@ -101,8 +101,8 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
 
         <View style={{ marginTop: spacing.md }}>
           <ListRow
-            title="Đổi mật khẩu"
-            subtitle="Bảo mật tài khoản"
+            title={t('admin.action_change_password', 'Đổi mật khẩu')}
+            subtitle={t('admin.action_change_password_sub', 'Bảo mật tài khoản')}
             type="setting"
             leadingIcon="lock"
             onPress={() =>
@@ -128,8 +128,8 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
           />
 
           <ListRow
-            title="Thùng rác"
-            subtitle="Khôi phục hoặc dọn dẹp ca và bệnh nhân đã xóa"
+            title={t('label.thung_rac', 'Thùng rác')}
+            subtitle={t('doctor_detail.trash_subtitle', 'Khôi phục hoặc dọn dẹp ca và bệnh nhân đã xóa')}
             type="setting"
             leadingIcon="trash"
             onPress={() =>
@@ -142,13 +142,13 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
           />
 
           <ListRow
-            title="Trung tâm đồng bộ"
-            subtitle={`${MOCK_DOCTOR_PROFILE.pendingSyncCount} thay đổi chờ gửi (Mô phỏng)`}
+            title={t('navigation.sync_center', 'Trung tâm đồng bộ')}
+            subtitle={`${MOCK_DOCTOR_PROFILE.pendingSyncCount} ${t('sync.pending_count_sub', 'thay đổi chờ gửi (Mô phỏng)')}`}
             type="setting"
             leadingIcon="sync"
             badges={
               <StatusBadge
-                label={`${MOCK_DOCTOR_PROFILE.pendingSyncCount} mục`}
+                label={`${MOCK_DOCTOR_PROFILE.pendingSyncCount} ${t('common.item_unit', 'mục')}`}
                 tone="warning"
                 icon="sync"
               />
@@ -164,7 +164,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
         </View>
 
         <View style={{ marginTop: spacing.lg }}>
-          <Button label="Đăng xuất" variant="danger" onPress={() => setShowLogoutDialog(true)} />
+          <Button label={t('admin.action_logout', 'Đăng xuất')} variant="danger" onPress={() => setShowLogoutDialog(true)} />
         </View>
       </ScrollView>
 
