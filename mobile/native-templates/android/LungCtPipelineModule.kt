@@ -40,6 +40,10 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
   private var pickerPromise: Promise? = null
   private val PICK_IMAGE_REQUEST_CODE = 41285
 
+  private var cameraPromise: Promise? = null
+  private var cameraPhotoFile: File? = null
+  private val TAKE_PHOTO_REQUEST_CODE = 41286
+
   private val activityEventListener: ActivityEventListener = object : BaseActivityEventListener() {
     override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
       if (requestCode == PICK_IMAGE_REQUEST_CODE) {
@@ -66,8 +70,9 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
 
         val uri: Uri = data.data!!
         try {
-          // Lấy thông tin tệp từ URI
-          var displayName = "selected_image.jpg"
+          // Sao chép an toàn ảnh đã chọn vào sandbox dicom_cases của app
+          val casesDir = File(reactContext.filesDir, "dicom_cases").apply { if (!exists()) mkdirs() }
+          var displayName = "picked_${System.currentTimeMillis()}.jpg"
           var fileSize = -1L
 
           reactContext.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -75,7 +80,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
               val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
               val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
               if (nameIndex != -1 && !cursor.isNull(nameIndex)) {
-                displayName = cursor.getString(nameIndex)
+                val origName = cursor.getString(nameIndex)
+                if (!origName.isNullOrBlank()) displayName = origName
               }
               if (sizeIndex != -1 && !cursor.isNull(sizeIndex)) {
                 fileSize = cursor.getLong(sizeIndex)
@@ -83,15 +89,64 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
             }
           }
 
+          val safeName = "ct_${System.currentTimeMillis()}_${displayName.replace("[^a-zA-Z0-9._-]".toRegex(), "_")}"
+          val targetFile = File(casesDir, safeName)
+          reactContext.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(targetFile).use { output ->
+              input.copyTo(output)
+            }
+          }
+
           val map = Arguments.createMap().apply {
             putBoolean("canceled", false)
-            putString("uri", uri.toString())
+            putString("uri", Uri.fromFile(targetFile).toString())
+            putString("filePath", targetFile.absolutePath)
+            putString("originalUri", uri.toString())
             putString("name", displayName)
-            putDouble("size", fileSize.toDouble())
+            putDouble("size", if (fileSize > 0) fileSize.toDouble() else targetFile.length().toDouble())
           }
           promise.resolve(map)
         } catch (e: Exception) {
-          promise.reject("ERR_PICKER", "Lỗi đọc thông tin ảnh đã chọn: ${e.message}", e)
+          promise.reject("ERR_PICKER", "Lỗi đọc hoặc sao chép ảnh đã chọn vào sandbox: ${e.message}", e)
+        }
+      } else if (requestCode == TAKE_PHOTO_REQUEST_CODE) {
+        val promise = cameraPromise
+        val photoFile = cameraPhotoFile
+        cameraPromise = null
+        cameraPhotoFile = null
+
+        if (promise == null) return
+
+        if (resultCode == Activity.RESULT_CANCELED || photoFile == null || !photoFile.exists() || photoFile.length() == 0L) {
+          if (photoFile != null && photoFile.exists() && photoFile.length() == 0L) {
+            photoFile.delete()
+          }
+          val map = Arguments.createMap().apply {
+            putBoolean("canceled", true)
+          }
+          promise.resolve(map)
+          return
+        }
+
+        if (resultCode != Activity.RESULT_OK) {
+          val map = Arguments.createMap().apply {
+            putBoolean("canceled", true)
+          }
+          promise.resolve(map)
+          return
+        }
+
+        try {
+          val map = Arguments.createMap().apply {
+            putBoolean("canceled", false)
+            putString("uri", Uri.fromFile(photoFile).toString())
+            putString("filePath", photoFile.absolutePath)
+            putString("name", photoFile.name)
+            putDouble("size", photoFile.length().toDouble())
+          }
+          promise.resolve(map)
+        } catch (e: Exception) {
+          promise.reject("ERR_CAMERA", "Lỗi xử lý ảnh chụp từ camera: ${e.message}", e)
         }
       }
     }
@@ -202,8 +257,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       return
     }
 
-    if (pickerPromise != null) {
-      promise.reject("ERR_BUSY", "Trình chọn ảnh đang mở. Vui lòng hoàn tất hoặc hủy thao tác hiện tại.")
+    if (pickerPromise != null || cameraPromise != null) {
+      promise.reject("ERR_BUSY", "Trình chọn ảnh hoặc máy ảnh đang mở. Vui lòng hoàn tất hoặc hủy thao tác hiện tại.")
       return
     }
 
@@ -221,6 +276,50 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     } catch (e: Exception) {
       pickerPromise = null
       promise.reject("ERR_LAUNCH_PICKER", "Không thể khởi chạy trình chọn ảnh: ${e.message}", e)
+    }
+  }
+
+  /**
+   * Mở Intent chụp ảnh từ Camera:
+   * Chụp ảnh và lưu trực tiếp vào thư mục an toàn của app (reactContext.filesDir/dicom_cases)
+   */
+  @ReactMethod
+  fun takePhotoWithCamera(promise: Promise) {
+    val currentActivity = reactContext.currentActivity
+    if (currentActivity == null) {
+      promise.reject("ERR_NO_ACTIVITY", "Không tìm thấy Activity hiện tại để mở máy ảnh.")
+      return
+    }
+
+    if (cameraPromise != null || pickerPromise != null) {
+      promise.reject("ERR_BUSY", "Máy ảnh hoặc trình chọn ảnh đang mở. Vui lòng thử lại sau.")
+      return
+    }
+
+    try {
+      val casesDir = File(reactContext.filesDir, "dicom_cases").apply { if (!exists()) mkdirs() }
+      val photoFile = File(casesDir, "camera_${System.currentTimeMillis()}.jpg")
+      cameraPhotoFile = photoFile
+      cameraPromise = promise
+
+      val authority = "${reactContext.packageName}.fileprovider"
+      val photoUri = androidx.core.content.FileProvider.getUriForFile(
+        reactContext,
+        authority,
+        photoFile
+      )
+
+      val intent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).apply {
+        putExtra(android.provider.MediaStore.EXTRA_OUTPUT, photoUri)
+        addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      }
+
+      currentActivity.startActivityForResult(intent, TAKE_PHOTO_REQUEST_CODE)
+    } catch (e: Exception) {
+      cameraPromise = null
+      cameraPhotoFile?.let { if (it.exists() && it.length() == 0L) it.delete() }
+      cameraPhotoFile = null
+      promise.reject("ERR_LAUNCH_CAMERA", "Không thể khởi chạy máy ảnh: ${e.message}", e)
     }
   }
 
