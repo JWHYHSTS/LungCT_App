@@ -35,6 +35,7 @@ Do thư mục `mobile/android/` bị Git bỏ qua (`.gitignore`) để tránh l�
    Copy-Item mobile\native-templates\android\NativeCryptoVaultModule.kt mobile\android\app\src\main\java\com\anonymous\mobile\NativeCryptoVaultModule.kt
    Copy-Item mobile\native-templates\android\LungCtNativePackage.kt mobile\android\app\src\main\java\com\anonymous\mobile\LungCtNativePackage.kt
    Copy-Item mobile\native-templates\android\MainApplication.kt mobile\android\app\src\main\java\com\anonymous\mobile\MainApplication.kt
+   Copy-Item -Recurse -Force mobile\native-templates\android\res\* mobile\android\app\src\main\res\
    ```
 
 3. Khôi phục model weights vào `mobile/android/app/src/main/assets/models/`:
