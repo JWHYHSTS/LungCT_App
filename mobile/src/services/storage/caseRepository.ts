@@ -14,7 +14,7 @@
  */
 
 import { localStorageService } from './index';
-import { CaseEntity, PatientEntity } from './types';
+import { CaseEntity, PatientEntity, CTImageEntity, AIPredictionResultEntity } from './types';
 import {
   MockCase,
   getMockCases,
@@ -253,6 +253,84 @@ export class CaseRepository {
 
     notifyCaseListeners();
     return { success: true };
+  }
+
+  /**
+   * Đính kèm ảnh CT vào ca bệnh trong vùng lưu trữ an toàn của ứng dụng
+   */
+  public static async attachCTImage(
+    ownerId: string,
+    caseId: string,
+    imageData: {
+      source: 'LIBRARY' | 'CAMERA';
+      mimeType: 'image/jpeg' | 'image/png';
+      localFileRef: string;
+      originalFileName?: string;
+      byteSize?: number;
+      width?: number;
+      height?: number;
+    },
+  ): Promise<CTImageEntity> {
+    await this.ensureReady(ownerId);
+
+    const existingImages = await localStorageService.getImagesByCaseId(ownerId, caseId);
+    const orderIndex = existingImages.length + 1;
+
+    const saved = await localStorageService.saveCTImage(ownerId, {
+      caseId,
+      ownerId,
+      imageVersion: 1,
+      orderIndex,
+      source: imageData.source,
+      mimeType: imageData.mimeType,
+      width: imageData.width || 512,
+      height: imageData.height || 512,
+      byteSize: imageData.byteSize || 1024,
+      sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      localFileRef: imageData.localFileRef,
+      originalFileName: imageData.originalFileName,
+      state: 'ACTIVE',
+    });
+
+    notifyCaseListeners();
+    return saved;
+  }
+
+  /**
+   * Lưu kết quả chẩn đoán On-Device AI cho ảnh CT
+   */
+  public static async saveAIResult(
+    ownerId: string,
+    imageId: string,
+    result: {
+      scores: [number, number, number];
+      label: 'BENIGN' | 'MALIGNANT' | 'NORMAL';
+      durationMs: number;
+      modelVersion?: string;
+      mode?: 'REAL' | 'MOCK';
+    },
+  ): Promise<AIPredictionResultEntity> {
+    await this.ensureReady(ownerId);
+
+    const saved = await localStorageService.savePredictionResult(ownerId, {
+      imageId,
+      imageVersion: 1,
+      classificationStatus: 'PASS',
+      scores: result.scores,
+      label: result.label,
+      explanationStatus: 'UNAVAILABLE', // On-device MSG-11
+      modelVersion: result.modelVersion || 'Adaptive_ViT_FP32_v1',
+      preprocessingVersion: 'Nearest_Float32_v1',
+      executionSource: 'LOCAL',
+      mode: result.mode || 'REAL',
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      durationMs: result.durationMs,
+      state: 'CURRENT',
+    });
+
+    notifyCaseListeners();
+    return saved;
   }
 
   /**

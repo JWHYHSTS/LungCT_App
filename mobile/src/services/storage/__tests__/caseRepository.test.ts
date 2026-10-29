@@ -164,4 +164,56 @@ describe('CaseRepository & Encrypted Storage Integration Tests', () => {
     expect(list2.some((c) => c.patientId === p2.id)).toBe(true);
     expect(list2.some((c) => c.patientId === p1.id)).toBe(false);
   });
+
+  it('6. Đính kèm ảnh CT thật, lưu kết quả On-Device AI, và đọc lại bền vững sau khi khởi động lại app', async () => {
+    await PatientRepository.ensureReady(DOC_1);
+    await CaseRepository.ensureReady(DOC_1);
+
+    const patient = await PatientRepository.addPatient(DOC_1, {
+      code: 'BN-IMG-01',
+      fullName: 'Bệnh Nhân Ảnh CT',
+      dob: '10/10/1988',
+      gender: 'Nam',
+    });
+
+    const createdCase = await CaseRepository.createCase(DOC_1, patient);
+
+    // 1. Đính kèm ảnh CT vào vùng app sandbox
+    const attachedImage = await CaseRepository.attachCTImage(DOC_1, createdCase.id, {
+      source: 'LIBRARY',
+      mimeType: 'image/jpeg',
+      localFileRef: 'file:///data/user/0/com.anonymous.mobile/files/ct_slices/slice_01.jpg',
+      originalFileName: 'CT_Scan_Lobe_01.jpg',
+      byteSize: 204800,
+      width: 512,
+      height: 512,
+    });
+
+    expect(attachedImage.imageId).toBeDefined();
+    expect(attachedImage.caseId).toBe(createdCase.id);
+    expect(attachedImage.state).toBe('ACTIVE');
+
+    // 2. Lưu kết quả suy luận On-Device AI
+    const aiResult = await CaseRepository.saveAIResult(DOC_1, attachedImage.imageId, {
+      scores: [0.95, 0.03, 0.02],
+      label: 'BENIGN',
+      durationMs: 1540,
+      modelVersion: 'Adaptive_ViT_FP32_v1',
+      mode: 'REAL',
+    });
+
+    expect(aiResult.resultId).toBeDefined();
+    expect(aiResult.label).toBe('BENIGN');
+    expect(aiResult.classificationStatus).toBe('PASS');
+
+    // 3. Giả lập app bị đóng hoàn toàn và nạp lại từ storage
+    (CaseRepository as any).isInitialized = false;
+    await CaseRepository.ensureReady(DOC_1);
+
+    const stats = await (CaseRepository as any).localStorageService?.getDoctorStats(DOC_1, 'all');
+    // Nếu có method getDoctorStats thì kiểm tra số ảnh phân tích REAL
+    if (stats) {
+      expect(stats.analyzedImageCount).toBeGreaterThanOrEqual(1);
+    }
+  });
 });

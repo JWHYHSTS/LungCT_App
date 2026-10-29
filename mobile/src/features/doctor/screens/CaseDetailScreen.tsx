@@ -18,6 +18,7 @@ import {
 import { findCaseById, subscribeDoctorStore, addImageToCase, type MockCase } from '../../../mocks';
 import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
+import { pickImageFromDevice } from '../../../services/ai/onDevicePipeline';
 
 export interface CaseDetailScreenProps {
   caseId: string;
@@ -171,8 +172,32 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   };
 
   // Thêm ảnh từ Thư viện / Camera
-  const handleSelectImageSource = (source: 'gallery' | 'camera') => {
+  const handleSelectImageSource = async (source: 'gallery' | 'camera') => {
     setShowAddImageSheet(false);
+    if (source === 'gallery') {
+      try {
+        const picked = await pickImageFromDevice();
+        if (picked.canceled) {
+          return;
+        }
+        const added = addImageToCase(currentCase.id, 'gallery', 'pending');
+        if (added) {
+          setNoticeDialog({
+            visible: true,
+            title: 'Đã nạp tệp ảnh thực tế',
+            body: `Đã chọn tệp: ${picked.name ?? 'CT_Slice.jpg'}. Trạng thái ảnh được thiết lập chờ phân tích On-Device AI.`,
+          });
+        }
+        return;
+      } catch (err: any) {
+        // Fallback về ảnh mô phỏng nếu native picker không khả dụng (môi trường web/mock)
+        console.warn(
+          '[CaseDetailScreen] Native picker không khả dụng, chuyển sang chế độ mô phỏng:',
+          err,
+        );
+      }
+    }
+
     const added = addImageToCase(currentCase.id, source, 'mock');
     if (added) {
       setNoticeDialog({

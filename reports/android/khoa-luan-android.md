@@ -318,11 +318,11 @@ Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế F
 ### 4.5 Thực nghiệm và đo lường kết quả
 
 #### A. Kết quả kiểm thử tự động (Unit / Integration Tests)
-- Toàn bộ hệ thống vượt qua **16/16 test suites** với **146/146 test cases thành công (100%)** trong môi trường Jest sandbox:
-  - Giao diện người dùng và điều hướng: 113/113 test cases pass.
+- Toàn bộ hệ thống vượt qua **16/16 test suites** với **150/150 test cases thành công (100%)** trong môi trường Jest sandbox:
+  - Giao diện người dùng và điều hướng: 116/116 test cases pass (bổ sung kiểm thử logic đếm ca nháp/hoàn tất trên trang chủ, lọc thống kê 7 ngày/30 ngày/tất cả, và nạp ca bệnh theo ID trên màn hình xuất PDF).
   - Tầng lưu trữ và bảo mật (`localStorageService.test.ts`): 13/13 test cases pass (mã hóa chứng thực AES-256-GCM, bắt lỗi sai khóa, chống trùng lặp mã bệnh nhân Q-20, migration schema, cô lập dữ liệu đa người dùng và kịch bản biên AUTH-08).
   - Tích hợp nghiệp vụ bệnh nhân (`patientRepository.test.ts`): 7/7 test cases pass (tự động seed dữ liệu mẫu giả lập ban đầu cho bác sĩ, thêm bệnh nhân mới có mã hóa không lưu plaintext, sửa thông tin, giả lập đóng app và mở lại đọc lại nguyên vẹn, tách biệt tuyệt đối giữa 2 bác sĩ, bắt lỗi sai khóa giải mã, và **kiểm tra chặn lưu dữ liệu khi thiếu module mã hóa an toàn**).
-  - Tích hợp nghiệp vụ ca bệnh (`caseRepository.test.ts`): 5/5 test cases pass (tự động seed danh sách ca bệnh mẫu ban đầu, tạo ca mới cho bệnh nhân có mã hóa AES-256-GCM không lưu plaintext, cập nhật ghi chú bác sĩ bền vững, giả lập đóng app/kill tiến trình và mở lại nạp lại đầy đủ ca bệnh và ghi chú từ kho mã hóa, cô lập ca bệnh giữa 2 tài khoản bác sĩ).
+  - Tích hợp nghiệp vụ ca bệnh và ảnh CT (`caseRepository.test.ts`): 6/6 test cases pass (tự động seed danh sách ca bệnh mẫu ban đầu, tạo ca mới cho bệnh nhân có mã hóa AES-256-GCM không lưu plaintext, cập nhật ghi chú bác sĩ bền vững, giả lập đóng app/kill tiến trình và mở lại nạp lại đầy đủ ca bệnh và ghi chú từ kho mã hóa, cô lập ca bệnh giữa 2 tài khoản bác sĩ, **đính kèm tệp ảnh CT vào vùng sandbox của app và lưu trữ kết quả suy luận On-Device AI an toàn bền vững**).
   - Kiểm thử chuyển đổi SQLite (`sqliteMigration.test.ts`): 3/3 test cases pass (chuyển đổi an toàn từ AsyncStorage sang SQLite, kiểm tra tính toàn vẹn và phục hồi khi gián đoạn).
   - Kiểm thử bảo mật SQLCipher (`sqlcipherVault.test.ts`): 5/5 test cases pass (mở bằng passphrase đúng, từ chối khóa sai `SQLITE_NOTADB`, kiểm tra tính ngẫu nhiên trang đĩa loại trừ 100% plaintext, phục hồi an toàn sau gián đoạn, và **cơ chế bảo vệ mã hóa bản sao lưu .encrypted.bak bằng AES-256-GCM kèm kiểm thử khôi phục thảm họa**).
   - *Đính chính khoa học về phạm vi kiểm thử*: Kết quả kiểm thử trên Jest được thực thi trong môi trường mô phỏng (Node.js runtime); trên **máy ảo Android qua APK Release**, ta tiến hành đo kiểm thực tế trên tệp đĩa vật lý và giao diện người dùng. Tuyệt đối không đánh đồng kết quả mock trong bộ nhớ với việc đo kiểm trên thiết bị thật.
@@ -350,23 +350,22 @@ Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trư
      - Khởi động ứng dụng, đăng nhập tài khoản bác sĩ (`bs.an@example.com` / `usr-doc-01`).
      - Hệ thống tự động nhận diện kho SQLite cũ và thực hiện chuyển đổi sang SQLCipher. Tệp CSDL mã hóa mới `lungct_secure_usr_doc_01.db` được tạo thành công với kích thước 53.248 bytes.
      - Tệp kho cũ được tự động đổi tên và lưu trữ an toàn thành `lungct_secure_usr_doc_01.db.plaintext.bak` (kích thước 61.440 bytes), đảm bảo không xảy ra rủi ro mất dữ liệu.
-  3. **Kiểm tra tính bảo mật triệt để bằng lệnh `strings` (0 Byte Plaintext Verification)**:
-     - Dùng công cụ `strings` quét toàn bộ tệp CSDL mã hóa trên máy ảo:
+  3. **Kiểm tra tính an toàn dữ liệu trên tệp CSDL bằng lệnh `strings`**:
+     - Dùng công cụ `strings` quét các chuỗi nhạy cảm trên tệp CSDL SQLite:
        `adb shell "strings /data/data/com.anonymous.mobile/databases/lungct_secure_usr_doc_01.db | grep -iE 'Bui_Duc|Nguyen|Minh|Le_Van'"`
-     - **Kết quả: RỖNG TUYỆT ĐỐI (0 byte plaintext)**.
-     - Toàn bộ họ tên bệnh nhân, mã bệnh nhân, triệu chứng và ghi chú lâm sàng đều biến mất hoàn toàn trên cấu trúc đĩa thô, chứng minh cơ chế mã hóa cấp trang đã bảo vệ triệt để toàn bộ CSDL.
-     - Trong khi đó, quét tệp sao lưu `.plaintext.bak` vẫn cho ra đầy đủ các chuỗi văn bản rõ gốc.
-  4. **Kiểm tra nghiệp vụ UI và tính toàn vẹn dữ liệu**:
-     - Mở danh sách bệnh nhân trên giao diện: Toàn bộ danh sách 7 bệnh nhân (`BN-2026-SQLITE · Bui_Duc_SQLite`, `BN-2026-888 · Le_Van_Sua_Da_Cap_Nhat`, `BN-000126 · Phạm Thị Dung`, v.v.) hiển thị đầy đủ và chính xác từ CSDL SQLCipher.
-     - Mở chi tiết bệnh nhân, kiểm tra danh sách ca bệnh và kết quả phân tích AI: Dữ liệu tải nhanh chóng, giải mã trong suốt và không phát sinh lỗi.
-  5. **Xác thực Vòng đời Đóng/Mở lại Ứng dụng**:
-     - Thực hiện tắt hoàn toàn tiến trình ứng dụng bằng `adb shell am force-stop com.anonymous.mobile`.
-     - Mở lại app bằng `am start`, đăng nhập lại: Toàn bộ phiên làm việc, dữ liệu bệnh nhân và ca bệnh được nạp lại 100% từ tệp SQLCipher mã hóa.
+     - **Kết quả: Không tìm thấy các chuỗi được dò trong tệp DB bằng lệnh đã chạy**, phản ánh các trang đĩa đã được SQLCipher mã hóa khối AES-256-CBC.
+     - *Lưu ý an toàn quan trọng*: Tệp sao lưu kho cũ `lungct_secure_usr_doc_01.db.plaintext.bak` được tạo trong quá trình di chuyển **vẫn ở dạng văn bản rõ (chưa mã hóa)**; do đó cần có quy trình mã hóa sao lưu bổ sung (`.encrypted.bak`) hoặc xóa an toàn sau khi nghiệm thu đối chiếu.
+  4. **Kiểm tra nghiệp vụ UI và bảo vệ tệp ảnh CT trong vùng Sandbox**:
+     - Mở danh sách bệnh nhân trên giao diện: Toàn bộ danh sách 7 bệnh nhân (`BN-2026-SQLITE · Bui_Duc_SQLite`, `BN-2026-888 · Le_Van_Sua_Da_Cap_Nhat`, `BN-000126 · Phạm Thị Dung`, v.v.) hiển thị từ CSDL SQLCipher.
+     - **Cơ chế bảo vệ ảnh CT trong vùng lưu trữ**: Các tệp ảnh CT lưu tại thư mục nội bộ của ứng dụng (`/data/user/0/com.anonymous.mobile/files/`) **chưa được mã hóa riêng từng tệp**, mà hiện tại được bảo vệ thông qua cơ chế phân quyền bảo mật thư mục sandbox của hệ điều hành Linux/Android (chỉ UID của ứng dụng mới có quyền truy cập).
+  5. **Xác thực Vòng đời Đóng/Mở lại Ứng dụng & Phân định phạm vi**:
+     - *Trong Jest sandbox*: Đã kiểm thử logic nạp lại từ repository và đọc lại bản ghi sau khi hủy/khởi tạo lại instance.
+     - *Trên máy ảo Android qua APK Release*: Đã thực hiện `am force-stop` và `am start` nạp lại giao diện đăng nhập và phiên làm việc; tuy nhiên việc khởi chạy ứng dụng thành công chỉ chứng minh tiến trình nạp được mã nhị phân và khởi tạo CSDL, **chưa được coi là đã kiểm thử lại toàn bộ chuỗi suy luận On-Device AI trên bản build cập nhật này**.
   6. **Bảng tổng hợp 3 trạng thái độc lập (Nguyên tắc trung thực khoa học)**:
      | Nghiệp vụ / Tính năng | 1. Đã viết mã (Code Complete) | 2. Đạt Jest Sandbox (Node.js Mock In-Memory) | 3. Đã kiểm thử trên APK Máy ảo (Real Android SQLCipher on Disk) |
      | :--- | :---: | :---: | :---: |
      | Khởi tạo CSDL SQLite Native (`lungct_secure_*.db`) | Đạt | Đạt | Đạt (Kích thước đĩa 61.440 bytes) |
-     | Chuyển đổi dữ liệu cũ (Zero Data Loss) | Đạt | Đạt (141/141 tests) | Đạt (Di chuyển 6 bệnh nhân gốc an toàn) |
+     | Chuyển đổi dữ liệu cũ sang SQLCipher | Đạt | Đạt (150/150 tests) | Đạt (Di chuyển và tạo tệp `.plaintext.bak`) |
      | Khả năng chạy lại & phục hồi (Resume) | Đạt | Đạt (`sqliteMigration.test.ts`) | Đạt (Không trùng lặp bản ghi) |
      | Thao tác Bệnh nhân (Thêm/Sửa/Thùng rác) | Đạt | Đạt | Đạt (`BN-2026-SQLITE`, tổng 7 BN) |
      | Tạo Ca bệnh & Khóa ngoại liên kết | Đạt | Đạt | Đạt (`CA-2026-000005`, tổng 5 ca) |

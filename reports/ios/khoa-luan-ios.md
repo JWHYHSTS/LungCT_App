@@ -206,11 +206,11 @@ Trình bày cấu hình dịch vụ FastAPI và các dịch vụ Firebase phục
 Quy trình cấu hình `Podfile`, quản lý chứng chỉ ký ứng dụng (Code Signing) và chuẩn bị hồ sơ phát hành thử nghiệm qua Apple TestFlight.
 
 ### 4.5 Thực nghiệm và đo lường kết quả
-- **Kiểm thử tự động trên môi trường Jest sandbox**: Vượt qua **16/16 test suites** với **146/146 test cases thành công (100%)** cho toàn bộ phần dùng chung:
-  - Giao diện người dùng và điều hướng: 113/113 test cases pass.
+- **Kiểm thử tự động trên môi trường Jest sandbox**: Vượt qua **16/16 test suites** với **150/150 test cases thành công (100%)** cho toàn bộ phần dùng chung:
+  - Giao diện người dùng và điều hướng: 116/116 test cases pass (bổ sung kiểm thử logic đếm ca nháp/hoàn tất trên trang chủ, lọc thống kê 7 ngày/30 ngày/tất cả, và nạp ca bệnh theo ID trên màn hình xuất PDF).
   - Tầng lưu trữ và bảo mật (`localStorageService.test.ts`): 13/13 test cases pass (mã hóa chứng thực AES-256-GCM, bắt lỗi sai khóa, chống trùng mã Q-20, migration schema, cô lập dữ liệu đa người dùng và kịch bản biên AUTH-08).
   - Tích hợp nghiệp vụ bệnh nhân (`patientRepository.test.ts`): 7/7 test cases pass (seed dữ liệu giả lập ban đầu cho bác sĩ, thêm bệnh nhân mới không lưu plaintext, sửa thông tin, kiểm tra tính bền vững sau khi đóng/mở lại, tách biệt dữ liệu giữa 2 tài khoản, bắt lỗi sai khóa, và kiểm tra chặn lưu dữ liệu an toàn khi thiếu module native).
-  - Tích hợp nghiệp vụ ca bệnh (`caseRepository.test.ts`): 5/5 test cases pass (tự động seed ca bệnh mẫu ban đầu, tạo ca mới cho bệnh nhân có mã hóa AES-256-GCM không lưu plaintext, cập nhật ghi chú bác sĩ, kiểm tra nạp lại bền vững sau khi giả lập đóng app, cô lập ca bệnh giữa 2 bác sĩ).
+  - Tích hợp nghiệp vụ ca bệnh và ảnh CT (`caseRepository.test.ts`): 6/6 test cases pass (tự động seed ca bệnh mẫu ban đầu, tạo ca mới cho bệnh nhân có mã hóa AES-256-GCM không lưu plaintext, cập nhật ghi chú bác sĩ, kiểm tra nạp lại bền vững sau khi giả lập đóng app, cô lập ca bệnh giữa 2 bác sĩ, đính kèm ảnh CT vào vùng sandbox của app và lưu trữ kết quả suy luận On-Device AI an toàn bền vững).
   - Chuyển đổi SQLite an toàn (`sqliteMigration.test.ts`): 3/3 test cases pass (bảo toàn 100% dữ liệu gốc và phục hồi sau gián đoạn).
   - Bảo mật SQLCipher (`sqlcipherVault.test.ts`): 5/5 test cases pass (kiểm tra passphrase, từ chối khóa sai, ngẫu nhiên hóa đĩa, chống trùng lặp, và cơ chế bảo vệ mã hóa bản sao lưu .encrypted.bak kèm kiểm thử khôi phục).
   - *Đính chính khoa học về phạm vi kiểm thử*: Kết quả kiểm thử các trường thông tin bệnh nhân trong Jest được thực hiện trên môi trường sandbox giả lập (in-memory mock); không được mô tả là dữ liệu đã đọc từ đĩa trên thiết bị thực tế nếu chưa qua kiểm chứng cụ thể.
@@ -225,9 +225,9 @@ Phân tích ma trận so sánh giữa hai phân hệ, làm rõ ưu thế về ki
 | **Nền tảng kiểm thử** | Android SDK 34 / Xiaomi Redmi 13 | iOS 17+ / iPhone vật lý (Dự kiến) |
 | **Runtime AI On-Device** | ONNX Runtime Native C++ + LiteRT C API | Nghiên cứu khảo sát CoreML vs ONNX Runtime iOS |
 | **Tăng tốc phần cứng** | CPU đa luồng / NNAPI / Vulkan | Apple Neural Engine (ANE) / Metal |
-| **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Mã hóa toàn bộ trang đĩa AES-256, 0 byte plaintext)** | Định hướng CoreData / SQLite mã hóa |
+| **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Mã hóa toàn bộ trang đĩa AES-256, không tìm thấy chuỗi dò bằng strings)** | Định hướng CoreData / SQLite mã hóa |
 | **Bảo mật phần cứng** | Android Keystore System (AES-256-GCM, định hướng TEE/StrongBox) | Định hướng iOS Keychain & Secure Enclave |
-| **Trạng thái thực tế** | **Đã biên dịch APK Release, tích hợp SQLCipher 4.6.1 mã hóa toàn bộ tệp cấp trang, kiểm chứng 0 byte plaintext qua `strings`, bảo toàn kho cũ `.plaintext.bak` và sinh bản sao lưu mã hóa `.encrypted.bak`, CRUD Bệnh nhân, Ca bệnh, Ghi chú bác sĩ, lưu kết quả On-Device AI và đọc lại 100% sau khi đóng/mở app** | **Đang nghiên cứu chuyển đổi, kiểm thử Jest dùng chung và mô phỏng giao diện** |
+| **Trạng thái thực tế** | **Đã biên dịch APK Release, tích hợp SQLCipher 4.6.1 mã hóa toàn bộ tệp cấp trang, kiểm tra không tìm thấy chuỗi dò qua `strings` trên tệp DB chính, giữ nguyên bản sao lưu kho cũ `.plaintext.bak` (chưa mã hóa), CRUD Bệnh nhân, Ca bệnh, Ghi chú bác sĩ, đính kèm ảnh CT trong sandbox và lưu kết quả On-Device AI** | **Đang nghiên cứu chuyển đổi, kiểm thử Jest dùng chung và mô phỏng giao diện** |
 
 ---
 

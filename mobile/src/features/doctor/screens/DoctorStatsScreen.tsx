@@ -4,6 +4,8 @@ import Svg, { Rect } from 'react-native-svg';
 import { useTheme } from '../../../ui/theme';
 import { AppText, Dialog, IconButton, Segmented, StatCard, TopBar } from '../../../ui/components';
 import { MOCK_STATS, type MockStatsData } from '../../../mocks';
+import { localStorageService } from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 
 export interface DoctorStatsScreenProps {
   initialRange?: '7d' | '30d' | 'all';
@@ -12,8 +14,43 @@ export interface DoctorStatsScreenProps {
 export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRange = '30d' }) => {
   const { theme } = useTheme();
   const { colors, spacing } = theme;
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
   const [selectedRange, setSelectedRange] = useState<'7d' | '30d' | 'all'>(initialRange);
+  const [realStats, setRealStats] = useState<MockStatsData | null>(null);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const fetchStats = async () => {
+      try {
+        const stats = await localStorageService.getDoctorStats(ownerId, selectedRange);
+        if (isMounted && stats && (stats.patientCount > 0 || stats.activeCaseCount > 0)) {
+          setRealStats({
+            period: selectedRange,
+            patientCount: stats.patientCount,
+            completedCaseCount: stats.completedCaseCount,
+            draftCaseCount: stats.draftCaseCount,
+            analyzedImageCount: stats.analyzedImageCount,
+            labelDistribution: stats.labelDistribution,
+            unitNotes: {
+              caseUnit: 'ca',
+              imageUnit: 'ảnh',
+              syncFormulaNote: `Dữ liệu tổng hợp kỳ ${selectedRange} từ SQLite mã hóa nội bộ thiết bị`,
+            },
+            isMock: true, // Thỏa mãn type MockStatsData cho view component
+          });
+        }
+      } catch (err) {
+        console.warn('[DoctorStatsScreen] Lỗi đọc thống kê:', err);
+      }
+    };
+
+    fetchStats();
+    return () => {
+      isMounted = false;
+    };
+  }, [ownerId, selectedRange]);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -34,8 +71,11 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
   };
 
   const currentStats: MockStatsData = useMemo(() => {
+    if (realStats && realStats.period === selectedRange) {
+      return realStats;
+    }
     return MOCK_STATS[selectedRange] ?? MOCK_STATS['30d'];
-  }, [selectedRange]);
+  }, [realStats, selectedRange]);
 
   const { benign, malignant, normal } = currentStats.labelDistribution;
 
@@ -80,17 +120,27 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
         contentContainerStyle={[styles.content, { padding: spacing.md }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.simulationBanner, { backgroundColor: colors.status.warning.bg }]}>
+        <View
+          style={[
+            styles.simulationBanner,
+            {
+              backgroundColor: realStats ? colors.bg.brandSubtle : colors.status.warning.bg,
+              borderColor: realStats ? colors.brand.primary : colors.status.warning.fg,
+              borderWidth: 1,
+            },
+          ]}
+        >
           <AppText
             variant="bodyS"
             style={{
-              color: colors.status.warning.fg,
+              color: realStats ? colors.brand.primary : colors.status.warning.fg,
               fontWeight: '500',
               textAlign: 'center',
             }}
           >
-            [Chế độ mô phỏng] Số liệu thống kê được tổng hợp từ dữ liệu mẫu phục vụ kiểm thử giao
-            diện UI-06.
+            {realStats
+              ? 'Số liệu thống kê được tổng hợp trực tiếp từ kho lưu trữ mã hóa cục bộ của bác sĩ.'
+              : '[Chế độ mô phỏng] Số liệu thống kê được lấy từ dữ liệu mẫu phục vụ kiểm thử giao diện UI-06.'}
           </AppText>
         </View>
 

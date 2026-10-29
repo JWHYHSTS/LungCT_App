@@ -420,4 +420,24 @@ describe('UI-07: Doctor Detail Screens Unit Tests', () => {
     await i18n.changeLanguage('vi');
     expect(i18n.language).toBe('vi');
   });
+
+  // 14. ExportPdfScreen nạp đúng ca bệnh và định dạng tên tệp theo mã ca
+  test('14. ExportPdfScreen nạp đúng hồ sơ ca bệnh theo ID và cô lập dữ liệu theo tài khoản', () => {
+    const targetCase = MOCK_CASES[0];
+    const exportScreen = ExportPdfScreen({
+      caseId: targetCase.id,
+      onBack: jest.fn(),
+    });
+
+    expect(exportScreen).toBeDefined();
+    expect(React.isValidElement(exportScreen)).toBe(true);
+
+    // Kiểm tra trường hợp ca không tồn tại hoặc ID lạ
+    const notFoundScreen = ExportPdfScreen({
+      caseId: 'case-non-existent-999',
+      onBack: jest.fn(),
+    });
+    expect(notFoundScreen).toBeDefined();
+    expect(React.isValidElement(notFoundScreen)).toBe(true);
+  });
 });

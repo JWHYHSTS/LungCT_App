@@ -99,7 +99,7 @@ export interface ILocalStorageAdapter {
   getLatestPrediction(ownerId: string, imageId: string): Promise<AIPredictionResultEntity | null>;
 
   // === THỐNG KÊ (PROJECTION) ===
-  getDoctorStats(ownerId: string): Promise<DoctorStatsProjection>;
+  getDoctorStats(ownerId: string, period?: '7d' | '30d' | 'all'): Promise<DoctorStatsProjection>;
 
   // === BẢO MẬT & XỬ LÝ TÀI KHOẢN BỊ KHÓA (AUTH-08) ===
   /**

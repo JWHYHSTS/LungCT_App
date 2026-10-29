@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
@@ -13,6 +13,8 @@ import {
   TopBar,
 } from '../../../ui/components';
 import { findCaseById, type MockCase } from '../../../mocks';
+import { CaseRepository } from '../../../services/storage';
+import { useAuth } from '../../../features/auth';
 
 export interface ExportPdfScreenProps {
   caseId: string;
@@ -43,8 +45,28 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
+  const { user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
-  const currentCase: MockCase | undefined = useMemo(() => findCaseById(caseId), [caseId]);
+  const [currentCase, setCurrentCase] = useState<MockCase | undefined>(() => findCaseById(caseId));
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const loadRealCase = async () => {
+      try {
+        const storedCase = await CaseRepository.getCaseById(ownerId, caseId);
+        if (isMounted && storedCase) {
+          setCurrentCase(storedCase);
+        }
+      } catch (err) {
+        console.warn('[ExportPdfScreen] Lỗi nạp thông tin ca từ kho mã hóa:', err);
+      }
+    };
+    loadRealCase();
+    return () => {
+      isMounted = false;
+    };
+  }, [ownerId, caseId]);
 
   // Ngôn ngữ của tài liệu PDF tạo ra (riêng biệt khỏi giao diện hệ thống)
   const [pdfLanguage, setPdfLanguage] = useState<'vi' | 'en'>('vi');

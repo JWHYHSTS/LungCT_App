@@ -21,7 +21,15 @@ import {
   getMockPatients,
   subscribeDoctorStore,
   createMockCaseForPatient,
+  type MockCase,
+  type MockPatient,
 } from '../../../mocks';
+import {
+  PatientRepository,
+  subscribePatientRepository,
+  CaseRepository,
+  subscribeCaseRepository,
+} from '../../../services/storage';
 import { SCORE_FORMAT_DECISION } from '../../../config/ui-decisions';
 import { useAuth } from '../../auth/context/AuthContext';
 
@@ -49,22 +57,57 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing } = theme;
   const { t } = useTranslation();
-  const { isOnline } = useAuth();
+  const { isOnline, user } = useAuth();
+  const ownerId = user?.id || 'usr-doc-01';
 
   const [isLoading] = useState(isLoadingInitial);
   const [isEmpty] = useState(isEmptyInitial);
   const [isModelError] = useState(isModelErrorInitial);
   const [isSelectPatientSheetVisible, setIsSelectPatientSheetVisible] = useState(false);
 
-  const [casesList, setCasesList] = useState(getMockCases());
-  const [patientsList, setPatientsList] = useState(getMockPatients());
+  const [casesList, setCasesList] = useState<MockCase[]>(() => getMockCases());
+  const [patientsList, setPatientsList] = useState<MockPatient[]>(() => getMockPatients());
 
+  // Nạp dữ liệu ca bệnh và bệnh nhân trực tiếp từ Kho lưu trữ mã hóa cục bộ
   React.useEffect(() => {
-    return subscribeDoctorStore(() => {
-      setCasesList(getMockCases());
-      setPatientsList(getMockPatients());
+    let isMounted = true;
+
+    const loadRealStorageData = async () => {
+      try {
+        const storedPatients = await PatientRepository.getPatientsForUI(ownerId, false);
+        if (isMounted && storedPatients && storedPatients.length > 0) {
+          setPatientsList(storedPatients);
+        }
+
+        const storedCases = await CaseRepository.getCasesForUI(ownerId, undefined, false);
+        if (isMounted && storedCases && storedCases.length > 0) {
+          setCasesList(storedCases);
+        }
+      } catch (err) {
+        console.warn('[DoctorHomeScreen] Lỗi đọc dữ liệu từ kho lưu trữ mã hóa:', err);
+      }
+    };
+
+    loadRealStorageData();
+
+    // Lắng nghe thay đổi từ cả PatientRepository, CaseRepository và Mock Store
+    const unsubPatientRepo = subscribePatientRepository(() => {
+      loadRealStorageData();
     });
-  }, []);
+    const unsubCaseRepo = subscribeCaseRepository(() => {
+      loadRealStorageData();
+    });
+    const unsubMockStore = subscribeDoctorStore(() => {
+      loadRealStorageData();
+    });
+
+    return () => {
+      isMounted = false;
+      unsubPatientRepo();
+      unsubCaseRepo();
+      unsubMockStore();
+    };
+  }, [ownerId]);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -85,6 +128,9 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
   };
 
   const pendingCases = isEmpty ? [] : casesList.filter((c) => c.status === 'DRAFT');
+  const completedCasesCount = isEmpty
+    ? 0
+    : casesList.filter((c) => c.status === 'COMPLETED').length;
   const recentPatients = isEmpty ? [] : patientsList.slice(0, 3);
 
   return (
@@ -201,12 +247,17 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
 
         <View style={styles.statsRow}>
           <View style={styles.statCardWrapper}>
-            <StatCard label="Ca nháp" value={isEmpty ? '0' : '3'} icon="draft" tone="warning" />
+            <StatCard
+              label="Ca nháp"
+              value={isEmpty ? '0' : String(pendingCases.length)}
+              icon="draft"
+              tone="warning"
+            />
           </View>
           <View style={styles.statCardWrapper}>
             <StatCard
               label="Hoàn tất tháng này"
-              value={isEmpty ? '0' : '12'}
+              value={isEmpty ? '0' : String(completedCasesCount)}
               icon="success"
               tone="brand"
             />
@@ -329,16 +380,24 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
               subtitle={`${p.age} tuổi · ${p.gender}`}
               type="patient"
               leadingIcon="patients"
-              onPress={() => {
+              onPress={async () => {
                 setIsSelectPatientSheetVisible(false);
-                const createdCase = createMockCaseForPatient(p);
-                if (onNavigateToCaseDetail) {
-                  onNavigateToCaseDetail(createdCase.id);
-                } else {
-                  showFeatureNotice(
-                    'Đã tạo ca khám mới (CASE-01)',
-                    `[Chế độ mô phỏng] Đã tạo ca ${createdCase.caseCode} cho bệnh nhân ${p.fullName}. Dữ liệu đã lưu tạm trong phiên mô phỏng; có thể mất khi khởi động lại app.`,
-                  );
+                try {
+                  const createdCase = await CaseRepository.createCase(ownerId, p);
+                  if (onNavigateToCaseDetail) {
+                    onNavigateToCaseDetail(createdCase.id);
+                  } else {
+                    showFeatureNotice(
+                      'Đã tạo ca khám mới (CASE-01)',
+                      `Đã tạo thành công ca ${createdCase.caseCode} cho bệnh nhân ${p.fullName}. Dữ liệu đã lưu an toàn trong kho lưu trữ mã hóa cục bộ.`,
+                    );
+                  }
+                } catch (createErr) {
+                  console.warn('[DoctorHomeScreen] Lỗi tạo ca khám mới:', createErr);
+                  const fallbackCase = createMockCaseForPatient(p);
+                  if (onNavigateToCaseDetail) {
+                    onNavigateToCaseDetail(fallbackCase.id);
+                  }
                 }
               }}
               style={{ marginBottom: 6 }}

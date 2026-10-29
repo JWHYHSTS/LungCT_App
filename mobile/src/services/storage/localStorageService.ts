@@ -671,14 +671,31 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
   // THỐNG KÊ (PROJECTION)
   // ==========================================
 
-  public async getDoctorStats(ownerId: string): Promise<DoctorStatsProjection> {
+  public async getDoctorStats(
+    ownerId: string,
+    period: '7d' | '30d' | 'all' = 'all',
+  ): Promise<DoctorStatsProjection> {
     const patients = await this.getPatients(ownerId, false);
-    const cases = await this.getCases(ownerId, undefined, false);
+    let cases = await this.getCases(ownerId, undefined, false);
     const keys = this.getKeys(ownerId);
-    const predictions = await this.readEncryptedTable<AIPredictionResultEntity>(
+    let predictions = await this.readEncryptedTable<AIPredictionResultEntity>(
       ownerId,
       keys.predictions,
     );
+
+    if (period !== 'all') {
+      const now = new Date().getTime();
+      const days = period === '7d' ? 7 : 30;
+      const thresholdTime = now - days * 24 * 60 * 60 * 1000;
+      cases = cases.filter((c) => {
+        const time = new Date(c.scanDate).getTime();
+        return !isNaN(time) && time >= thresholdTime;
+      });
+      predictions = predictions.filter((p) => {
+        const time = new Date(p.finishedAt || p.startedAt).getTime();
+        return !isNaN(time) && time >= thresholdTime;
+      });
+    }
 
     // Chỉ tính kết quả phân tích REAL hiện hành
     const realPreds = predictions.filter(

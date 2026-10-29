@@ -186,13 +186,13 @@ graph TD
     - *Bản chất CSDL hiện tại và phân định bảo mật*:
       - CSDL cục bộ `/data/data/com.anonymous.mobile/databases/lungct_secure_<ownerId>.db` được quản lý trực tiếp bằng SQLCipher Android Native (`net.zetetic.database.sqlcipher.SQLiteDatabase.openOrCreateDatabase(dbFile.absolutePath, passphrase, null, null, null)`).
       - **Mức độ mã hóa**: Mã hóa cấp trang toàn bộ tệp (Page-level Full Database Encryption) bằng thuật toán 256-bit AES-CBC kết hợp HMAC-SHA512 cho từng trang đĩa 4096 bytes. Passphrase của CSDL là chuỗi khóa 256-bit ngẫu nhiên sinh bằng `SecureRandom`, được mã hóa chứng thực AES-256-GCM qua Android Keystore Master Key của từng bác sĩ (`LungCt_Doctor_VaultKey_<ownerId>`) trước khi lưu trữ.
-      - **Minh chứng triệt tiêu văn bản rõ (0 Byte Plaintext)**:
-        - Thực hiện rà quét tệp nhị phân `lungct_secure_usr_doc_01.db` (kích thước 53.248 bytes) bằng công cụ `strings` kết hợp lọc mẫu nhạy cảm (`strings lungct_secure_usr_doc_01.db | grep -iE 'Bui_Duc|Nguyen|Minh|Le_Van'`): **KẾT QUẢ RỖNG HOÀN TOÀN (0 ký tự plaintext)**.
+      - **Kiểm tra văn bản rõ trên tệp CSDL**:
+        - Thực hiện rà quét tệp nhị phân `lungct_secure_usr_doc_01.db` (kích thước 53.248 bytes) bằng công cụ `strings` kết hợp lọc mẫu nhạy cảm (`strings lungct_secure_usr_doc_01.db | grep -iE 'Bui_Duc|Nguyen|Minh|Le_Van'`): **Không tìm thấy các chuỗi được dò trong tệp DB bằng lệnh đã chạy**.
         - Toàn bộ bảng, chỉ mục và cột (`patient_code`, `full_name`, `phone`, `symptoms`, `doctor_comment`, `label`) đều nằm trong các khối đĩa mã hóa ngẫu nhiên, không thể đọc trích xuất trực tiếp kể cả khi bị can thiệp vật lý (Physical extraction/Root forensics).
     - *Dịch vụ di chuyển an toàn & bảo toàn dữ liệu cũ (Zero Data Loss Migration)*:
       - Tự động phát hiện CSDL SQLite plaintext cũ thông qua việc kiểm tra 16 bytes header chuẩn `"SQLite format 3"`.
       - Tự động di chuyển toàn bộ cấu trúc bảng và bản ghi (`secure_patients`, `secure_cases`, `secure_predictions`, `secure_metadata`) sang CSDL SQLCipher mới.
-      - Tự động lưu bản sao lưu an toàn `lungct_secure_<ownerId>.db.plaintext.bak` (kích thước 61.440 bytes) trước khi kích hoạt CSDL mã hóa, đảm bảo an toàn tuyệt đối không làm mất dữ liệu.
+      - Tự động lưu bản sao lưu an toàn `lungct_secure_<ownerId>.db.plaintext.bak` (kích thước 61.440 bytes) trước khi kích hoạt CSDL mã hóa, đảm bảo an toàn tuyệt đối không làm mất dữ liệu. *Lưu ý: Tệp `.plaintext.bak` này vẫn là văn bản rõ (chưa mã hóa)*.
       - **Cơ chế bảo vệ bản sao lưu kép**: Tự động sinh bản sao lưu mã hóa `lungct_secure_<ownerId>.db.encrypted.bak` (mã hóa toàn bộ nội dung backup bằng Master Key Keystore AES-256-GCM, định dạng magic header `LCBK`), giữ nguyên bản sao lưu gốc `.plaintext.bak` để phục vụ khôi phục thảm họa (Disaster Recovery), không ghi đè hoặc xóa bỏ.
       - Thử nghiệm mở bằng khóa đúng/sai: Khóa đúng mở bình thường; khóa sai ném ngoại lệ `SQLITE_NOTADB` và chặn truy cập, không làm biến dạng tệp đĩa.
       - Thử nghiệm gián đoạn và chạy lại (Idempotency & Resume): Chạy lại không làm nhân đôi hoặc mất mát bất kỳ bản ghi nào.
@@ -200,15 +200,16 @@ graph TD
       | Nghiệp vụ / Tính năng | 1. Đã viết mã (Code Complete) | 2. Đạt Jest Sandbox (Node.js Mock In-Memory) | 3. Đã kiểm thử trên APK Máy ảo (Real Android SQLCipher on Disk) |
       | :--- | :---: | :---: | :---: |
       | Tạo & Mở SQLite Native (`lungct_secure_*.db`) | Đạt | Đạt | Đạt (Tệp đĩa 61.440 bytes) |
-      | Di chuyển an toàn từ AsyncStorage (Zero Data Loss) | Đạt | Đạt (141/141 tests) | Đạt (Di chuyển 6 bệnh nhân gốc thành công) |
+      | Di chuyển an toàn từ AsyncStorage sang SQLCipher | Đạt | Đạt (150/150 tests) | Đạt (Di chuyển và tạo tệp `.plaintext.bak`) |
       | Idempotency & Phục hồi khi gián đoạn (Resume) | Đạt | Đạt (`sqliteMigration.test.ts`) | Đạt (Không nhân đôi bản ghi) |
       | Thêm bệnh nhân mới trên UI vào SQLite | Đạt | Đạt | Đạt (`BN-2026-SQLITE`, tổng 7 BN) |
       | Tạo ca bệnh mới gắn với bệnh nhân (Khóa ngoại) | Đạt | Đạt | Đạt (`CA-2026-000005`, tổng 5 ca) |
       | Nhận xét bác sĩ có mã hóa vào SQLite | Đạt | Đạt | Đạt (`doctor_comment`, revision 2) |
       | Chạy On-Device AI FP32 và lưu kết quả vào SQLite | Đạt | Đạt | Đạt (`res_1793118243771_jb5ws`, latency 3.744ms) |
-      | Vòng đời sau khởi động lại app (`am force-stop` & `start`) | Đạt | Đạt | Đạt (Đọc lại 100% từ đĩa SQLite) |
-      | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher 4.6.1) | Đạt | Đạt (`sqlcipherVault.test.ts`, 146/146 tests) | Đạt (Tệp 53.248 bytes, `strings` ra 0 byte plaintext) |
-      | Bảo vệ bản sao lưu kho cũ (`.plaintext.bak` & `.encrypted.bak`) | Đạt | Đạt (Test 5 phục hồi sandbox) | Đạt (Tệp backup 61.440 bytes bảo toàn) |
+      | Đính kèm ảnh CT vào sandbox & lưu kết quả AI | Đạt | Đạt (150/150 tests) | Chưa kiểm chứng toàn luồng AI sau update |
+      | Vòng đời sau khởi động lại app (`am force-stop` & `start`) | Đạt (logic repo) | Đạt (Jest sandbox) | Đạt (Tiến trình khởi chạy lại an toàn) |
+      | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher 4.6.1) | Đạt | Đạt (`sqlcipherVault.test.ts`, 150/150 tests) | Đạt (Không tìm thấy chuỗi dò bằng lệnh đã chạy) |
+      | Bảo vệ bản sao lưu kho cũ (`.plaintext.bak` & `.encrypted.bak`) | Đạt | Đạt (Test 5 phục hồi sandbox) | Đạt (Tệp backup 61.440 bytes giữ nguyên bản rõ) |
   - [ ] **6.3c Hệ thống Xác thực thật và Phân quyền Backend (JWT Token & FastAPI Server)**
     - *Trạng thái*: **Chưa làm (Hiện tại đang mô phỏng Mock Auth UI-05)**.
     - *Mục tiêu kỹ thuật*: Thay thế đăng nhập giả lập bằng hệ thống xác thực thật qua JWT Token, kết nối dịch vụ FastAPI Backend, quản lý phiên làm việc và phân quyền bảo mật cấp API thay vì chỉ cô lập ở tầng logic ứng dụng (`ownerId`).

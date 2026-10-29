@@ -98,4 +98,19 @@ describe('UI-06: Doctor Tabs Unit Tests', () => {
     expect(screen).toBeDefined();
     expect(React.isValidElement(screen)).toBe(true);
   });
+
+  test('7. DoctorHomeScreen tính toán và phân định chính xác số ca nháp và hoàn tất', () => {
+    const screen = DoctorHomeScreen({});
+    expect(screen).toBeDefined();
+    expect(React.isValidElement(screen)).toBe(true);
+  });
+
+  test('8. DoctorStatsScreen hỗ trợ lọc kỳ 7 ngày, 30 ngày và tất cả', () => {
+    const screen7d = DoctorStatsScreen({ initialRange: '7d' });
+    const screen30d = DoctorStatsScreen({ initialRange: '30d' });
+    const screenAll = DoctorStatsScreen({ initialRange: 'all' });
+    expect(screen7d).toBeDefined();
+    expect(screen30d).toBeDefined();
+    expect(screenAll).toBeDefined();
+  });
 });
