@@ -30,6 +30,8 @@ function MainAppContent(): React.JSX.Element {
  * Tải trước font Be Vietnam Pro (Regular, Medium, SemiBold).
  * Bao bọc ứng dụng trong AuthProvider, ThemeProvider và i18n context.
  */
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 export default function App(): React.JSX.Element {
   const [fontsLoaded, fontError] = useFonts({
     'BeVietnamPro-Regular': require('./assets/fonts/BeVietnamPro-Regular.ttf'),
@@ -48,11 +50,13 @@ export default function App(): React.JSX.Element {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <MainAppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <MainAppContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 

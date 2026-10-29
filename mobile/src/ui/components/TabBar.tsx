@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useAppSafeAreaInsets } from '../utils/safeArea';
 import { useTheme } from '../theme';
 import { Icon, type IconName } from '../icons';
 
@@ -26,7 +27,7 @@ export interface TabBarProps {
  * Thanh điều hướng đáy (Bottom TabBar) chuẩn hóa của ứng dụng LungCT.
  * - Bác sĩ (5 tab): Trang chủ, Bệnh nhân, Ca bệnh, Thống kê, Tôi.
  * - Quản trị viên (3 tab): Tài khoản, Thống kê, Tôi.
- * - Nhãn luôn luôn hiển thị (always show labels).
+ * - Tự động cộng padding phía dưới bằng useSafeAreaInsets để tránh bị che bởi thanh điều hướng hệ thống (cử chỉ / 3 nút).
  */
 export const TabBar: React.FC<TabBarProps> = ({
   role = 'doctor',
@@ -37,6 +38,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, typography } = theme;
+  const insets = useAppSafeAreaInsets();
 
   const doctorTabs: TabItem[] = [
     { key: 'home', label: t('navigation.tab_home', 'Trang chủ'), icon: 'home' },
@@ -61,7 +63,8 @@ export const TabBar: React.FC<TabBarProps> = ({
         {
           backgroundColor: colors.bg.surface,
           borderTopColor: colors.border.default,
-          paddingVertical: spacing.xs,
+          paddingTop: spacing.xs,
+          paddingBottom: Math.max(insets.bottom, spacing.xs),
         },
         style,
       ]}

@@ -135,6 +135,8 @@ export const validateDateOfBirth = (
  * - Kiểm tra lỗi: Mã bệnh nhân đã tồn tại, Ngày sinh không hợp lệ hoặc trong tương lai.
  * - Khi có thay đổi dữ liệu mà bấm Đóng/Back: Hiển thị Dialog "Bỏ thông tin chưa lưu?".
  */
+import { useAppSafeAreaInsets } from '../../../ui/utils/safeArea';
+
 export const PatientFormModal: React.FC<PatientFormModalProps> = ({
   initialPatientId,
   onClose,
@@ -143,6 +145,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
+  const insets = useAppSafeAreaInsets();
   const isEditMode = Boolean(initialPatientId);
 
   const [code, setCode] = useState('');
@@ -341,7 +344,13 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
       />
 
       <ScrollView
-        contentContainerStyle={[styles.content, { padding: spacing.md }]}
+        contentContainerStyle={[
+          styles.content,
+          {
+            padding: spacing.md,
+            paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xl,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <AppText

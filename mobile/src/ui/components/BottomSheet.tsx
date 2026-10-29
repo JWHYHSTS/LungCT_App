@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useAppSafeAreaInsets } from '../utils/safeArea';
 import { useTheme } from '../theme';
 import { AppText } from './AppText';
 
@@ -17,6 +18,7 @@ export interface BottomSheetProps {
 /**
  * Bảng trượt đáy BottomSheet.
  * Hỗ trợ đóng khi bấm ngoài nền (scrim 50%) và tự động bắt sự kiện Android Back.
+ * Tự động chừa khoảng an toàn cho thanh điều hướng cử chỉ với useAppSafeAreaInsets.
  */
 export const BottomSheet: React.FC<BottomSheetProps> = ({
   visible,
@@ -27,6 +29,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 }) => {
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
+  const insets = useAppSafeAreaInsets();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -39,7 +42,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
               borderTopLeftRadius: radius.xl,
               borderTopRightRadius: radius.xl,
               paddingHorizontal: spacing.lg,
-              paddingBottom: spacing.xl,
+              paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.sm,
               paddingTop: spacing.sm,
             },
             style,

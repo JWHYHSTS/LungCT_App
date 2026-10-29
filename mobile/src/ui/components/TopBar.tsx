@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useAppSafeAreaInsets } from '../utils/safeArea';
 import { useTheme } from '../theme';
 import { IconButton } from './IconButton';
 
@@ -21,8 +22,9 @@ export interface TopBarProps {
 }
 
 /**
- * Thanh tiêu đề trên cùng (TopBar) chuẩn hóa của LungCT.
- */
+  * Thanh tiêu đề trên cùng (TopBar) chuẩn hóa của LungCT.
+  * Tự động thích ứng với tai thỏ, nốt ruồi và thanh trạng thái hệ thống thông qua useAppSafeAreaInsets.
+  */
 export const TopBar: React.FC<TopBarProps> = ({
   title,
   type = 'root',
@@ -34,6 +36,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, typography } = theme;
+  const insets = useAppSafeAreaInsets();
 
   const isRoot = type === 'root';
   const isStack = type === 'stack';
@@ -46,6 +49,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         {
           backgroundColor: colors.bg.surface,
           borderBottomColor: colors.border.default,
+          paddingTop: Math.max(insets.top, spacing.xs),
           paddingHorizontal: spacing.md,
         },
         style,
