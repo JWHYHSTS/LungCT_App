@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import { AppText, Dialog, IconButton, Segmented, StatCard, TopBar } from '../../../ui/components';
 import { MOCK_STATS, type MockStatsData } from '../../../mocks';
@@ -12,6 +13,7 @@ export interface DoctorStatsScreenProps {
 }
 
 export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRange = '30d' }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing } = theme;
   const { user } = useAuth();
@@ -88,7 +90,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg.app }]}>
       <TopBar
-        title="Thống kê"
+        title={t('navigation.tab_stats', 'Thống kê')}
         type="root"
         rightActions={
           <View style={styles.topBarActions}>
@@ -139,17 +141,17 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
             }}
           >
             {realStats
-              ? 'Số liệu thống kê được tổng hợp trực tiếp từ kho lưu trữ mã hóa cục bộ của bác sĩ.'
-              : '[Chế độ mô phỏng] Số liệu thống kê được lấy từ dữ liệu mẫu phục vụ kiểm thử giao diện UI-06.'}
+              ? t('doctor_stats.banner_local', 'Số liệu thống kê được tổng hợp trực tiếp từ kho lưu trữ mã hóa cục bộ của bác sĩ.')
+              : t('doctor_stats.banner_simulated', '[Chế độ mô phỏng] Số liệu thống kê được lấy từ dữ liệu mẫu phục vụ kiểm thử giao diện UI-06.')}
           </AppText>
         </View>
 
         <View style={{ marginVertical: spacing.sm }}>
           <Segmented<'7d' | '30d' | 'all'>
             items={[
-              { key: '7d', label: '7 ngày' },
-              { key: '30d', label: '30 ngày' },
-              { key: 'all', label: 'Tất cả' },
+              { key: '7d', label: t('doctor_stats.period_7d', '7 ngày') },
+              { key: '30d', label: t('doctor_stats.period_30d', '30 ngày') },
+              { key: 'all', label: t('doctor_stats.period_all', 'Tất cả') },
             ]}
             selectedKey={selectedRange}
             onSelect={(key: '7d' | '30d' | 'all') => setSelectedRange(key)}
@@ -159,11 +161,11 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
             <View style={styles.statCol}>
-              <StatCard label="Bệnh nhân" value={`${currentStats.patientCount}`} icon="patients" />
+              <StatCard label={t('doctor_stats.stat_patients', 'Bệnh nhân')} value={`${currentStats.patientCount}`} icon="patients" />
             </View>
             <View style={styles.statCol}>
               <StatCard
-                label="Ca hoàn tất"
+                label={t('doctor_stats.stat_completed', 'Ca hoàn tất')}
                 value={`${currentStats.completedCaseCount}`}
                 icon="success"
                 tone="brand"
@@ -174,7 +176,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
           <View style={[styles.statsRow, { marginTop: spacing.sm }]}>
             <View style={styles.statCol}>
               <StatCard
-                label="Ca nháp"
+                label={t('doctor_stats.stat_draft', 'Ca nháp')}
                 value={`${currentStats.draftCaseCount}`}
                 icon="draft"
                 tone="warning"
@@ -182,7 +184,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
             </View>
             <View style={styles.statCol}>
               <StatCard
-                label="Ảnh đã phân tích"
+                label={t('doctor_stats.stat_analyzed_images', 'Ảnh đã phân tích')}
                 value={`${currentStats.analyzedImageCount}`}
                 icon="cases"
               />
@@ -200,12 +202,12 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
           ]}
         >
           <AppText variant="titleS" style={{ marginBottom: spacing.md }}>
-            Số ảnh theo nhãn AI (Tổng: {benign + malignant + normal} ảnh)
+            {t('doctor_stats.chart_title', 'Số ảnh theo nhãn AI (Tổng: {{count}} ảnh)', { count: benign + malignant + normal })}
           </AppText>
 
           <View style={styles.chartRow}>
             <AppText variant="bodyS" style={styles.labelCol}>
-              Lành tính
+              {t('doctor_stats.label_benign', 'Lành tính')}
             </AppText>
             <View style={styles.barWrapper}>
               <Svg width={maxBarWidth} height={12}>
@@ -227,7 +229,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
 
           <View style={[styles.chartRow, { marginTop: spacing.sm }]}>
             <AppText variant="bodyS" style={styles.labelCol}>
-              Ác tính
+              {t('doctor_stats.label_malignant', 'Ác tính')}
             </AppText>
             <View style={styles.barWrapper}>
               <Svg width={maxBarWidth} height={12}>
@@ -249,7 +251,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
 
           <View style={[styles.chartRow, { marginTop: spacing.sm }]}>
             <AppText variant="bodyS" style={styles.labelCol}>
-              Bình thường
+              {t('doctor_stats.label_normal', 'Bình thường')}
             </AppText>
             <View style={styles.barWrapper}>
               <Svg width={maxBarWidth} height={12}>
@@ -283,7 +285,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
               variant="caption"
               style={{ color: colors.text.secondary, fontStyle: 'italic' }}
             >
-              * Đơn vị thống kê: theo số ca khám (ca) và số ảnh CT (ảnh).
+              {t('doctor_stats.unit_note', '* Đơn vị thống kê: theo số ca khám (ca) và số ảnh CT (ảnh).')}
             </AppText>
             <AppText
               variant="caption"
@@ -293,7 +295,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
                 fontStyle: 'italic',
               }}
             >
-              * {currentStats.unitNotes.syncFormulaNote}
+              {t('doctor_stats.sync_formula_note', '* Dữ liệu tổng hợp kỳ {{period}} từ SQLite mã hóa nội bộ thiết bị', { period: selectedRange })}
             </AppText>
           </View>
         </View>
@@ -304,7 +306,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
         type="default"
         title={dialogNotice.title}
         body={dialogNotice.body}
-        confirmLabel="Đã hiểu"
+        confirmLabel={t('common.understood', 'Đã hiểu')}
         onConfirm={closeNotice}
         onCancel={closeNotice}
       />

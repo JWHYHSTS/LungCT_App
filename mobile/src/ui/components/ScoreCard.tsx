@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme';
 import { AILabel, type AIClass } from './AILabel';
 import { AppText } from './AppText';
@@ -25,6 +26,7 @@ export interface ScoreCardProps {
  *    "Điểm (score) là đầu ra của mô hình, chưa được hiệu chuẩn thành xác suất mắc bệnh."
  */
 export const ScoreCard: React.FC<ScoreCardProps> = ({ scores, style }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
 
@@ -67,7 +69,7 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({ scores, style }) => {
       {/* Tiêu đề thẻ & Nhãn AI của các lớp đạt điểm cao nhất (nhấn mạnh tất cả lớp cùng cao nhất) */}
       <View style={styles.header}>
         <AppText variant="titleS" color={colors.text.primary}>
-          Nhãn AI
+          {t('doctor_detail.ai_section_scores', 'Nhãn phân loại AI')}
         </AppText>
         <View style={styles.labelsWrapper}>
           {topClasses.map((cls) => (
@@ -87,7 +89,7 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({ scores, style }) => {
 
       {/* Thông điệp y tế bắt buộc MSG-02 */}
       <AppText variant="caption" color={colors.text.secondary}>
-        Điểm (score) là đầu ra của mô hình, chưa được hiệu chuẩn thành xác suất mắc bệnh.
+        {t('msg.msg_02', 'Điểm (score) là đầu ra của mô hình, chưa được hiệu chuẩn thành xác suất mắc bệnh.')}
       </AppText>
     </View>
   );

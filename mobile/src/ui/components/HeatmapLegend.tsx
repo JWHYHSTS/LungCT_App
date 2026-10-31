@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme';
 import { HEATMAP_STOPS } from '../theme/heatmap';
 import { AppText } from './AppText';
@@ -14,6 +15,7 @@ export interface HeatmapLegendProps {
  * - Hiển thị 3 mốc: "Thấp", "Mức đóng góp tương đối trong ảnh này", "Cao" theo đúng BR-AI-05.
  */
 export const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ style }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
 
@@ -43,13 +45,13 @@ export const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ style }) => {
 
       <View style={styles.labelsRow}>
         <AppText variant="caption" color={colors.text.secondary}>
-          Thấp
+          {t('doctor_detail.heatmap_low', 'Thấp')}
         </AppText>
         <AppText variant="caption" color={colors.text.secondary} style={styles.centerLabel}>
-          Mức đóng góp tương đối trong ảnh này
+          {t('doctor_detail.heatmap_relative_contribution', 'Mức đóng góp tương đối trong ảnh này')}
         </AppText>
         <AppText variant="caption" color={colors.text.secondary}>
-          Cao
+          {t('doctor_detail.heatmap_high', 'Cao')}
         </AppText>
       </View>
     </View>

@@ -49,10 +49,54 @@ function notifyCaseListeners() {
 /**
  * Chuyển đổi từ CaseEntity sang MockCase dùng trên UI
  */
-export function entityToMockCase(entity: CaseEntity, patient?: PatientEntity | null): MockCase {
+export function entityToMockCase(
+  entity: CaseEntity,
+  patient?: PatientEntity | null,
+  ctImages?: CTImageEntity[],
+  predictions?: AIPredictionResultEntity[],
+): MockCase {
   // Lấy thêm thông tin ảnh nếu có sẵn từ mock store (để hiển thị lát cắt trong phiên)
   const mockExisting = findMockCaseById(entity.caseId);
-  const images = mockExisting ? mockExisting.images : [];
+  let images: MockCase['images'] = mockExisting ? [...mockExisting.images] : [];
+
+  if (ctImages && ctImages.length > 0) {
+    const predMap = new Map<string, AIPredictionResultEntity>();
+    if (predictions) {
+      predictions.forEach((p) => {
+        if (p.state === 'CURRENT') predMap.set(p.imageId, p);
+      });
+    }
+
+    images = ctImages.map((img, idx) => {
+      const pred = predMap.get(img.imageId);
+      const uriStr = img.localFileRef.startsWith('/') ? `file://${img.localFileRef}` : img.localFileRef;
+      const aiClass = pred
+        ? (pred.label === 'BENIGN' ? 'Benign' : pred.label === 'MALIGNANT' ? 'Malignant' : 'Normal')
+        : undefined;
+
+      return {
+        id: img.imageId,
+        index: idx + 1,
+        sliceNumber: 30 + (idx + 1),
+        source: img.source === 'CAMERA' ? 'camera' : 'gallery',
+        status: pred ? (pred.explanationStatus === 'PASS' ? 'pass' : 'passNoCam') : 'pending',
+        uri: uriStr,
+        filePath: img.localFileRef,
+        originalFileName: img.originalFileName,
+        aiClass,
+        scores:
+          pred && Array.isArray(pred.scores) && pred.scores.length >= 3
+            ? {
+                benign: pred.scores[0],
+                malignant: pred.scores[1],
+                normal: pred.scores[2],
+              }
+            : undefined,
+        hasGradCam: pred ? pred.explanationStatus === 'PASS' : false,
+        mockWatermark: undefined,
+      };
+    });
+  }
 
   // Định dạng ngày chụp DD/MM/YYYY
   let captureDateStr = entity.scanDate;
@@ -155,10 +199,19 @@ export class CaseRepository {
     const patientMap = new Map<string, PatientEntity>();
     patients.forEach((p) => patientMap.set(p.patientId, p));
 
-    return entities.map((entity) => {
+    const keys = (localStorageService as any).getKeys(ownerId);
+    const predictions = await (localStorageService as any).readEncryptedTable(
+      ownerId,
+      keys.predictions,
+    );
+
+    const casesWithImages: MockCase[] = [];
+    for (const entity of entities) {
       const patient = patientMap.get(entity.patientId);
-      return entityToMockCase(entity, patient);
-    });
+      const ctImages = await localStorageService.getImagesByCaseId(ownerId, entity.caseId);
+      casesWithImages.push(entityToMockCase(entity, patient, ctImages, predictions));
+    }
+    return casesWithImages;
   }
 
   /**
@@ -174,7 +227,13 @@ export class CaseRepository {
     }
 
     const patient = await localStorageService.getPatientById(ownerId, entity.patientId);
-    return entityToMockCase(entity, patient);
+    const ctImages = await localStorageService.getImagesByCaseId(ownerId, caseId);
+    const keys = (localStorageService as any).getKeys(ownerId);
+    const predictions = await (localStorageService as any).readEncryptedTable(
+      ownerId,
+      keys.predictions,
+    );
+    return entityToMockCase(entity, patient, ctImages, predictions);
   }
 
   /**
@@ -239,16 +298,42 @@ export class CaseRepository {
   ): Promise<{ success: boolean; reason?: string }> {
     await this.ensureReady(ownerId);
 
-    // Kiểm tra tính hợp lệ qua Mock Store logic (BR-CASE-01: cần ít nhất 1 ảnh, không running)
-    const mockRes = completeMockCase(caseId);
-    if (!mockRes.success) {
-      return mockRes;
+    // 1. Kiểm tra tồn tại trong SQLite storage
+    const caseEntity = await localStorageService.getCaseById(ownerId, caseId);
+    if (!caseEntity) {
+      // Nếu không có trong storage thì thử kiểm tra mock store
+      const mockTarget = findMockCaseById(caseId);
+      if (!mockTarget) {
+        return { success: false, reason: 'Không tìm thấy ca bệnh.' };
+      }
+      return completeMockCase(caseId);
     }
 
+    // 2. BR-CASE-01: Yêu cầu ít nhất 1 ảnh CT đính kèm
+    const images = await localStorageService.getImagesByCaseId(ownerId, caseId);
+    if (!images || images.length === 0) {
+      return {
+        success: false,
+        reason: 'Cần ít nhất 1 ảnh để hoàn tất ca bệnh (BR-CASE-01).',
+      };
+    }
+
+    // 3. Hoàn tất trong kho lưu trữ mã hóa SQLite
     try {
       await localStorageService.completeCase(ownerId, caseId);
     } catch (err: any) {
       console.warn('[CaseRepository] Lỗi hoàn tất trong kho lưu trữ mã hóa:', err);
+      return {
+        success: false,
+        reason: err?.message || 'Lỗi lưu trạng thái hoàn tất.',
+      };
+    }
+
+    // 4. Đồng bộ mềm vào mock store nếu ca này cũng đang có trong RAM
+    try {
+      completeMockCase(caseId);
+    } catch {
+      // ignore
     }
 
     notifyCaseListeners();

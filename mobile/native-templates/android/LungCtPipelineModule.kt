@@ -6,6 +6,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.ActivityEventListener
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.BaseActivityEventListener
@@ -13,6 +15,8 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.modules.core.PermissionAwareActivity
+import com.facebook.react.modules.core.PermissionListener
 import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import java.io.File
@@ -43,6 +47,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
   private var cameraPromise: Promise? = null
   private var cameraPhotoFile: File? = null
   private val TAKE_PHOTO_REQUEST_CODE = 41286
+  private val CAMERA_PERMISSION_REQUEST_CODE = 41287
 
   private val activityEventListener: ActivityEventListener = object : BaseActivityEventListener() {
     override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
@@ -291,11 +296,49 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       return
     }
 
-    if (cameraPromise != null || pickerPromise != null) {
-      promise.reject("ERR_BUSY", "Máy ảnh hoặc trình chọn ảnh đang mở. Vui lòng thử lại sau.")
-      return
+    val hasCameraPermission = ContextCompat.checkSelfPermission(
+      currentActivity,
+      android.Manifest.permission.CAMERA
+    ) == PackageManager.PERMISSION_GRANTED
+
+    if (!hasCameraPermission) {
+      if (currentActivity is PermissionAwareActivity) {
+        currentActivity.requestPermissions(
+          arrayOf(android.Manifest.permission.CAMERA),
+          CAMERA_PERMISSION_REQUEST_CODE,
+          object : PermissionListener {
+            override fun onRequestPermissionsResult(
+              requestCode: Int,
+              permissions: Array<String>,
+              grantResults: IntArray
+            ): Boolean {
+              if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                  launchCameraIntent(currentActivity, promise)
+                } else {
+                  val map = Arguments.createMap().apply {
+                    putBoolean("canceled", true)
+                    putString("error", "PERMISSION_DENIED")
+                  }
+                  promise.resolve(map)
+                }
+                return true
+              }
+              return false
+            }
+          }
+        )
+        return
+      } else {
+        promise.reject("ERR_PERMISSION", "Không thể yêu cầu quyền Camera từ Activity hiện tại.")
+        return
+      }
     }
 
+    launchCameraIntent(currentActivity, promise)
+  }
+
+  private fun launchCameraIntent(activity: Activity, promise: Promise) {
     try {
       val casesDir = File(reactContext.filesDir, "dicom_cases").apply { if (!exists()) mkdirs() }
       val photoFile = File(casesDir, "camera_${System.currentTimeMillis()}.jpg")
@@ -314,7 +357,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
       }
 
-      currentActivity.startActivityForResult(intent, TAKE_PHOTO_REQUEST_CODE)
+      activity.startActivityForResult(intent, TAKE_PHOTO_REQUEST_CODE)
     } catch (e: Exception) {
       cameraPromise = null
       cameraPhotoFile?.let { if (it.exists() && it.length() == 0L) it.delete() }

@@ -189,10 +189,10 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       >
         {isNoResult ? (
           <EmptyState
-            title="Không tìm thấy bệnh nhân"
-            body="Không có bệnh nhân nào khớp với tiêu chí tìm kiếm hoặc bộ lọc hiện tại."
+            title={t('ui.khong_tim_thay_benh_nhan', 'Không tìm thấy bệnh nhân')}
+            body={t('ui.thu_tu_khoa_khac_hoac_bo_bo_loc', 'Không có bệnh nhân nào khớp với tiêu chí tìm kiếm hoặc bộ lọc hiện tại.')}
             type="noResult"
-            actionLabel="Xóa bộ lọc"
+            actionLabel={t('ui.xoa_bo_loc', 'Xóa bộ lọc')}
             onActionPress={() => {
               setSearchQuery('');
               setSelectedFilter('all');
@@ -200,10 +200,10 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
           />
         ) : filteredPatients.length === 0 ? (
           <EmptyState
-            title="Chưa có bệnh nhân nào"
-            body="Bắt đầu thêm hồ sơ bệnh nhân mới để phục vụ quản lý và tạo ca chụp cắt lớp."
+            title={t('ui.chua_co_benh_nhan', 'Chưa có bệnh nhân nào')}
+            body={t('ui.them_benh_nhan_au_tien_e_bat_au_tao_ca', 'Bắt đầu thêm hồ sơ bệnh nhân mới để phục vụ quản lý và tạo ca chụp cắt lớp.')}
             type="noData"
-            actionLabel="+ Thêm bệnh nhân mới"
+            actionLabel={`+ ${t('ui.them_benh_nhan', 'Thêm bệnh nhân')}`}
             onActionPress={() => {
               if (onNavigateToCreatePatient) {
                 onNavigateToCreatePatient();
@@ -216,50 +216,63 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             }}
           />
         ) : (
-          filteredPatients.map((patient) => (
-            <ListRow
-              key={patient.id}
-              title={`${patient.code} · ${patient.fullName}`}
-              subtitle={`${patient.age} tuổi · ${patient.gender} · ${patient.caseCount} ca · gần nhất ${patient.lastCaseDate}`}
-              type="patient"
-              leadingIcon="patients"
-              badges={
-                patient.isTrashed ? (
-                  <StatusBadge label="Đã xóa" tone="danger" icon="trash" />
-                ) : patient.syncStatus === 'pending' ? (
-                  <StatusBadge label="Chờ gửi" tone="warning" icon="sync" />
-                ) : undefined
-              }
-              onPress={() => {
-                if (patient.isTrashed) {
-                  // Mở hộp thoại xác nhận khôi phục
-                  setDialogNotice({
-                    visible: true,
-                    title: 'Khôi phục bệnh nhân',
-                    body: `Bạn có muốn khôi phục hồ sơ ${patient.fullName} (${patient.code}) trở lại danh sách hoạt động không?`,
-                    confirmLabel: 'Khôi phục',
-                    cancelLabel: 'Hủy',
-                    onConfirm: async () => {
-                      closeNotice();
-                      try {
-                        await PatientRepository.restorePatient(ownerId, patient.id);
-                      } catch (err: any) {
-                        console.warn('[DoctorPatientsScreen] Lỗi khôi phục:', err);
-                      }
-                    },
-                  });
-                } else if (onNavigateToDetail) {
-                  onNavigateToDetail(patient.id);
-                } else {
-                  showFeatureNotice(
-                    'Chi tiết bệnh nhân (SCR-P03)',
-                    `[Chế độ mô phỏng] Đang xem bệnh nhân ${patient.fullName} (${patient.code}). Màn hình chi tiết SCR-P03 sẽ hoàn thiện ở gói UI-07.`,
-                  );
+          filteredPatients.map((patient) => {
+            const genderLabel =
+              patient.gender === 'Nữ'
+                ? t('ui.nu', 'Nữ')
+                : patient.gender === 'Nam'
+                  ? t('ui.nam', 'Nam')
+                  : patient.gender;
+
+            return (
+              <ListRow
+                key={patient.id}
+                title={`${patient.code} · ${patient.fullName}`}
+                subtitle={`${patient.age} ${t('common.age_unit', 'tuổi')} · ${genderLabel} · ${patient.caseCount} ${t('common.case_unit', 'ca')} · ${t('common.latest', 'gần nhất')} ${patient.lastCaseDate}`}
+                type="patient"
+                leadingIcon="patients"
+                badges={
+                  patient.isTrashed ? (
+                    <StatusBadge label={t('common.deleted', 'Đã xóa')} tone="danger" icon="trash" />
+                  ) : patient.syncStatus === 'pending' ? (
+                    <StatusBadge label={t('common.pending_sync', 'Chờ gửi')} tone="warning" icon="sync" />
+                  ) : undefined
                 }
-              }}
-              style={{ marginBottom: spacing.xs }}
-            />
-          ))
+                onPress={() => {
+                  if (patient.isTrashed) {
+                    // Mở hộp thoại xác nhận khôi phục
+                    setDialogNotice({
+                      visible: true,
+                      title: t('trash.restore_patient_title', 'Khôi phục bệnh nhân'),
+                      body: t(
+                        'trash.restore_patient_confirm_body',
+                        `Bạn có muốn khôi phục hồ sơ ${patient.fullName} (${patient.code}) trở lại danh sách hoạt động không?`,
+                        { name: patient.fullName, code: patient.code }
+                      ),
+                      confirmLabel: t('trash.restore_btn', 'Khôi phục'),
+                      cancelLabel: t('common.cancel', 'Hủy'),
+                      onConfirm: async () => {
+                        closeNotice();
+                        try {
+                          await PatientRepository.restorePatient(ownerId, patient.id);
+                        } catch (err: any) {
+                          console.warn('[DoctorPatientsScreen] Lỗi khôi phục:', err);
+                        }
+                      },
+                    });
+                  } else if (onNavigateToDetail) {
+                    onNavigateToDetail(patient.id);
+                  } else {
+                    showFeatureNotice(
+                      'Chi tiết bệnh nhân (SCR-P03)',
+                      `[Chế độ mô phỏng] Đang xem bệnh nhân ${patient.fullName} (${patient.code}). Màn hình chi tiết SCR-P03 sẽ hoàn thiện ở gói UI-07.`,
+                    );
+                  }
+                }}
+                style={{ marginBottom: spacing.xs }}
+              />
+            );
+          })
         )}
       </ScrollView>
 
@@ -275,7 +288,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
         ]}
       >
         <Button
-          label="+ Thêm bệnh nhân"
+          label={`+ ${t('ui.them_benh_nhan', 'Thêm bệnh nhân')}`}
           variant="primary"
           onPress={() => {
             if (onNavigateToCreatePatient) {
@@ -295,8 +308,8 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
         type={dialogNotice.onConfirm ? 'default' : 'default'}
         title={dialogNotice.title}
         body={dialogNotice.body}
-        confirmLabel={dialogNotice.confirmLabel || 'Đã hiểu'}
-        cancelLabel={dialogNotice.cancelLabel || (dialogNotice.onConfirm ? 'Hủy' : undefined)}
+        confirmLabel={dialogNotice.confirmLabel || t('common.understood', 'Đã hiểu')}
+        cancelLabel={dialogNotice.cancelLabel || (dialogNotice.onConfirm ? t('common.cancel', 'Hủy') : undefined)}
         onConfirm={() => {
           if (dialogNotice.onConfirm) {
             dialogNotice.onConfirm();

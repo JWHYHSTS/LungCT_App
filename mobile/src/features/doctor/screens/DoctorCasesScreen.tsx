@@ -190,10 +190,10 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
       >
         {isNoResult ? (
           <EmptyState
-            title="Không tìm thấy ca bệnh"
-            body="Không có ca bệnh nào khớp với từ khóa tìm kiếm hoặc trạng thái lọc."
+            title={t('ui.khong_tim_thay_ca_benh', 'Không tìm thấy ca bệnh')}
+            body={t('ui.khong_co_ca_benh_nao_khop', 'Không có ca bệnh nào khớp với từ khóa tìm kiếm hoặc trạng thái lọc.')}
             type="noResult"
-            actionLabel="Xóa bộ lọc"
+            actionLabel={t('ui.xoa_bo_loc', 'Xóa bộ lọc')}
             onActionPress={() => {
               setSearchQuery('');
               setSelectedFilter('all');
@@ -201,10 +201,10 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
           />
         ) : filteredCases.length === 0 ? (
           <EmptyState
-            title="Chưa có ca bệnh nào"
-            body="Bắt đầu tạo ca chụp cắt lớp mới cho bệnh nhân để tiến hành phân tích AI."
+            title={t('ui.chua_co_ca_nao', 'Chưa có ca bệnh nào')}
+            body={t('ui.bat_dau_tao_ca_chup', 'Bắt đầu tạo ca chụp cắt lớp mới cho bệnh nhân để tiến hành phân tích AI.')}
             type="noData"
-            actionLabel="Tạo ca mới"
+            actionLabel={t('ui.tao_ca_moi', 'Tạo ca mới')}
             onActionPress={() => {
               if (onNavigateToCreateCase) {
                 onNavigateToCreateCase();
@@ -220,10 +220,10 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
           filteredCases.map((caseItem) => {
             const statusLabel =
               caseItem.status === 'DRAFT'
-                ? 'Nháp'
+                ? t('label.nhap', 'Nháp')
                 : caseItem.status === 'COMPLETED'
-                  ? 'Hoàn tất'
-                  : 'Một phần';
+                  ? t('label.hoan_tat', 'Hoàn tất')
+                  : t('label.ket_qua_mot_phan', 'Một phần');
 
             const scoreText =
               caseItem.aiScore !== undefined
@@ -238,14 +238,14 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
               <ListRow
                 key={caseItem.id}
                 title={`${caseItem.caseCode} · ${caseItem.patientName}`}
-                subtitle={`Chụp ${caseItem.captureDate} · ${caseItem.imageCount} ảnh · ${statusLabel}${aiText}`}
+                subtitle={`${t('common.capture_prefix', 'Chụp')}: ${caseItem.captureDate} · ${caseItem.imageCount} ${t('common.image_unit', 'ảnh')} · ${statusLabel}${aiText}`}
                 type="case"
                 leadingIcon="cases"
                 badges={
                   caseItem.isTrashed ? (
-                    <StatusBadge label="Đã xóa" tone="danger" icon="trash" />
+                    <StatusBadge label={t('common.deleted', 'Đã xóa')} tone="danger" icon="trash" />
                   ) : caseItem.syncStatus === 'pending' ? (
-                    <StatusBadge label="Chờ gửi" tone="warning" icon="sync" />
+                    <StatusBadge label={t('common.pending_sync', 'Chờ gửi')} tone="warning" icon="sync" />
                   ) : undefined
                 }
                 onPress={() => {
@@ -270,7 +270,7 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
         type="default"
         title={dialogNotice.title}
         body={dialogNotice.body}
-        confirmLabel="Đã hiểu"
+        confirmLabel={t('common.understood', 'Đã hiểu')}
         onConfirm={closeNotice}
         onCancel={closeNotice}
       />

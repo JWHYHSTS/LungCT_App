@@ -9,6 +9,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   IMAGE_CANVAS,
   HEATMAP_DEFAULT_OPACITY,
@@ -54,6 +55,7 @@ export const CTImageView: React.FC<CTImageViewProps> = ({
   watermarkText,
   style,
 }) => {
+  const { t } = useTranslation();
   const pan = React.useMemo(() => new Animated.ValueXY({ x: 0, y: 0 }), []);
   const scale = React.useMemo(() => new Animated.Value(1), []);
   const [currentScale, setCurrentScale] = useState(1);
@@ -188,7 +190,10 @@ export const CTImageView: React.FC<CTImageViewProps> = ({
       {currentScale > 1 && (
         <View style={styles.zoomBadge}>
           <AppText variant="caption" color={MOCK_CT_TEXT_LIGHT}>
-            {`Zoom: ${currentScale.toFixed(1)}x (Chạm đúp để đặt lại)`}
+            {t('doctor_detail.zoom_note', {
+              scale: currentScale.toFixed(1),
+              defaultValue: `Zoom: ${currentScale.toFixed(1)}x (Chạm đúp để đặt lại)`,
+            })}
           </AppText>
         </View>
       )}

@@ -19,7 +19,7 @@ import {
   Slider,
   TopBar,
 } from '../../../ui/components';
-import { findCaseById, type MockCase, type MockCTImage } from '../../../mocks';
+import { findCaseById, subscribeDoctorStore, type MockCase, type MockCTImage } from '../../../mocks';
 import {
   runNativePipelineFromFilePath,
   getAvailableTestImages,
@@ -28,7 +28,7 @@ import {
   type AvailableTestImage,
 } from '../../../services/ai/onDevicePipeline';
 import { PipelinePredictionResult } from '../../../services/ai/types';
-import { localStorageService } from '../../../services/storage';
+import { CaseRepository, localStorageService, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 
 export interface AIImageResultScreenProps {
@@ -62,7 +62,35 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
   const { user } = useAuth();
   const ownerId = user?.id || 'usr-doc-01';
 
-  const currentCase: MockCase | undefined = useMemo(() => findCaseById(caseId), [caseId]);
+  const [currentCase, setCurrentCase] = useState<MockCase | undefined>(() => findCaseById(caseId));
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const loadCase = async () => {
+      try {
+        const stored = await CaseRepository.getCaseById(ownerId, caseId);
+        if (isMounted && stored) {
+          setCurrentCase(stored);
+        }
+      } catch (e) {
+        console.warn('[AIImageResultScreen] Lỗi tải ca từ storage:', e);
+      }
+    };
+    loadCase();
+
+    const unsubRepo = subscribeCaseRepository(loadCase);
+    const unsubMock = subscribeDoctorStore(() => {
+      const fallback = findCaseById(caseId);
+      if (isMounted && fallback) setCurrentCase(fallback);
+    });
+
+    return () => {
+      isMounted = false;
+      unsubRepo();
+      unsubMock();
+    };
+  }, [caseId, ownerId]);
+
   const images = currentCase?.images ?? [];
 
   const [currentIndex, setCurrentIndex] = useState<number>(initialImageIndex);
@@ -96,12 +124,10 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     try {
       const picked = await pickImageFromDevice();
       if (picked.canceled || !picked.uri) {
-        // Người dùng hủy chọn ảnh: giữ nguyên trạng thái hiện tại
         return;
       }
 
-      const fileName = picked.name || 'Ảnh chọn từ thiết bị';
-      // Reset triệt để kết quả cũ trước khi chạy phân tích ảnh mới
+      const fileName = picked.name || 'CT_Slice.jpg';
       setSelectedFileLabel(fileName);
       setSelectedImageUri(picked.uri);
       setOnDeviceResult(null);
@@ -109,10 +135,43 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
 
       const result = await runNativePipelineFromFilePath(picked.uri);
       setOnDeviceResult(result);
+
+      // Lưu kết quả dự đoán vào CaseRepository
+      try {
+        const mappedLabel =
+          result.predictedClass.toLowerCase() === 'benign'
+            ? 'BENIGN'
+            : result.predictedClass.toLowerCase() === 'malignant'
+              ? 'MALIGNANT'
+              : 'NORMAL';
+
+        await CaseRepository.saveAIResult(ownerId, activeImage.id, {
+          scores: [
+            result.probabilities.Benign,
+            result.probabilities.Malignant,
+            result.probabilities.Normal,
+          ],
+          label: mappedLabel,
+          durationMs: result.latency.totalInferenceMs,
+          modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
+          mode: 'REAL',
+        });
+      } catch (saveErr) {
+        console.warn('[AIImageResultScreen] Lỗi lưu kết quả AI tệp picked:', saveErr);
+      }
+
       setNoticeDialog({
         visible: true,
-        title: 'Phân tích tệp thiết bị thành công',
-        body: `Đã phân tích tệp: ${fileName}\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms`,
+        title: t('doctor_detail.ai_device_file_success_title', 'Phân tích tệp thiết bị thành công'),
+        body: t('doctor_detail.ai_device_file_success_body', {
+          name: fileName,
+          cls: result.predictedClass,
+          benign: (result.probabilities.Benign * 100).toFixed(4),
+          malignant: (result.probabilities.Malignant * 100).toFixed(4),
+          normal: (result.probabilities.Normal * 100).toFixed(4),
+          vit: result.latency.vitInferenceMs,
+          fusion: result.latency.fusionInferenceMs,
+        }),
       });
     } catch (err: any) {
       setOnDeviceResult(null);
@@ -120,8 +179,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
       setSelectedFileLabel(null);
       setNoticeDialog({
         visible: true,
-        title: 'Lỗi phân tích tệp CT (MSG-10)',
-        body: err?.message || 'Không thể giải mã hoặc suy luận tệp ảnh đã chọn.',
+        title: t('doctor_detail.ai_error_title', 'Lỗi phân tích tệp CT (MSG-10)'),
+        body: err?.message || t('doctor_detail.ai_error_device_file_msg', 'Không thể giải mã hoặc suy luận tệp ảnh đã chọn.'),
       });
     } finally {
       setIsAnalyzing(false);
@@ -130,7 +189,6 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
 
   const handleSelectFile = async (file: AvailableTestImage) => {
     setShowFilePicker(false);
-    // Reset triệt để kết quả cũ trước khi chạy phân tích ảnh mới
     setSelectedFileLabel(file.name);
     setSelectedImageUri(file.path.startsWith('/') ? `file://${file.path}` : file.path);
     setOnDeviceResult(null);
@@ -139,10 +197,43 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     try {
       const result = await runNativePipelineFromFilePath(file.path);
       setOnDeviceResult(result);
+
+      // Lưu kết quả dự đoán vào CaseRepository
+      try {
+        const mappedLabel =
+          result.predictedClass.toLowerCase() === 'benign'
+            ? 'BENIGN'
+            : result.predictedClass.toLowerCase() === 'malignant'
+              ? 'MALIGNANT'
+              : 'NORMAL';
+
+        await CaseRepository.saveAIResult(ownerId, activeImage.id, {
+          scores: [
+            result.probabilities.Benign,
+            result.probabilities.Malignant,
+            result.probabilities.Normal,
+          ],
+          label: mappedLabel,
+          durationMs: result.latency.totalInferenceMs,
+          modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
+          mode: 'REAL',
+        });
+      } catch (saveErr) {
+        console.warn('[AIImageResultScreen] Lỗi lưu kết quả AI tệp select:', saveErr);
+      }
+
       setNoticeDialog({
         visible: true,
-        title: 'Phân tích tệp thiết bị thành công',
-        body: `Đã phân tích tệp: ${file.name}\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms`,
+        title: t('doctor_detail.ai_device_file_success_title', 'Phân tích tệp thiết bị thành công'),
+        body: t('doctor_detail.ai_device_file_success_body', {
+          name: file.name,
+          cls: result.predictedClass,
+          benign: (result.probabilities.Benign * 100).toFixed(4),
+          malignant: (result.probabilities.Malignant * 100).toFixed(4),
+          normal: (result.probabilities.Normal * 100).toFixed(4),
+          vit: result.latency.vitInferenceMs,
+          fusion: result.latency.fusionInferenceMs,
+        }),
       });
     } catch (err: any) {
       setOnDeviceResult(null);
@@ -150,8 +241,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
       setSelectedFileLabel(null);
       setNoticeDialog({
         visible: true,
-        title: 'Lỗi phân tích tệp CT (MSG-10)',
-        body: err?.message || 'Không thể giải mã hoặc suy luận tệp ảnh đã chọn.',
+        title: t('doctor_detail.ai_error_title', 'Lỗi phân tích tệp CT (MSG-10)'),
+        body: err?.message || t('doctor_detail.ai_error_device_file_msg', 'Không thể giải mã hoặc suy luận tệp ảnh đã chọn.'),
       });
     } finally {
       setIsAnalyzing(false);
@@ -163,8 +254,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     if (isAnalyzing || isInferenceRunning()) {
       setNoticeDialog({
         visible: true,
-        title: 'Hệ thống đang bận',
-        body: 'Tiến trình suy luận AI Edge FP32 đang được thực thi. Vui lòng không bấm liên tiếp.',
+        title: t('doctor_detail.ai_busy_title', 'Hệ thống đang bận'),
+        body: t('doctor_detail.ai_busy_body', 'Tiến trình suy luận AI Edge FP32 đang được thực thi. Vui lòng không bấm liên tiếp.'),
       });
       return;
     }
@@ -228,25 +319,16 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
               ? 'MALIGNANT'
               : 'NORMAL';
 
-        await localStorageService.savePredictionResult(ownerId, {
-          imageId: activeImage.id,
-          imageVersion: 1,
-          classificationStatus: 'PASS',
+        await CaseRepository.saveAIResult(ownerId, activeImage.id, {
           scores: [
             result.probabilities.Benign,
             result.probabilities.Malignant,
             result.probabilities.Normal,
           ],
           label: mappedLabel,
-          explanationStatus: result.gradcamAvailable ? 'PASS' : 'UNAVAILABLE',
-          modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
-          preprocessingVersion: 'Native-Pillow-Nearest-v1',
-          executionSource: 'LOCAL',
-          mode: 'REAL',
-          startedAt: new Date(startRunTimestamp).toISOString(),
-          finishedAt: new Date(finishRunTimestamp).toISOString(),
           durationMs: totalFlowDurationMs,
-          state: 'CURRENT',
+          modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
+          mode: 'REAL',
         });
       } catch (saveErr) {
         console.warn('[AIImageResultScreen] Lỗi ghi kết quả AI vào kho lưu trữ:', saveErr);
@@ -254,15 +336,23 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
 
       setNoticeDialog({
         visible: true,
-        title: 'Phân tích On-Device Hoàn Tất',
-        body: `Mô hình trên thiết bị đã phân tích thành công lát cắt #${activeImage.sliceNumber}:\n- Kết luận: ${result.predictedClass}\n- Lành tính: ${(result.probabilities.Benign * 100).toFixed(4)}%\n- Ác tính: ${(result.probabilities.Malignant * 100).toFixed(4)}%\n- Bình thường: ${(result.probabilities.Normal * 100).toFixed(4)}%\n- Độ trễ ViT: ${result.latency.vitInferenceMs} ms\n- Độ trễ Fusion: ${result.latency.fusionInferenceMs} ms\n(Kết quả đã được mã hóa và lưu trữ an toàn)`,
+        title: t('doctor_detail.ai_run_success_title', 'Phân tích On-Device Hoàn Tất'),
+        body: t('doctor_detail.ai_run_success_body', {
+          slice: activeImage.sliceNumber,
+          cls: result.predictedClass,
+          benign: (result.probabilities.Benign * 100).toFixed(4),
+          malignant: (result.probabilities.Malignant * 100).toFixed(4),
+          normal: (result.probabilities.Normal * 100).toFixed(4),
+          vit: result.latency.vitInferenceMs,
+          fusion: result.latency.fusionInferenceMs,
+        }),
       });
     } catch (err: any) {
       setOnDeviceResult(null);
       setNoticeDialog({
         visible: true,
-        title: 'Lỗi phân tích AI (MSG-10)',
-        body: err?.message || 'Không thể thực hiện suy luận on-device cho lát cắt này.',
+        title: t('doctor_detail.ai_error_title', 'Lỗi phân tích AI (MSG-10)'),
+        body: err?.message || t('doctor_detail.ai_error_default_msg', 'Không thể thực hiện suy luận on-device cho lát cắt này.'),
       });
     } finally {
       setIsAnalyzing(false);
@@ -359,7 +449,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           <View style={{ alignItems: 'center' }}>
             <AppText variant="titleS">
               {selectedFileLabel
-                ? `Tệp: ${selectedFileLabel}`
+                ? t('doctor_detail.ai_file_prefix', { name: selectedFileLabel, defaultValue: `Tệp: ${selectedFileLabel}` })
                 : t('doctor_detail.ai_slice_info', {
                     current: activeIndex,
                     total: images.length,
@@ -369,7 +459,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
             </AppText>
             <AppText variant="caption" color={colors.text.secondary}>
               {selectedFileLabel
-                ? 'Nguồn: Bộ nhớ thiết bị (Tệp thực)'
+                ? t('doctor_detail.ai_file_source_label', 'Nguồn: Bộ nhớ thiết bị (Tệp thực)')
                 : activeImage.source === 'gallery'
                   ? t('doctor_detail.ai_source_gallery', 'Nguồn: Thư viện ảnh')
                   : t('doctor_detail.ai_source_camera', 'Nguồn: Máy ảnh')}
@@ -399,10 +489,12 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
             size={340}
             watermarkText={
               onDeviceResult
-                ? 'ON-DEVICE AI THỰC'
+                ? t('doctor_detail.ai_watermark_real', 'ON-DEVICE AI THỰC')
                 : selectedImageUri || activeImage.uri
-                  ? 'ẢNH TỪ THIẾT BỊ'
-                  : activeImage.mockWatermark || 'ẢNH GIẢ LẬP'
+                  ? t('doctor_detail.ai_watermark_device_file', 'ẢNH TỪ THIẾT BỊ')
+                  : activeImage.mockWatermark
+                    ? t('doctor_detail.ai_watermark_mock', 'ẢNH GIẢ LẬP')
+                    : undefined
             }
           />
         </View>
@@ -506,7 +598,9 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         <View style={{ marginVertical: spacing.sm, gap: spacing.xs }}>
           <Button
             label={
-              isAnalyzing ? 'Đang phân tích On-Device...' : 'Chạy phân tích AI Lát Cắt Này (FP32)'
+              isAnalyzing
+                ? t('doctor_detail.ai_btn_running', 'Đang phân tích On-Device...')
+                : t('doctor_detail.ai_btn_run_slice', 'Chạy phân tích AI Lát Cắt Này (FP32)')
             }
             leadingIcon="on-device"
             variant="primary"
@@ -515,7 +609,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
             onPress={handleRunRealInference}
           />
           <Button
-            label="Chọn ảnh từ thiết bị để chạy AI"
+            label={t('doctor_detail.ai_btn_choose_device', 'Chọn ảnh từ thiết bị để chạy AI')}
             variant="secondary"
             disabled={isAnalyzing}
             onPress={handleOpenFilePicker}
@@ -525,14 +619,6 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         {/* Bảng điểm phân loại 3 lớp AI */}
         {!isFail && (onDeviceResult || (!selectedImageUri && activeImage.scores)) ? (
           <View style={{ marginVertical: spacing.sm }}>
-            <View style={[styles.sectionHeader, { marginBottom: spacing.xs }]}>
-              <AppText variant="titleS">
-                {t('doctor_detail.ai_section_scores', 'Nhãn phân loại AI')}
-              </AppText>
-              {(onDeviceResult?.predictedClass || (!selectedImageUri && activeImage.aiClass)) && (
-                <AILabel classification={onDeviceResult?.predictedClass || activeImage.aiClass!} />
-              )}
-            </View>
             <ScoreCard
               scores={
                 onDeviceResult
@@ -571,28 +657,34 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
             {t('doctor_detail.ai_section_meta', 'Thông số lát cắt & Mô hình')}
           </AppText>
           <View style={styles.metaRow}>
-            <AppText variant="caption" color={colors.text.secondary}>
+            <AppText variant="caption" color={colors.text.secondary} style={styles.metaLabel}>
               {t('doctor_detail.mo_hinh', 'Mô hình')}
             </AppText>
-            <AppText variant="bodyM">Adaptive AACNN–ViT (FP32)</AppText>
+            <AppText variant="bodyM" style={styles.metaValue}>Adaptive AACNN–ViT (FP32)</AppText>
           </View>
           <View style={styles.metaRow}>
-            <AppText variant="caption" color={colors.text.secondary}>
+            <AppText variant="caption" color={colors.text.secondary} style={styles.metaLabel}>
               {t('doctor_detail.nguon_thuc_thi', 'Nguồn thực thi')}
             </AppText>
-            <AppText variant="bodyM">
+            <AppText variant="bodyM" style={styles.metaValue}>
               {onDeviceResult
-                ? 'Thiết bị thực tế (ViT ONNX + Fusion TFLite)'
+                ? t(
+                    'doctor_detail.ai_source_real_device',
+                    'Thiết bị thực tế (ViT ONNX + Fusion TFLite)',
+                  )
                 : t('doctor_detail.on_device', 'Trên thiết bị (On-Device)')}
             </AppText>
           </View>
           <View style={styles.metaRow}>
-            <AppText variant="caption" color={colors.text.secondary}>
+            <AppText variant="caption" color={colors.text.secondary} style={styles.metaLabel}>
               {t('doctor_detail.trang_thai_grad_cam', 'Trạng thái Grad-CAM')}
             </AppText>
-            <AppText variant="bodyM">
+            <AppText variant="bodyM" style={styles.metaValue}>
               {onDeviceResult
-                ? 'Không khả dụng ngoại tuyến (MSG-11)'
+                ? t(
+                    'doctor_detail.ai_gradcam_offline_unavailable',
+                    'Không khả dụng ngoại tuyến (MSG-11)',
+                  )
                 : activeImage.hasGradCam
                   ? t('doctor_detail.at', 'Đạt')
                   : t('doctor_detail.khong_kha_dung', 'Không khả dụng')}
@@ -600,19 +692,19 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           </View>
           {onDeviceResult && (
             <View style={styles.metaRow}>
-              <AppText variant="caption" color={colors.text.secondary}>
-                Thời gian suy luận
+              <AppText variant="caption" color={colors.text.secondary} style={styles.metaLabel}>
+                {t('doctor_detail.ai_inference_time', 'Thời gian suy luận')}
               </AppText>
-              <AppText variant="bodyM">
+              <AppText variant="bodyM" style={styles.metaValue}>
                 {`${onDeviceResult.latency.totalInferenceMs} ms (ViT: ${onDeviceResult.latency.vitInferenceMs}ms, Fusion: ${onDeviceResult.latency.fusionInferenceMs}ms)`}
               </AppText>
             </View>
           )}
           <View style={styles.metaRow}>
-            <AppText variant="caption" color={colors.text.secondary}>
+            <AppText variant="caption" color={colors.text.secondary} style={styles.metaLabel}>
               {t('doctor_detail.thoi_iem', 'Thời điểm')}
             </AppText>
-            <AppText variant="bodyM">{currentCase.captureDate} 10:41</AppText>
+            <AppText variant="bodyM" style={styles.metaValue}>{currentCase.captureDate} 10:41</AppText>
           </View>
         </View>
 
@@ -644,7 +736,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
       {/* BottomSheet Chọn Tệp Từ Thiết Bị */}
       <BottomSheet
         visible={showFilePicker}
-        title="Chọn tệp ảnh CT từ thiết bị"
+        title={t('doctor_detail.ai_picker_title', 'Chọn tệp ảnh CT từ thiết bị')}
         onClose={() => setShowFilePicker(false)}
       >
         <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
@@ -665,26 +757,26 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           >
             <View style={{ flex: 1, marginRight: spacing.sm }}>
               <AppText variant="labelM" color={colors.text.primary} style={{ fontWeight: '700' }}>
-                📁 Mở trình chọn tệp hệ thống (System Picker)
+                {t('doctor_detail.ai_picker_system_title', '📁 Mở trình chọn tệp hệ thống (System Picker)')}
               </AppText>
               <AppText variant="caption" color={colors.text.secondary}>
-                Duyệt và chọn ảnh bất kỳ từ bộ nhớ thiết bị, Thư viện ảnh, Drive...
+                {t('doctor_detail.ai_picker_system_subtitle', 'Duyệt và chọn ảnh bất kỳ từ bộ nhớ thiết bị, Thư viện ảnh, Drive...')}
               </AppText>
             </View>
             <AppText variant="labelM" color={colors.text.link}>
-              Mở →
+              {t('doctor_detail.ai_picker_system_open', 'Mở →')}
             </AppText>
           </TouchableOpacity>
 
           <Divider style={{ marginVertical: spacing.xs }} />
 
           <AppText variant="caption" color={colors.text.secondary} style={{ fontWeight: '600' }}>
-            Tệp tìm thấy trong thư mục kiểm thử (/sdcard/Download, app storage):
+            {t('doctor_detail.ai_picker_found_in_folder', 'Tệp tìm thấy trong thư mục kiểm thử (/sdcard/Download, app storage):')}
           </AppText>
 
           {availableFiles.length === 0 ? (
             <AppText variant="bodyM" color={colors.text.secondary}>
-              Không tìm thấy tệp ảnh CT nào trong các thư mục quét mặc định.
+              {t('doctor_detail.ai_picker_no_files', 'Không tìm thấy tệp ảnh CT nào trong các thư mục quét mặc định.')}
             </AppText>
           ) : (
             availableFiles.map((file) => (
@@ -707,11 +799,15 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
                     {file.name}
                   </AppText>
                   <AppText variant="caption" color={colors.text.secondary}>
-                    {`Dung lượng: ${Math.round(file.size / 1024)} KB · ${file.path}`}
+                    {t('doctor_detail.ai_picker_file_size', {
+                      size: Math.round(file.size / 1024),
+                      path: file.path,
+                      defaultValue: `Dung lượng: ${Math.round(file.size / 1024)} KB · ${file.path}`,
+                    })}
                   </AppText>
                 </View>
                 <AppText variant="labelM" color={colors.text.link}>
-                  Phân tích →
+                  {t('doctor_detail.ai_picker_analyze_btn', 'Phân tích →')}
                 </AppText>
               </TouchableOpacity>
             ))
@@ -726,6 +822,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         title={noticeDialog.title}
         body={noticeDialog.body}
         confirmLabel={t('doctor_detail.common_dialog_close', 'Đã hiểu')}
+        cancelLabel={null}
         onConfirm={() => setNoticeDialog({ visible: false, title: '', body: '' })}
         onCancel={() => setNoticeDialog({ visible: false, title: '', body: '' })}
       />
@@ -779,8 +876,17 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginVertical: 4,
+    gap: 8,
+  },
+  metaLabel: {
+    flexShrink: 0,
+    maxWidth: '45%',
+  },
+  metaValue: {
+    flex: 1,
+    textAlign: 'right',
   },
   legalBox: {
     borderWidth: 1,

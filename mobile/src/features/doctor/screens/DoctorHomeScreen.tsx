@@ -136,7 +136,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg.app }]}>
       <TopBar
-        title="Xin chào, BS. An"
+        title={t('ui.xin_chao_bs_an', 'Xin chào, BS. An')}
         type="root"
         rightActions={
           <View style={styles.topBarActions}>
@@ -171,7 +171,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
         {!isOnline && (
           <Banner
             type="offline"
-            title="Đang ngoại tuyến"
+            title={t('ui.ang_ngoai_tuyen', 'Đang ngoại tuyến')}
             body={t(
               'ui.offline_banner_msg08',
               'Dữ liệu mới sẽ được lưu cục bộ và đồng bộ khi có mạng (MSG-08).',
@@ -183,7 +183,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
         {isModelError && (
           <Banner
             type="error"
-            title="Sự cố mô hình AI"
+            title={t('ui.su_co_mo_hinh_ai', 'Sự cố mô hình AI')}
             body={t(
               'ui.model_corrupted_msg09',
               'Mô hình AI trên thiết bị gặp sự cố hoặc tệp trọng số bị hỏng (MSG-09). Vui lòng cài lại ứng dụng.',
@@ -226,7 +226,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
                     fontWeight: '600',
                   }}
                 >
-                  {t('label.gia_lap', 'Mô phỏng')}
+                  {t('label.mo_phong', 'Mô phỏng')}
                 </AppText>
               </View>
             </View>
@@ -268,7 +268,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
 
         <View style={styles.sectionHeader}>
           <AppText variant="titleS">{t('ui.ca_can_xu_ly', 'Ca cần xử lý')}</AppText>
-          <Button label={t('doctor_detail.case_view_all', 'Xem tất cả')} variant="tertiary" size="M" onPress={onNavigateToCases} />
+          <Button label={t('ui.xem_tat_ca', 'Xem tất cả')} variant="tertiary" size="M" onPress={onNavigateToCases} />
         </View>
 
         {isLoading ? (
@@ -292,7 +292,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             ]}
           >
             <AppText variant="bodyM" style={{ color: colors.text.secondary, textAlign: 'center' }}>
-              Không có ca nháp nào cần xử lý lúc này.
+              {t('ui.khong_co_ca_nhap_nao', 'Không có ca nháp nào cần xử lý lúc này.')}
             </AppText>
           </View>
         ) : (
@@ -303,18 +303,18 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
                 : '';
             const aiText = caseItem.aiLabelSummary
               ? ` · ${caseItem.aiLabelSummary}${scoreText}`
-              : ' · Chưa phân tích';
+              : ` · ${t('common.unanalyzed', 'Chưa phân tích')}`;
 
             return (
               <ListRow
                 key={caseItem.id}
                 title={`${caseItem.caseCode} · ${caseItem.patientName}`}
-                subtitle={`Chụp: ${caseItem.captureDate} · ${caseItem.imageCount} ảnh${aiText}`}
+                subtitle={`${t('common.capture_prefix', 'Chụp')}: ${caseItem.captureDate} · ${caseItem.imageCount} ${t('common.image_unit', 'ảnh')}${aiText}`}
                 type="case"
                 leadingIcon="cases"
                 badges={
                   caseItem.syncStatus === 'pending' ? (
-                    <StatusBadge label="Chờ gửi" tone="warning" icon="sync" />
+                    <StatusBadge label={t('common.pending_sync', 'Chờ gửi')} tone="warning" icon="sync" />
                   ) : undefined
                 }
                 onPress={() => onNavigateToCaseDetail?.(caseItem.id)}
@@ -326,7 +326,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
 
         <View style={[styles.sectionHeader, { marginTop: spacing.md }]}>
           <AppText variant="titleS">{t('ui.benh_nhan_gan_ay', 'Bệnh nhân gần đây')}</AppText>
-          <Button label={t('doctor_detail.case_view_all', 'Xem tất cả')} variant="tertiary" size="M" onPress={onNavigateToPatients} />
+          <Button label={t('ui.xem_tat_ca', 'Xem tất cả')} variant="tertiary" size="M" onPress={onNavigateToPatients} />
         </View>
 
         {isLoading ? (
@@ -348,17 +348,26 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             </AppText>
           </View>
         ) : (
-          recentPatients.map((patient) => (
-            <ListRow
-              key={patient.id}
-              title={`${patient.code} · ${patient.fullName}`}
-              subtitle={`${patient.age} ${t('common.age_unit', 'tuổi')} · ${patient.gender} · ${patient.caseCount} ${t('common.case_unit', 'ca')} · ${t('common.latest', 'gần nhất')} ${patient.lastCaseDate}`}
-              type="patient"
-              leadingIcon="patients"
-              onPress={() => onNavigateToPatientDetail?.(patient.id)}
-              style={{ marginBottom: spacing.xs }}
-            />
-          ))
+          recentPatients.map((patient) => {
+            const genderLabel =
+              patient.gender === 'Nữ'
+                ? t('ui.nu', 'Nữ')
+                : patient.gender === 'Nam'
+                  ? t('ui.nam', 'Nam')
+                  : patient.gender;
+
+            return (
+              <ListRow
+                key={patient.id}
+                title={`${patient.code} · ${patient.fullName}`}
+                subtitle={`${patient.age} ${t('common.age_unit', 'tuổi')} · ${genderLabel} · ${patient.caseCount} ${t('common.case_unit', 'ca')} · ${t('common.latest', 'gần nhất')} ${patient.lastCaseDate}`}
+                type="patient"
+                leadingIcon="patients"
+                onPress={() => onNavigateToPatientDetail?.(patient.id)}
+                style={{ marginBottom: spacing.xs }}
+              />
+            );
+          })
         )}
       </ScrollView>
 
@@ -372,42 +381,51 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             variant="bodyS"
             style={{ color: colors.text.secondary, marginBottom: spacing.sm }}
           >
-            Chọn bệnh nhân có sẵn từ danh sách hoặc tạo bệnh nhân mới để bắt đầu:
+            {t('ui.chon_benh_nhan_huong_dan', 'Chọn bệnh nhân có sẵn từ danh sách hoặc tạo bệnh nhân mới để bắt đầu:')}
           </AppText>
 
-          {patientsList.map((p) => (
-            <ListRow
-              key={p.id}
-              title={`${p.code} · ${p.fullName}`}
-              subtitle={`${p.age} tuổi · ${p.gender}`}
-              type="patient"
-              leadingIcon="patients"
-              onPress={async () => {
-                setIsSelectPatientSheetVisible(false);
-                try {
-                  const createdCase = await CaseRepository.createCase(ownerId, p);
-                  if (onNavigateToCaseDetail) {
-                    onNavigateToCaseDetail(createdCase.id);
-                  } else {
-                    showFeatureNotice(
-                      'Đã tạo ca khám mới (CASE-01)',
-                      `Đã tạo thành công ca ${createdCase.caseCode} cho bệnh nhân ${p.fullName}. Dữ liệu đã lưu an toàn trong kho lưu trữ mã hóa cục bộ.`,
-                    );
+          {patientsList.map((p) => {
+            const genderLabel =
+              p.gender === 'Nữ'
+                ? t('ui.nu', 'Nữ')
+                : p.gender === 'Nam'
+                  ? t('ui.nam', 'Nam')
+                  : p.gender;
+
+            return (
+              <ListRow
+                key={p.id}
+                title={`${p.code} · ${p.fullName}`}
+                subtitle={`${p.age} ${t('common.age_unit', 'tuổi')} · ${genderLabel}`}
+                type="patient"
+                leadingIcon="patients"
+                onPress={async () => {
+                  setIsSelectPatientSheetVisible(false);
+                  try {
+                    const createdCase = await CaseRepository.createCase(ownerId, p);
+                    if (onNavigateToCaseDetail) {
+                      onNavigateToCaseDetail(createdCase.id);
+                    } else {
+                      showFeatureNotice(
+                        'Đã tạo ca khám mới (CASE-01)',
+                        `Đã tạo thành công ca ${createdCase.caseCode} cho bệnh nhân ${p.fullName}. Dữ liệu đã lưu an toàn trong kho lưu trữ mã hóa cục bộ.`,
+                      );
+                    }
+                  } catch (createErr) {
+                    console.warn('[DoctorHomeScreen] Lỗi tạo ca khám mới:', createErr);
+                    const fallbackCase = createMockCaseForPatient(p);
+                    if (onNavigateToCaseDetail) {
+                      onNavigateToCaseDetail(fallbackCase.id);
+                    }
                   }
-                } catch (createErr) {
-                  console.warn('[DoctorHomeScreen] Lỗi tạo ca khám mới:', createErr);
-                  const fallbackCase = createMockCaseForPatient(p);
-                  if (onNavigateToCaseDetail) {
-                    onNavigateToCaseDetail(fallbackCase.id);
-                  }
-                }
-              }}
-              style={{ marginBottom: 6 }}
-            />
-          ))}
+                }}
+                style={{ marginBottom: 6 }}
+              />
+            );
+          })}
 
           <Button
-            label={t('ui.them_benh_nhan', '+ Thêm bệnh nhân mới')}
+            label={t('ui.them_benh_nhan_moi', '+ Thêm bệnh nhân mới')}
             variant="secondary"
             onPress={() => {
               setIsSelectPatientSheetVisible(false);
@@ -430,7 +448,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
         type="default"
         title={dialogNotice.title}
         body={dialogNotice.body}
-        confirmLabel="Đã hiểu"
+        confirmLabel={t('common.understood', 'Đã hiểu')}
         onConfirm={closeNotice}
         onCancel={closeNotice}
       />

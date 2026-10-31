@@ -183,8 +183,9 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
       }
 
       // Đính kèm ảnh thực tế vào kho lưu trữ mã hóa SQLite
+      let savedEntity: any = null;
       try {
-        await CaseRepository.attachCTImage(ownerId, currentCase.id, {
+        savedEntity = await CaseRepository.attachCTImage(ownerId, currentCase.id, {
           source: source === 'camera' ? 'CAMERA' : 'LIBRARY',
           mimeType: 'image/jpeg',
           localFileRef: picked.filePath || picked.uri,
@@ -201,11 +202,27 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
         originalFileName: picked.name,
       });
 
-      if (added) {
+      // Nạp lại trực tiếp từ SQLite để cập nhật ngay danh sách ảnh lát cắt trên UI
+      try {
+        const refreshed = await CaseRepository.getCaseById(ownerId, currentCase.id);
+        if (refreshed) {
+          setCurrentCase(refreshed);
+        }
+      } catch (e) {
+        console.warn('[CaseDetailScreen] Lỗi tải lại ca sau khi thêm ảnh:', e);
+      }
+
+      if (added || savedEntity) {
         setNoticeDialog({
           visible: true,
-          title: source === 'camera' ? 'Đã chụp ảnh CT thành công' : 'Đã nạp tệp ảnh thực tế',
-          body: `Đã nạp tệp: ${picked.name ?? 'CT_Slice.jpg'}.\nẢnh đã được lưu an toàn trong thư mục ứng dụng và sẵn sàng để phân tích On-Device AI.`,
+          title:
+            source === 'camera'
+              ? t('doctor_detail.case_photo_taken_title', 'Đã chụp ảnh CT thành công')
+              : t('doctor_detail.case_file_loaded_title', 'Đã nạp tệp ảnh thực tế'),
+          body: t('doctor_detail.case_image_loaded_body', {
+            name: picked.name ?? 'CT_Slice.jpg',
+            defaultValue: `Đã nạp tệp: ${picked.name ?? 'CT_Slice.jpg'}.\nẢnh đã được lưu an toàn trong thư mục ứng dụng và sẵn sàng để phân tích On-Device AI.`,
+          }),
         });
       }
       return;
@@ -219,8 +236,11 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
       if (added) {
         setNoticeDialog({
           visible: true,
-          title: 'Đã thêm ảnh cắt lớp',
-          body: `[Mô phỏng] Đã nạp thành công ảnh lát cắt #${added.sliceNumber}. Dữ liệu đã lưu tạm trong phiên mô phỏng.`,
+          title: t('doctor_detail.case_simulated_image_title', 'Đã thêm ảnh cắt lớp'),
+          body: t('doctor_detail.case_simulated_image_body', {
+            slice: added.sliceNumber,
+            defaultValue: `[Mô phỏng] Đã nạp thành công ảnh lát cắt #${added.sliceNumber}. Dữ liệu đã lưu tạm trong phiên mô phỏng.`,
+          }),
         });
       }
     }
@@ -231,16 +251,27 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
     setShowCompleteConfirmModal(false);
     const res = await CaseRepository.completeCase(ownerId, currentCase.id);
     if (res.success) {
+      try {
+        const refreshed = await CaseRepository.getCaseById(ownerId, currentCase.id);
+        if (refreshed) {
+          setCurrentCase(refreshed);
+        }
+      } catch (e) {
+        console.warn('[CaseDetailScreen] Lỗi nạp lại ca sau hoàn tất:', e);
+      }
       setNoticeDialog({
         visible: true,
-        title: 'Hoàn tất ca bệnh thành công',
-        body: `Ca bệnh ${currentCase.caseCode} đã được hoàn tất và lưu trữ an toàn trong kho mã hóa.`,
+        title: t('doctor_detail.case_completed_success_title', 'Hoàn tất ca bệnh thành công'),
+        body: t('doctor_detail.case_completed_success_body', {
+          code: currentCase.caseCode,
+          defaultValue: `Ca bệnh ${currentCase.caseCode} đã được hoàn tất và lưu trữ an toàn trong kho mã hóa.`,
+        }),
       });
     } else {
       setNoticeDialog({
         visible: true,
-        title: 'Không thể hoàn tất ca',
-        body: res.reason ?? 'Lỗi không xác định.',
+        title: t('doctor_detail.case_completed_fail_title', 'Không thể hoàn tất ca'),
+        body: res.reason ?? t('doctor_detail.case_completed_unknown_error', 'Lỗi không xác định.'),
       });
     }
   };
@@ -368,10 +399,10 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
 
         {/* Danh sách ảnh lát cắt */}
         <View style={[styles.sectionHeader, { marginTop: spacing.md }]}>
-          <AppText variant="titleS">
+          <AppText variant="titleS" style={{ flexShrink: 0 }}>
             {t('doctor_detail.case_grid_title', { count: currentCase.images.length })}
           </AppText>
-          <AppText variant="caption" color={colors.text.secondary}>
+          <AppText variant="caption" color={colors.text.secondary} style={{ flex: 1, textAlign: 'right' }}>
             {t('doctor_detail.case_grid_hint')}
           </AppText>
         </View>
@@ -417,8 +448,8 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
 
         {/* Nhận xét của Bác sĩ */}
         <View style={[styles.sectionHeader, { marginTop: spacing.lg }]}>
-          <AppText variant="titleS">{t('doctor_detail.case_notes_section_title')}</AppText>
-          <AppText variant="caption" style={{ color: colors.text.link }}>
+          <AppText variant="titleS" style={{ flexShrink: 0 }}>{t('doctor_detail.case_notes_section_title')}</AppText>
+          <AppText variant="caption" style={{ color: colors.text.link, flex: 1, textAlign: 'right' }}>
             {notesSaveStatus}
           </AppText>
         </View>
@@ -534,6 +565,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
         title={noticeDialog.title}
         body={noticeDialog.body}
         confirmLabel={t('doctor_detail.common_dialog_close')}
+        cancelLabel={null}
         onConfirm={() => {
           if (noticeDialog.onClose) {
             noticeDialog.onClose();

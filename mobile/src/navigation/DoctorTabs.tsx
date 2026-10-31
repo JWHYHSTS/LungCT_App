@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useTranslation } from 'react-i18next';
 import { TabBar } from '../ui/components';
 import {
   DoctorHomeScreen,
@@ -28,8 +29,10 @@ const Tab = createBottomTabNavigator<DoctorTabParamList>();
  * - Khi ở tab Home (tab gốc), bấm phím Back sẽ kích hoạt thoát ứng dụng (exitApp) theo đúng đặc tả Android SCR-H01.
  */
 export const DoctorTabs: React.FC = () => {
+  const { i18n } = useTranslation();
   return (
     <Tab.Navigator
+      key={i18n.language}
       initialRouteName="Home"
       backBehavior="firstRoute"
       screenOptions={{

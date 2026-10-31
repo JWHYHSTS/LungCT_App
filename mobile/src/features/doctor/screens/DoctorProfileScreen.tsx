@@ -75,27 +75,45 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
 
           <View style={[styles.metaRow, { marginTop: spacing.md }]}>
             <AppText variant="bodyS" style={{ color: colors.text.secondary }}>
-              Nơi công tác
+              {t('ui.noi_cong_tac_2', 'Nơi công tác')}
             </AppText>
-            <AppText variant="bodyM">{MOCK_DOCTOR_PROFILE.workplace}</AppText>
+            <AppText variant="bodyM">
+              {MOCK_DOCTOR_PROFILE.workplace === 'Bệnh viện Thực hành A'
+                ? t('ui.benh_vien_thuc_hanh_a', 'Bệnh viện Thực hành A')
+                : MOCK_DOCTOR_PROFILE.workplace}
+            </AppText>
           </View>
 
           <View style={[styles.metaRow, { marginTop: spacing.xs }]}>
             <AppText variant="bodyS" style={{ color: colors.text.secondary }}>
-              Chuyên khoa
+              {t('ui.chuyen_khoa_2', 'Chuyên khoa')}
             </AppText>
-            <AppText variant="bodyM">{MOCK_DOCTOR_PROFILE.specialty}</AppText>
+            <AppText variant="bodyM">
+              {MOCK_DOCTOR_PROFILE.specialty === 'Chẩn đoán hình ảnh'
+                ? t('ui.chan_oan_hinh_anh', 'Chẩn đoán hình ảnh')
+                : MOCK_DOCTOR_PROFILE.specialty}
+            </AppText>
           </View>
 
           <View style={[styles.metaRow, { marginTop: spacing.xs }]}>
             <AppText variant="bodyS" style={{ color: colors.text.secondary }}>
-              Vai trò
+              {t('ui.vai_tro', 'Vai trò')}
             </AppText>
-            <AppText variant="bodyM">{MOCK_DOCTOR_PROFILE.role}</AppText>
+            <AppText variant="bodyM">
+              {MOCK_DOCTOR_PROFILE.role === 'Bác sĩ' ? t('ui.bac_si', 'Bác sĩ') : MOCK_DOCTOR_PROFILE.role}
+            </AppText>
           </View>
 
           <View style={[styles.statusBadgeWrapper, { marginTop: spacing.sm }]}>
-            <StatusBadge label={MOCK_DOCTOR_PROFILE.status} tone="success" icon="success" />
+            <StatusBadge
+              label={
+                MOCK_DOCTOR_PROFILE.status === 'Hoạt động'
+                  ? t('ui.hoat_ong', 'Hoạt động')
+                  : MOCK_DOCTOR_PROFILE.status
+              }
+              tone="success"
+              icon="success"
+            />
           </View>
         </View>
 
@@ -129,7 +147,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
 
           <ListRow
             title={t('label.thung_rac', 'Thùng rác')}
-            subtitle={t('doctor_detail.trash_subtitle', 'Khôi phục hoặc dọn dẹp ca và bệnh nhân đã xóa')}
+            subtitle={t('common.trash_subtitle', 'Khôi phục hoặc dọn dẹp ca và bệnh nhân đã xóa')}
             type="setting"
             leadingIcon="trash"
             onPress={() =>
@@ -201,10 +219,13 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
       <Dialog
         visible={showLogoutDialog}
         type="destructive"
-        title="Đăng xuất khỏi ứng dụng?"
-        body="Hiện còn 3 thay đổi chưa được gửi lên máy chủ trung tâm. Dữ liệu này vẫn được lưu an toàn trên máy của bạn và sẽ được đồng bộ khi bạn đăng nhập lại (MSG-14)."
-        confirmLabel="Đăng xuất"
-        cancelLabel="Ở lại"
+        title={t('auth.logout_dialog_title', 'Đăng xuất khỏi ứng dụng?')}
+        body={t(
+          'auth.logout_dialog_body',
+          'Hiện còn 3 thay đổi chưa được gửi lên máy chủ trung tâm. Dữ liệu này vẫn được lưu an toàn trên máy của bạn và sẽ được đồng bộ khi bạn đăng nhập lại (MSG-14).',
+        )}
+        confirmLabel={t('admin.action_logout', 'Đăng xuất')}
+        cancelLabel={t('admin.logout_cancel_btn', 'Ở lại')}
         onConfirm={handleConfirmLogout}
         onCancel={() => setShowLogoutDialog(false)}
       />
@@ -214,7 +235,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
         type="default"
         title={dialogNotice.title}
         body={dialogNotice.body}
-        confirmLabel="Đã hiểu"
+        confirmLabel={t('common.understood', 'Đã hiểu')}
         onConfirm={closeNotice}
         onCancel={closeNotice}
       />

@@ -29,21 +29,21 @@ export const AILabel: React.FC<AILabelProps> = ({ classification, label, style }
         return {
           bg: colors.ai.benign.bg,
           fg: colors.ai.benign.fg,
-          textKey: 'common.benign',
+          textKey: 'label.lanh_tinh',
           defaultText: 'Lành tính',
         };
       case 'Malignant':
         return {
           bg: colors.ai.malignant.bg,
           fg: colors.ai.malignant.fg,
-          textKey: 'common.malignant',
+          textKey: 'label.ac_tinh',
           defaultText: 'Ác tính',
         };
       case 'Normal':
         return {
           bg: colors.ai.normal.bg,
           fg: colors.ai.normal.fg,
-          textKey: 'common.normal',
+          textKey: 'label.binh_thuong',
           defaultText: 'Bình thường',
         };
     }

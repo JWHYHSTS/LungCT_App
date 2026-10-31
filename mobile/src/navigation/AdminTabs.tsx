@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useTranslation } from 'react-i18next';
 import { TabBar } from '../ui/components';
 import {
   AdminAccountsScreen,
@@ -20,8 +21,10 @@ const Tab = createBottomTabNavigator<AdminTabParamList>();
  * Sử dụng component TabBar chuẩn hóa với role="admin".
  */
 export const AdminTabs: React.FC = () => {
+  const { i18n } = useTranslation();
   return (
     <Tab.Navigator
+      key={i18n.language}
       initialRouteName="Accounts"
       backBehavior="firstRoute"
       screenOptions={{

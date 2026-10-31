@@ -17,8 +17,8 @@ export interface DialogProps {
   body: string;
   /** Nhãn nút Xác nhận */
   confirmLabel?: string;
-  /** Nhãn nút Hủy */
-  cancelLabel?: string;
+  /** Nhãn nút Hủy (truyền null nếu muốn ẩn nút Hủy cho dialog chỉ có 1 nút xác nhận/đóng) */
+  cancelLabel?: string | null;
   /** Nhãn nút phụ/trung gian (ví dụ: Theo hệ thống) */
   neutralLabel?: string;
   /** Callback khi nhấn Xác nhận */
@@ -56,8 +56,14 @@ export const Dialog: React.FC<DialogProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={styles.scrim} onPress={onCancel}>
+      <View style={styles.scrim} pointerEvents="box-none">
         <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel="Đóng hộp thoại"
+        />
+        <View
           style={[
             styles.dialogContainer,
             {
@@ -68,7 +74,6 @@ export const Dialog: React.FC<DialogProps> = ({
             },
             style,
           ]}
-          onPress={(e) => e.stopPropagation()}
         >
           <AppText variant="titleM" color={colors.text.primary}>
             {title}
@@ -81,13 +86,15 @@ export const Dialog: React.FC<DialogProps> = ({
           {neutralLabel && onNeutral ? (
             <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
               <View style={[styles.actionsRow, { gap: spacing.sm }]}>
-                <Button
-                  label={cancelLabel}
-                  variant={isDestructive ? 'primary' : 'secondary'}
-                  size="M"
-                  onPress={onCancel}
-                  style={styles.actionBtn}
-                />
+                {cancelLabel ? (
+                  <Button
+                    label={cancelLabel}
+                    variant={isDestructive ? 'primary' : 'secondary'}
+                    size="M"
+                    onPress={onCancel}
+                    style={styles.actionBtn}
+                  />
+                ) : null}
                 <Button
                   label={confirmLabel}
                   variant={isDestructive ? 'danger' : 'primary'}
@@ -104,7 +111,7 @@ export const Dialog: React.FC<DialogProps> = ({
                 style={{ width: '100%' }}
               />
             </View>
-          ) : (
+          ) : cancelLabel ? (
             <View style={[styles.actionsRow, { gap: spacing.sm }]}>
               {/* Với destructive, nút Hủy là primary để tránh xóa nhầm */}
               <Button
@@ -123,9 +130,17 @@ export const Dialog: React.FC<DialogProps> = ({
                 style={styles.actionBtn}
               />
             </View>
+          ) : (
+            <Button
+              label={confirmLabel}
+              variant={isDestructive ? 'danger' : 'primary'}
+              size="M"
+              onPress={onConfirm}
+              style={{ width: '100%' }}
+            />
           )}
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 };

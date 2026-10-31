@@ -2,7 +2,8 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useFonts } from 'expo-font';
-import './src/i18n';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './src/i18n';
 import { AuthProvider } from './src/features/auth/context/AuthContext';
 import { RootNavigator } from './src/navigation';
 import { ThemeProvider, useTheme } from './src/ui/theme';
@@ -13,14 +14,17 @@ import { ThemeProvider, useTheme } from './src/ui/theme';
  * Tách biệt thành component con để có thể gọi hook `useTheme()` một cách hợp lệ,
  * đồng thời tự động điều chỉnh thanh trạng thái hệ thống (StatusBar) theo chế độ Sáng / Tối.
  */
+import { useTranslation } from 'react-i18next';
+
 function MainAppContent(): React.JSX.Element {
   const { theme } = useTheme();
+  const { i18n } = useTranslation();
 
   return (
-    <>
+    <React.Fragment key={i18n.language}>
       <RootNavigator />
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
-    </>
+    </React.Fragment>
   );
 }
 
@@ -51,11 +55,13 @@ export default function App(): React.JSX.Element {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <MainAppContent />
-        </AuthProvider>
-      </ThemeProvider>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <AuthProvider>
+            <MainAppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </I18nextProvider>
     </SafeAreaProvider>
   );
 }

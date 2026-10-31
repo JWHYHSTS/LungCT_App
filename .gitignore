@@ -90,5 +90,7 @@ release/android/*.apk
 release/android/*.aab
 release/ios/*.ipa
 mobile/release/
-dump.xml
+*.apk
+*.xml
+*.png
 

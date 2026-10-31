@@ -27,9 +27,12 @@ import {
 } from '../index';
 import { ThemeProvider } from '../../theme';
 import * as themeModule from '../../theme/ThemeProvider';
-import '../../../i18n';
+import i18n from '../../../i18n';
 
 describe('Thư viện Component lõi đợt 1 (UI-03)', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('vi');
+  });
   // Test 1: Đủ 17 component chuẩn hóa
   test('1. Tất cả 17 component đều được định nghĩa và là React component hợp lệ', () => {
     const components = [

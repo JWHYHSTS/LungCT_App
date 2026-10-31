@@ -3,6 +3,7 @@ import {
   BackHandler,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -38,8 +39,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 }) => {
   const { theme } = useTheme();
   const { colors, spacing } = theme;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { registerDoctor, isOnline } = useAuth();
+  const isVi = (i18n.language || 'vi').startsWith('vi');
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -140,8 +142,43 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <TopBar
+        type="stack"
         title={t('ui.ang_ky_tai_khoan_bac_si', 'Đăng ký tài khoản bác sĩ')}
         onBackPress={handleBackPress}
+        rightActions={
+          <View style={styles.langSwitch}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => i18n.changeLanguage('vi')}
+              style={[
+                styles.langBadge,
+                {
+                  backgroundColor: isVi ? colors.bg.brandSubtle : colors.bg.surface,
+                  borderColor: isVi ? colors.border.focus : colors.border.default,
+                },
+              ]}
+            >
+              <AppText variant="labelS" color={isVi ? colors.text.link : colors.text.secondary}>
+                VI
+              </AppText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => i18n.changeLanguage('en')}
+              style={[
+                styles.langBadge,
+                {
+                  backgroundColor: !isVi ? colors.bg.brandSubtle : colors.bg.surface,
+                  borderColor: !isVi ? colors.border.focus : colors.border.default,
+                },
+              ]}
+            >
+              <AppText variant="labelS" color={!isVi ? colors.text.link : colors.text.secondary}>
+                EN
+              </AppText>
+            </Pressable>
+          </View>
+        }
       />
 
       <ScrollView
@@ -162,19 +199,19 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
         <View style={[styles.form, { gap: spacing.md }]}>
           <TextField
-            label="Họ tên *"
+            label={t('ui.ho_ten', 'Họ tên *')}
             value={fullName}
             onChangeText={(txt) => {
               setFullName(txt);
               setErrors((prev) => ({ ...prev, fullName: '' }));
             }}
-            placeholder="Nguyễn Minh An"
+            placeholder={t('ui.ho_ten_placeholder', 'Nguyễn Minh An')}
             error={errors.fullName}
             autoCapitalize="words"
           />
 
           <TextField
-            label="Email *"
+            label={t('ui.email', 'Email *')}
             value={email}
             onChangeText={(txt) => {
               setEmail(txt);
@@ -188,7 +225,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           />
 
           <TextField
-            label="Mật khẩu *"
+            label={t('ui.mat_khau', 'Mật khẩu *')}
             value={password}
             onChangeText={(txt) => {
               setPassword(txt);
@@ -211,7 +248,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           />
 
           <TextField
-            label="Xác nhận mật khẩu *"
+            label={t('ui.xac_nhan_mat_khau', 'Xác nhận mật khẩu *')}
             value={confirmPassword}
             onChangeText={(txt) => {
               setConfirmPassword(txt);
@@ -223,24 +260,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           />
 
           <TextField
-            label="Nơi công tác *"
+            label={t('ui.noi_cong_tac', 'Nơi công tác *')}
             value={workplace}
             onChangeText={(txt) => {
               setWorkplace(txt);
               setErrors((prev) => ({ ...prev, workplace: '' }));
             }}
-            placeholder="Bệnh viện Thực hành A"
+            placeholder={t('ui.benh_vien_thuc_hanh_a', 'Bệnh viện Thực hành A')}
             error={errors.workplace}
           />
 
           <TextField
-            label="Chuyên khoa *"
+            label={t('ui.chuyen_khoa', 'Chuyên khoa *')}
             value={specialty}
             onChangeText={(txt) => {
               setSpecialty(txt);
               setErrors((prev) => ({ ...prev, specialty: '' }));
             }}
-            placeholder="Chẩn đoán hình ảnh"
+            placeholder={t('ui.chan_oan_hinh_anh', 'Chẩn đoán hình ảnh')}
             error={errors.specialty}
           />
 
@@ -305,5 +342,16 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
+  },
+  langSwitch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  langBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
   },
 });

@@ -36,11 +36,11 @@ export const ScoreRow: React.FC<ScoreRowProps> = ({
   const getLabel = (cls: AIClass) => {
     switch (cls) {
       case 'Benign':
-        return t('common.benign', 'Lành tính');
+        return t('label.lanh_tinh', 'Lành tính');
       case 'Malignant':
-        return t('common.malignant', 'Ác tính');
+        return t('label.ac_tinh', 'Ác tính');
       case 'Normal':
-        return t('common.normal', 'Bình thường');
+        return t('label.binh_thuong', 'Bình thường');
     }
   };
 
