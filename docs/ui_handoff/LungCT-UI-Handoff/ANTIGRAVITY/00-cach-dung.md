@@ -14,7 +14,7 @@ Mỗi file câu lệnh đều kết thúc bằng khung này; Antigravity phải 
 1. **Thực hiện** đúng phạm vi bước, không làm lấn sang bước khác.
 2. **Kiểm thử**: chạy `npx tsc --noEmit`, `npx jest` (và test riêng của bước); không được bỏ qua test đỏ.
 3. **Lưu minh chứng** vào `docs/evidence/ui/<số-bước>/`: ảnh chụp app trên điện thoại thật (Android) và/hoặc iOS Simulator đặt cạnh ảnh chuẩn trong `docs/ui-handoff/reference/screens-v2/png/`, log test.
-4. **Cập nhật tài liệu** liên quan và **viết/chỉnh trực tiếp CẢ HAI báo cáo khóa luận** (Android – Dương Thị Thu Diểm; iOS – Dương Hải Đăng), mỗi báo cáo chỉ ghi phần đúng nền tảng của mình. Không thay bằng nhật ký/checklist.
+4. **Cập nhật tài liệu** liên quan và **viết/chỉnh trực tiếp CẢ HAI báo cáo khóa luận** (Android – Dương Hải Đăng; iOS – Dương Hải Đăng), mỗi báo cáo chỉ ghi phần đúng nền tảng của mình. Không thay bằng nhật ký/checklist.
 5. **Git commit** với thông điệp rõ ràng, ví dụ `feat(ui): theme Sáng/Tối từ design tokens (UI-01)`.
 6. **Báo trên chat**: danh sách file đã sửa, mục báo cáo đã cập nhật, kết quả kiểm tra, đường dẫn minh chứng, mã commit, phần còn thiếu.
 

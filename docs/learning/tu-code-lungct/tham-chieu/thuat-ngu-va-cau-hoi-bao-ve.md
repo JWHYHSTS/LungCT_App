@@ -2,7 +2,7 @@
 ### Cẩm nang tra cứu thuật ngữ và câu hỏi chất vấn trước Hội đồng chấm khóa luận tốt nghiệp
 
 > **Biên soạn cho 2 phân hệ**:
-> - Phân hệ Android: Dương Thị Thu Diễm (MSSV: 49.01.103.011)
+> - Phân hệ Android: Dương Hải Đăng (MSSV: 49.01.103.020)
 > - Phân hệ iOS: Dương Hải Đăng (MSSV: 49.01.103.020)  
 > **Nguyên tắc trả lời**: Dựa trên mã nguồn và thực nghiệm đã kiểm chứng thực tế; phần nào chưa làm hoặc đang khảo sát thì trả lời trung thực theo hướng phát triển tương lai.
 

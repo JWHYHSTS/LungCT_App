@@ -1,13 +1,13 @@
 # BÁO CÁO KHÓA LUẬN TỐT NGHIỆP
 
-## ĐỀ TÀI: PHÁT TRIỂN PHÂN HỆ ANDROID CHO ỨNG DỤNG CHẨN ĐOÁN UNG THƯ PHỔI TRÊN THIẾT BỊ DI ĐỘNG BẰNG TRÍ TUỆ NHÂN TẠO CẠNH (EDGE AI)
+## ĐỀ TÀI: PHÁT TRIỂN ỨNG DỤNG CHẨN ĐOÁN UNG THƯ PHỔI TRÊN THIẾT BỊ DI ĐỘNG
 
 > **Thông tin khóa luận**:
 > - **Cơ quan đào tạo**: Bộ Giáo dục và Đào tạo – Trường Đại học Sư phạm Thành phố Hồ Chí Minh – Khoa Công nghệ Thông tin.
 > - **Ngành đào tạo**: Sư phạm Tin học (Khóa 49, Niên khóa 2026 – 2027).
-> - **Sinh viên thực hiện**: **DƯƠNG THỊ THU DIỄM** — MSSV: **49.01.103.011**.
+> - **Sinh viên thực hiện**: **DƯƠNG HẢI ĐĂNG** — MSSV: **49.01.103.020**.
 > - **Giảng viên hướng dẫn**: **ThS. TRỊNH HUY HOÀNG**.
-> - **Tình trạng văn bản**: **Bản thảo khóa luận đang phát triển (Working Draft)** — Soạn thảo theo khung 5 chương chuẩn của Đề cương chi tiết đã duyệt, tích hợp đề xuất nâng cấp công nghệ On-Device Edge AI đang chờ GVHD xác nhận.
+> - **Tình trạng văn bản**: **Bản thảo khóa luận hiện hành (Working Draft)** — Soạn thảo theo cấu trúc 5 chương chuẩn của Đề cương chi tiết đã duyệt, tập trung phân hệ Android và mô hình On-Device Edge AI kết hợp dịch vụ đám mây Firebase.
 > - **Cam kết dữ liệu**: 100% dữ liệu thực nghiệm sử dụng bộ dữ liệu công khai ẩn danh (IQ-OTH/NCCD) hoặc dữ liệu giả định tổng hợp (synthetic mock data); tuyệt đối không sử dụng dữ liệu bệnh nhân thực tế khi chưa có phê duyệt của Hội đồng Đạo đức Y sinh.
 
 ---
@@ -169,7 +169,7 @@ Phân tích và đối chiếu 3 kiến trúc triển khai:
 3. **Kiến trúc Lai thích ứng (Hybrid Edge-First - Hướng tiếp cận của đề tài)**: Ưu tiên thực hiện suy luận chẩn đoán sơ bộ ngay trên thiết bị; đồng thời sử dụng máy chủ đám mây để lưu trữ hồ sơ tập trung, đồng bộ dữ liệu và chạy phân tích nâng cao khi người dùng yêu cầu.
 
 ### 1.5 Nhận xét và hướng tiếp cận của đề tài
-Khóa luận chọn hướng tiếp cận **Kiến trúc Lai thích ứng (Edge-First)**. Đối với phân hệ Android do sinh viên **Dương Thị Thu Diễm** phụ trách, trọng tâm nghiên cứu tập trung vào việc hiện thực hóa suy luận mô hình AACNN-ViT Adaptive bằng native engine trên hệ điều hành Android, đảm bảo ứng dụng vận hành mượt mà, độc lập với kết nối mạng, đồng thời thiết kế tầng bảo vệ dữ liệu hồ sơ bệnh nhân cục bộ đạt chuẩn mật mã học y tế.
+Khóa luận chọn hướng tiếp cận **Kiến trúc Trí tuệ Nhân tạo Biên (On-Device Edge AI kết hợp Dịch vụ Đám mây)**. Đề tài do sinh viên **Dương Hải Đăng** thực hiện, trọng tâm nghiên cứu tập trung vào việc hiện thực hóa suy luận mô hình AACNN-ViT Adaptive bằng native engine trên hệ điều hành Android, đảm bảo ứng dụng vận hành mượt mà, độc lập với kết nối mạng, đồng thời thiết kế tầng bảo vệ dữ liệu hồ sơ bệnh nhân cục bộ đạt chuẩn mật mã học y tế.
 
 ---
 
@@ -379,18 +379,18 @@ Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trư
 - **Trạng thái**: Đang trong quá trình chuẩn bị để cài đặt và đo kiểm trên thiết bị vật lý thật.
 - **Cam kết khoa học**: Khóa luận tuyệt đối không lấy kết quả trên máy ảo làm kết quả trên điện thoại thật. Số liệu thực tế về RAM, nhiệt độ, mức tiêu hao pin và thời gian suy luận trên chip MediaTek Helio G91-Ultra sẽ được cập nhật đầy đủ sau khi hoàn tất đo đạc trên thiết bị thật.
 
-### 4.6 Đánh giá và so sánh hai phân hệ Android - iOS
-So sánh các giải pháp kỹ thuật giữa phân hệ Android (Dương Thị Thu Diễm) và phân hệ iOS (Dương Hải Đăng):
+### 4.6 Đánh giá kiến trúc triển khai Android và đối sánh giải pháp nền tảng
+Phân tích giải pháp kỹ thuật đã triển khai trên Android (Dương Hải Đăng) và đối sánh với định hướng nền tảng iOS phục vụ khả năng mở rộng tương lai:
 
-| Tiêu chí | Phân hệ Android | Phân hệ iOS |
+| Tiêu chí | Phân hệ Android (Triển khai chính thức) | Khảo sát nền tảng iOS (Định hướng mở rộng) |
 | :--- | :--- | :--- |
-| **Lập trình viên thực hiện** | **Dương Thị Thu Diễm** | **Dương Hải Đăng** |
-| **Nền tảng kiểm thử mục tiêu**| Android SDK 34 / Xiaomi Redmi 13 | iOS 17+ / iPhone vật lý |
-| **Runtime AI On-Device** | ONNX Runtime Native C++ + LiteRT C API | Đang khảo sát CoreML vs ONNX Runtime iOS |
+| **Sinh viên thực hiện** | **Dương Hải Đăng** | **Khảo sát tài liệu / Tham khảo** |
+| **Nền tảng kiểm thử mục tiêu**| Android SDK 34 / Thiết bị Android | iOS 17+ / Thiết bị iOS |
+| **Runtime AI On-Device** | ONNX Runtime Native C++ + LiteRT C API | CoreML / ONNX Runtime iOS |
 | **Tăng tốc phần cứng** | CPU đa luồng / NNAPI / Vulkan | Apple Neural Engine (ANE) / Metal |
-| **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Page-level AES-256)** | Định hướng CoreData / SQLite mã hóa |
-| **Quản lý khóa an toàn** | Android Keystore System (AES-256-GCM, định hướng TEE/StrongBox) | Định hướng iOS Keychain Services & Secure Enclave |
-| **Trạng thái thực nghiệm AI** | **Đã chạy phân loại trên máy ảo (1.580 ms)** | **Đang trong giai đoạn nghiên cứu chuyển đổi** |
+| **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Page-level AES-256)** | CoreData mã hóa / SQLite mã hóa |
+| **Quản lý khóa an toàn** | Android Keystore System (AES-256-GCM, định hướng TEE/StrongBox) | iOS Keychain Services & Secure Enclave |
+| **Trạng thái thực nghiệm AI** | **Đã chạy phân loại trên Android (1.580 ms)** | **Khảo sát lý thuyết định hướng mở rộng** |
 
 ---
 

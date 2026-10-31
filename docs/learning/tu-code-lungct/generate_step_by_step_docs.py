@@ -42,8 +42,8 @@ def build_android_step_by_step(output_path):
         doc,
         title="HƯỚNG DẪN TỰ TAY CODE LẠI ỨNG DỤNG LUNGCT\nCHO HỆ ĐIỀU HÀNH ANDROID TỪ CON SỐ 0",
         subtitle="Sổ tay thực hành thao tác liên tục: Cài môi trường, gõ lệnh, tạo tệp, viết code giải thích từng dòng,\nchạy máy ảo, kiểm thử tự động, tích hợp AI FP32 và SQLCipher Native",
-        author_name="DƯƠNG THỊ THU DIỄM",
-        mssv="49.01.103.011",
+        author_name="DƯƠNG HẢI ĐĂNG",
+        mssv="49.01.103.020",
         platform_name="Android (Windows 11 / Redmi 13 / Máy ảo API 34)"
     )
 

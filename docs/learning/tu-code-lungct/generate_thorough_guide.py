@@ -82,8 +82,8 @@ def build_thorough_android_guide(output_path):
         doc,
         title="HƯỚNG DẪN TỰ TAY CODE LẠI TOÀN BỘ LUNGCT\nCHO HỆ ĐIỀU HÀNH ANDROID TỪ CON SỐ 0",
         subtitle="Sổ tay hướng dẫn thực chiến từng thao tác: Gõ lệnh, tạo tệp, giải thích từng dòng mã nguồn,\nkiểm thử tự động Jest, tích hợp Edge AI FP32 và CSDL mã hóa cấp trang SQLCipher",
-        author_name="DƯƠNG THỊ THU DIỄM",
-        mssv="49.01.103.011",
+        author_name="DƯƠNG HẢI ĐĂNG",
+        mssv="49.01.103.020",
         platform_name="Android (Windows 11 / Xiaomi Redmi 13 / Máy ảo API 34)"
     )
 

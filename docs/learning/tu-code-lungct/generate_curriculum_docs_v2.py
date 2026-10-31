@@ -39,8 +39,8 @@ def build_full_android_curriculum(output_path):
         doc,
         title="BẢN THẢO GIÁO TRÌNH TỰ CODE LUNGCT\nCHO HỆ ĐIỀU HÀNH ANDROID",
         subtitle="Tài liệu tự học và thực hành từng bước từ thư mục trống:\nReact Native, TypeScript, Edge AI FP32 On-Device và SQLCipher Native",
-        author_name="DƯƠNG THỊ THU DIỄM",
-        mssv="49.01.103.011",
+        author_name="DƯƠNG HẢI ĐĂNG",
+        mssv="49.01.103.020",
         platform_name="Android (Windows 11 / Redmi 13 / Máy ảo API 34)"
     )
 

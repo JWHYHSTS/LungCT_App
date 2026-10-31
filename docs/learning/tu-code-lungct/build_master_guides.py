@@ -45,8 +45,8 @@ def build_complete_android_guide(output_path):
         doc,
         title="HƯỚNG DẪN TỰ TAY CODE LẠI TOÀN BỘ LUNGCT\nCHO HỆ ĐIỀU HÀNH ANDROID TỪ CON SỐ 0",
         subtitle="Giáo trình thực hành 'CÙNG TÔI XÂY DỰNG ỨNG DỤNG TỪ THƯ MỤC TRỐNG':\nTự gõ từng dòng code, nối file vào app đang chạy, kiểm thử tự động Jest,\ntích hợp Edge AI FP32 và CSDL mã hóa cấp trang SQLCipher 4.6.1",
-        author_name="DƯƠNG THỊ THU DIỄM",
-        mssv="49.01.103.011",
+        author_name="DƯƠNG HẢI ĐĂNG",
+        mssv="49.01.103.020",
         platform_name="Android (Windows 11 / Máy ảo API 34 / Xiaomi Redmi 13)"
     )
 
@@ -149,8 +149,8 @@ def build_complete_ios_guide(output_path):
         doc,
         title="HƯỚNG DẪN TỰ TAY CODE LẠI TOÀN BỘ LUNGCT\nCHO HỆ ĐIỀU HÀNH iOS TỪ CON SỐ 0",
         subtitle="Giáo trình thực hành 'CÙNG TÔI XÂY DỰNG ỨNG DỤNG TỪ THƯ MỤC TRỐNG':\nThiết lập môi trường macOS, Xcode Simulator, Podfile C++20,\nApple Keychain Services và phân tích kỹ thuật Edge AI",
-        author_name="DƯƠNG THỊ THU DIỄM",
-        mssv="49.01.103.011",
+        author_name="DƯƠNG HẢI ĐĂNG",
+        mssv="49.01.103.020",
         platform_name="iOS (macOS Sonoma / Xcode 15 / iPhone 15 Simulator)"
     )
 

@@ -1,91 +1,82 @@
-# Dự Án Khóa Luận Tốt Nghiệp: Ứng Dụng Hỗ Trợ Phân Tích Ảnh CT Phổi (LungCT)
+# Dự Án Khóa Luận Tốt Nghiệp: Ứng Dụng Chẩn Đoán Ung Thư Phổi Trên Thiết Bị Di Động (LungCT)
+
+> **Thông tin đề tài khóa luận**:
+> - **Tên đề tài**: Phát triển ứng dụng chẩn đoán ung thư phổi trên thiết bị di động
+> - **Sinh viên thực hiện**: **DƯƠNG HẢI ĐĂNG** — MSSV: **49.01.103.020**
+> - **Ngành đào tạo**: Sư phạm Tin học (Khóa 49, Niên khóa 2026 – 2027) — Trường Đại học Sư phạm Thành phố Hồ Chí Minh
+> - **Giảng viên hướng dẫn**: **ThS. TRỊNH HUY HOÀNG**
+> - **Tên ứng dụng**: **LungCT** (Android App)
+> - **Repository**: `LungCT_App` (GitHub: Dương Hải Đăng)
+
+---
 
 ## 1. Giới thiệu tổng quan
-Dự án khóa luận **LungCT** tập trung vào việc nghiên cứu, xây dựng và đánh giá hệ thống hỗ trợ phân tích ảnh chụp cắt lớp vi tính lồng ngực (Chest CT) phục vụ sàng lọc tổn thương phổi với 3 phân lớp mục tiêu:
+Dự án khóa luận **LungCT** tập trung vào việc nghiên cứu, xây dựng và đánh giá ứng dụng di động hỗ trợ chẩn đoán ung thư phổi từ ảnh chụp cắt lớp vi tính lồng ngực (Chest CT) với 3 phân lớp mục tiêu:
 1. **Benign** (Tổn thương lành tính)
 2. **Malignant** (Tổn thương ác tính / Ung thư phổi)
 3. **Normal** (Nhu mô phổi bình thường)
 
-Hệ thống kết hợp giữa nghiên cứu mô hình học sâu kết hợp cơ chế chú ý thích ứng (**Adaptive AACNN-ViT**) cùng kỹ thuật giải thích quyết định bằng bản đồ nhiệt thị giác (**Grad-CAM**), mang lại khả năng suy luận cục bộ độc lập ngay trên thiết bị di động (on-device edge AI).
+Hệ thống triển khai mô hình học sâu lai kết hợp cơ chế chú ý thích ứng (**Adaptive AACNN-ViT**) cùng kỹ thuật giải thích quyết định bằng bản đồ nhiệt thị giác (**Grad-CAM**), mang lại khả năng suy luận cục bộ độc lập ngay trên thiết bị di động Android (**On-Device Edge AI**).
 
 ---
 
-## 2. Kiến trúc giải pháp & Hai phân hệ nền tảng
-Hệ thống được thiết kế phân tầng chuyên biệt gồm:
-- **Phần dùng chung (Shared Core & Services)**:
-  - Lõi tiền xử lý ảnh CT chuẩn y khoa (chuẩn hóa kích thước, cường độ Hounsfield Unit / dải xám, tensor đầu vào).
-  - Kiến trúc đường ống (pipeline) suy luận, bộ ánh xạ nhãn lớp, logic tính toán Grad-CAM và hợp nhất bản đồ nhiệt.
-  - Bộ kiểm thử dùng chung (`tests/shared/`) và minh chứng đánh giá chung (`evidence/shared/`).
-- **Phân hệ Android (Phụ trách: Dương Thị Thu Diểm)**:
-  - Ứng dụng di động trên nền tảng Android (kiểm thử trọng tâm trên thiết bị thực tế Redmi 13).
-  - Tối ưu hóa runtime suy luận on-device trên Android, kiểm soát mức tiêu hao RAM, độ trễ và Grad-CAM offline hoàn toàn.
-  - Báo cáo khóa luận Android đặt tại: `reports/android/`.
-- **Phân hệ iOS (Phụ trách: Dương Hải Đăng)**:
-  - Ứng dụng di động trên nền tảng iOS (kiểm thử trọng tâm trên thiết bị iPhone thực tế được cấp phát).
-  - Tối ưu hóa pipeline suy luận và render trực quan Grad-CAM on-device tương thích hệ sinh thái iOS, đo lường năng lượng và thời gian phản hồi.
-  - Báo cáo khóa luận iOS đặt tại: `reports/ios/`.
+## 2. Kiến trúc giải pháp & Phạm vi triển khai
+
+Hệ thống được thiết kế theo kiến trúc **On-Device Edge AI kết hợp Dịch vụ Đám mây (Firebase)**:
+- **Tầng ứng dụng di động Android (React Native + TypeScript)**:
+  - Giao diện người dùng sạch sẽ, tuân thủ Design System y tế với 48 icon đồ họa chuẩn từ `LungCT-Icons/`.
+  - Nghiệp vụ dành cho hai tác nhân: **Bác sĩ** (quản lý bệnh nhân, ca bệnh, chụp/chọn ảnh CT, xem kết quả phân loại, xuất phiếu PDF) và **Quản trị viên** (quản lý tài khoản, phân quyền, thống kê).
+  - Hỗ trợ song ngữ (Việt - Anh) và giao diện Sáng / Tối / Theo hệ thống.
+- **Tầng suy luận AI On-Device (Native Kotlin / C++)**:
+  - Tiền xử lý ảnh (Nearest Resampling ma trận Float32 chuẩn ImageNet) chạy trực tiếp trên thiết bị.
+  - Runtime kép: **ONNX Runtime Mobile** (trích xuất token CLS 768 chiều từ Vision Transformer) và **Google LiteRT (TensorFlow Lite)** (mô hình Adaptive Fusion phân loại 3 lớp).
+  - **Hoạt động hoàn toàn ngoại tuyến (Offline-First)**: Không gửi ảnh CT của bệnh nhân về máy chủ để suy luận hoặc sinh Grad-CAM.
+- **Tầng Dịch vụ Đám mây (Firebase)**:
+  - **Firebase Authentication**: Quản lý phiên làm việc, đăng nhập/đăng ký, quên mật khẩu và phân quyền.
+  - **Cloud Firestore**: Đồng bộ danh mục bệnh nhân, ca chẩn đoán và quản lý trạng thái tài khoản.
+  - **Cloud Storage**: Lưu trữ an toàn ảnh hồ sơ và phiếu báo cáo khi người dùng trực tuyến.
+  - **Firebase Cloud Messaging**: Gửi thông báo đẩy về các sự kiện ca bệnh và trạng thái tài khoản.
+- **Kế thừa & Lưu trữ tài liệu cũ**:
+  - Toàn bộ tài liệu, cấu hình nghiên cứu phân hệ iOS trước đây được chuyển vào khu vực lưu trữ tham khảo (`reports/ios/`), bảo toàn nguyên trạng ghi nhận đóng góp lịch sử. Dự án hiện tại tập trung toàn diện vào nền tảng Android.
 
 ---
 
-## 3. Cấu trúc thư mục của LungCT_DoAn
+## 3. Cấu trúc thư mục của LungCT_App
 
 ```text
-LungCT_DoAn/
-├── README.md               # Tài liệu giới thiệu khung đồ án, quy chuẩn và vị trí dữ liệu
+LungCT_App/
+├── README.md               # Tài liệu giới thiệu tổng quan, quy chuẩn và kiến trúc
 ├── AGENTS.md               # Quy định bắt buộc cho AI Agent và quy trình phát triển
 ├── .gitignore              # Cấu hình loại trừ tệp tạm, dependencies, secrets và build
 │
-├── mobile/                 # Mã nguồn ứng dụng di động (React Native + TypeScript)
-├── backend/                # Dịch vụ backend hỗ trợ (FastAPI)
+├── mobile/                 # Mã nguồn ứng dụng di động Android (React Native + TypeScript)
+│   ├── android/            # Thư mục build native Android
+│   ├── native-templates/   # Bản mẫu cấu hình & mã nguồn native Kotlin bảo toàn trong Git
+│   ├── assets/             # Biểu tượng, phông chữ và tài nguyên đồ họa
+│   └── src/                # Mã nguồn logic, giao diện, dịch vụ và kiểm thử
 │
 ├── ai/                     # Nghiên cứu mô hình, chuyển đổi & đánh giá AI
-│   ├── notebooks/          # Notebook Colab phục vụ train, validate và export
-│   ├── models/
-│   │   ├── source/         # Gói mô hình nguồn nén gốc (.zip, .sha256)
-│   │   │   ├── primary/
-│   │   │   └── light_candidate/
-│   │   └── extracted/      # Trọng số giải nén khi được giao tích hợp
-│   │       ├── primary/
-│   │       └── light_candidate/
-│   ├── conversion/         # Script và công cụ chuyển đổi mô hình sang runtime mobile
-│   ├── evaluation/         # Script đo đạc, ma trận nhầm lẫn, metrics, benchmark
-│   └── manifests/          # Tệp manifest quản lý Run ID, checksum, split, kết quả test
+│   ├── notebooks/          # Notebook Colab tái lập và cải tiến mô hình
+│   ├── models/             # Gói mô hình nguồn nén (.zip, .sha256) và mô hình giải nén
+│   ├── conversion/         # Script chuyển đổi mô hình sang ONNX và LiteRT
+│   └── manifests/          # Manifests quản lý split, cấu hình và kết quả đánh giá
 │
-├── infra/                  # Cấu hình hạ tầng
-│   └── firebase/           # Cấu hình dịch vụ Firebase theo đặc tả
+├── infra/                  # Cấu hình hạ tầng đám mây (Firebase Security Rules, Firestore schemas)
 │
-├── LungCT-Icons/           # Bộ icon đồ họa chuẩn của hệ thống (48 icons: svg, png-32px, png-64px)
-│   ├── png-32px/           # Bitmap 32x32 px
-│   ├── png-64px/           # Bitmap 64x64 px
-│   └── svg/                # Vector SVG gốc phong cách duo-tone y tế
+├── LungCT-Icons/           # Bộ icon đồ họa chuẩn của hệ thống (48 icons duo-tone y tế)
 │
 ├── docs/                   # Tài liệu kỹ thuật dự án
-│   ├── requirements/       # Đặc tả chức năng, yêu cầu khóa luận (ví dụ: LumaCT_DacTa, LungCT_Icons_DacTa)
-│   ├── architecture/       # Sơ đồ kiến trúc (LungCT_KienTruc.drawio, LungCT_Pipeline.drawio)
-│   ├── api/                # Đặc tả API backend
-│   ├── setup/              # Hướng dẫn thiết lập môi trường
-│   ├── user-guide/         # Sổ tay hướng dẫn người dùng
-│   └── references/         # Nguồn tham khảo, bài báo, dataset chính thức
+│   ├── requirements/       # Đề cương chi tiết và biên bản tiếp nhận đầu vào
+│   ├── architecture/       # Sơ đồ kiến trúc hệ thống và pipeline On-Device (.drawio)
+│   └── learning/           # Hướng dẫn tự code, bảng đối chiếu đề cương, ghi chú kỹ thuật
 │
 ├── reports/                # Báo cáo khóa luận tốt nghiệp
-│   ├── android/            # Báo cáo của sinh viên Dương Thị Thu Diểm
-│   └── ios/                # Báo cáo của sinh viên Dương Hải Đăng
+│   ├── android/            # Báo cáo khóa luận 5 chương của Dương Hải Đăng
+│   └── ios/                # Khu vực lưu trữ tài liệu tham khảo phân hệ iOS cũ
 │
-├── tests/                  # Bộ mã kiểm thử tự động
-│   ├── shared/             # Kiểm thử dùng chung (preprocessing, mapping, logic)
-│   ├── android/            # Kiểm thử chuyên biệt phân hệ Android
-│   ├── ios/                # Kiểm thử chuyên biệt phân hệ iOS
-│   ├── backend/            # Kiểm thử API backend
-│   └── ai/                 # Kiểm thử tính nhất quán của mô hình và CAM
-│
+├── tests/                  # Bộ mã kiểm thử tự động (Unit test, Integration test)
 ├── evidence/               # Minh chứng kiểm thử thực tế và số đo thực nghiệm
-│   ├── shared/
-│   ├── android/            # Log, ảnh chụp màn hình, benchmark Redmi 13
-│   └── ios/                # Log, ảnh chụp màn hình, benchmark iPhone thực tế
-│
-└── release/                # Bản đóng gói phát hành
-    ├── android/
-    └── ios/
+└── release/                # Bản đóng gói phát hành (APK Release độc lập)
 ```
 
 ---

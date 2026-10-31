@@ -6,10 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "supportsTablet": true,
-      "infoPlist": {}
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#123047",

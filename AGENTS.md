@@ -1,83 +1,82 @@
 # QUY TẮC PHÁT TRIỂN DỰ ÁN KHÓA LUẬN LUNGCT (AGENTS.MD)
 
-Tài liệu này là **bộ quy tắc bắt buộc** dành cho tất cả trợ lý AI (Antigravity/Agent) và các nhà phát triển khi tham gia xây dựng dự án khóa luận `LungCT_DoAn`. Mọi thao tác phải tuân thủ nghiêm ngặt các điều khoản dưới đây.
+Tài liệu này là **bộ quy tắc bắt buộc** dành cho tất cả trợ lý AI (Antigravity/Agent) và các nhà phát triển khi tham gia xây dựng dự án khóa luận `LungCT` (Repository: `LungCT_App`). Mọi thao tác phải tuân thủ nghiêm ngặt các điều khoản dưới đây theo Đề cương chi tiết mới nhất của sinh viên **Dương Hải Đăng**.
 
 ---
 
-## PHẦN I. NGUYÊN TẮC CỐT LÕI VÀ PHẠM VI KHỞI TẠO
+## PHẦN I. THÔNG TIN ĐỀ TÀI VÀ PHẠM VI MỚI
+
+1. **Thông tin chung**:
+   - **Tên đề tài**: “Phát triển ứng dụng chẩn đoán ung thư phổi trên thiết bị di động”.
+   - **Sinh viên thực hiện đề tài ứng dụng**: **DƯƠNG HẢI ĐĂNG** — MSSV: **49.01.103.020** (Sư phạm Tin học, ĐH Sư phạm TP.HCM).
+   - **Giảng viên hướng dẫn**: **ThS. TRỊNH HUY HOÀNG**.
+   - **Tên ứng dụng**: **LungCT**.
+   - **Nền tảng mục tiêu**: **Chỉ phát triển, kiểm thử và đóng gói Android** (React Native + TypeScript, tận dụng tối đa mã nguồn hiện có).
+   - **Repository mới**: `LungCT_App`, thuộc đúng tài khoản GitHub của Dương Hải Đăng.
+
+2. **Định hướng công nghệ cốt lõi**:
+   - **Kiến trúc On-Device Edge AI thuần túy**: Mô hình học sâu lai **Adaptive AACNN-ViT** chạy trực tiếp 100% trên thiết bị Android; **tuyệt đối không gửi ảnh đến API/backend để phân loại hoặc sinh bản đồ nhiệt Grad-CAM**.
+   - Không giữ chế độ API/On-device song song hay cơ chế fallback sang máy chủ suy luận.
+   - **Dịch vụ Đám mây (Firebase)**: Firebase vẫn thuộc phạm vi đề tài, phục vụ các chức năng quản lý người dùng và nghiệp vụ: **Firebase Authentication** (xác thực, phiên làm việc), **Cloud Firestore** (đồng bộ hồ sơ ca bệnh, phân quyền), **Cloud Storage** (lưu trữ sao lưu hồ sơ khi trực tuyến) và **Firebase Cloud Messaging** (thông báo đẩy). Firebase KHÔNG làm máy chủ suy luận AI.
+   - **Đầu vào hình ảnh**: Lát cắt ảnh CT 2D định dạng JPG/PNG từ bộ dữ liệu IQ-OTH/NCCD; không tự mở rộng sang DICOM 3D hay khối thể tích.
+   - **Mô hình AI**: Sử dụng mô hình đã huấn luyện; bảo toàn cấu hình, kiến trúc và thứ tự 3 nhãn lớp (`["Benign", "Malignant", "Normal"]`). Không tự ý thay kiến trúc, thay checkpoint hay huấn luyện lại chỉ để demo chạy được.
+
+3. **Chuyển đổi phạm vi và Lưu trữ lịch sử kế thừa**:
+   - Dừng hoàn toàn workflow và tác vụ phát triển iOS. Các cấu hình/tài liệu iOS cũ được chuyển vào khu vực lưu trữ có chú thích (`docs/archive/` hoặc `reports/ios/` với ghi chú rõ ràng), bảo toàn nguyên trạng lịch sử đóng góp và quyền tác giả của giai đoạn trước.
+   - Duy trì **một bản thảo khóa luận duy nhất** cho đề tài Android của Dương Hải Đăng theo cấu trúc 5 chương trong Đề cương chi tiết đã duyệt. Không cập nhật hai báo cáo Android/iOS song song.
+   - Giữ nguyên `applicationId` (`com.anonymous.mobile` hoặc cấu hình định danh Android hiện tại) và khóa ký debug/release hiện có để bảo toàn khả năng cài đặt cập nhật.
+
+---
+
+## PHẦN II. NGUYÊN TẮC CỐT LÕI VÀ BẢO TỒN HIỆN TRẠNG
 
 1. **Phân tách phạm vi độc lập tuyệt đối**:
-   - `LungCT_DoAn` là dự án độc lập, khép kín, chứa đầy đủ mã nguồn, mô hình, cấu hình mẫu, tài liệu, báo cáo và kiểm thử để bàn giao.
-   - Thư mục bên ngoài `LungCT_LamViecRieng` chỉ dành cho prompt AI, tài liệu cá nhân, ghi chép và bản nháp.
-   - Xóa hoặc di chuyển `LungCT_LamViecRieng` **không được phép** ảnh hưởng đến `LungCT_DoAn`.
-   - Tuyệt đối không tạo code, script, cấu hình, symlink hay tài liệu trong đồ án có đường dẫn trỏ sang thư mục làm việc riêng.
+   - Dự án là một kho độc lập, khép kín, chứa đầy đủ mã nguồn, mô hình, cấu hình mẫu, tài liệu, báo cáo và kiểm thử để bàn giao.
+   - Tuyệt đối không tạo code, script, cấu hình, symlink hay tài liệu trong đồ án có đường dẫn trỏ sang thư mục làm việc riêng bên ngoài máy.
+   - Không dùng mặc định đường dẫn máy cũ (như `C:\Users\thudi...` hay `C:\LungCT...`). Tìm và cấu hình đúng theo môi trường hiện tại trên laptop của Đăng (`C:\Users\John\AppData\Local\Android\Sdk`, OpenJDK 17, Node v22.19.0).
+   - Không tự ý `git reset --hard`, `git clean -fd`, sửa lịch sử commit cũ hoặc ghi đè các thay đổi chưa commit.
 
-2. **Giới hạn phạm vi và Tình trạng tài liệu hiện tại**:
-   - Hiện trạng thực tế: Đã tiếp nhận hướng dẫn `Huong_dan_Antigravity.docx`, hai sơ đồ kiến trúc `LungCT_KienTruc.drawio`, `LungCT_Pipeline.drawio`, notebook `LungCT_Reproduction_Improved.ipynb`, gói Primary FP32 kèm SHA256 và gói LightCandidate FP16.
-   - **Đính chính quan trọng**: Chưa có bản đặc tả chức năng toàn bộ ứng dụng (chỉ có đặc tả bộ icon tại `docs/requirements/LungCT_Icons_DacTa.md`); chưa có hai báo cáo khóa luận và đề cương (thư mục `reports/android/` và `reports/ios/` hiện chỉ có `.gitkeep`).
-   - Việc chưa có đặc tả ứng dụng và hai báo cáo ở bước này là hoàn toàn bình thường, không coi là lỗi và không tạo file rỗng hay nội dung giả để thay thế. Biên bản tiếp nhận đầu vào được lưu tại `docs/requirements/TiepNhan_DauVao.md` chỉ ghi nhận hiện trạng kỹ thuật, không thay thế đặc tả ứng dụng.
-   - **Giai đoạn hiện tại**: Tập trung hoàn thiện tài liệu kỹ thuật trong đồ án, ghi chép số liệu và lưu trữ minh chứng phục vụ hai báo cáo.
-   - **Khi đã có hai báo cáo**: Mỗi lệnh triển khai tiếp theo bắt buộc phải cập nhật trực tiếp các phần nội dung bị ảnh hưởng trong CẢ HAI báo cáo, phản ánh đúng đóng góp kỹ thuật và số đo minh chứng riêng của từng nền tảng (Android: Redmi 13; iOS: iPhone thực tế).
-   - Đồ án phải hoạt động độc lập, tự chứa đựng; tuyệt đối không tạo phụ thuộc chạy/build/test sang thư mục làm việc riêng `LungCT_LamViecRieng`. Mọi hướng dẫn cần thiết để phát triển và bàn giao phải được ghi trong tài liệu chính thức của đồ án.
-
-3. **Nguyên tắc tiếp nhận và xử lý tài liệu khi người dùng bổ sung**:
-   - Khi người dùng bổ sung tài liệu và giao lệnh tiếp theo, AI phải chủ động đọc kỹ hướng dẫn, đặc tả (`docs/requirements/`), sơ đồ kiến trúc (`docs/architecture/`) và hai báo cáo (`reports/`) để đối chiếu, cập nhật quy tắc.
-   - **Không tự ý theo dõi thư mục (polling) hay tự động triển khai code ngay khi thấy tệp mới xuất hiện**. Chỉ bắt đầu khi có lệnh rõ ràng từ người dùng.
-   - Nếu tệp tài liệu ở định dạng nhị phân/Word mà công cụ không đọc được trực tiếp, phải báo rõ cho người dùng; **tuyệt đối không tự nhận là đã đọc hoặc đoán mò nội dung**.
-   - Không sao chép nguyên văn nhật ký chat, ghi chép cá nhân vào đồ án.
-   - Nếu tài liệu có điểm mâu thuẫn, phải chỉ rõ điều khoản và phạm vi ảnh hưởng. Ưu tiên cao nhất là chỉ đạo trực tiếp mới nhất của người dùng; không tự ý thay đổi phạm vi khóa luận.
+2. **Bảo toàn native source và tài nguyên đang bị Git bỏ qua**:
+   - Thư mục `mobile/native-templates/android` và các cấu hình tái tạo native phải luôn được theo dõi trong Git để bảo đảm ứng dụng có thể build lại 100% từ môi trường sạch.
+   - Các artifact mô hình (`fusion_model.tflite`, `vit_cls.onnx`, `vit_cls.onnx.data`) trong assets Android phải có checksum SHA-256 xác thực và tài liệu hướng dẫn đặt đúng vị trí.
 
 ---
 
-## PHẦN II. QUY TẮC TRIỂN KHAI VÀ PHÁT TRIỂN SAU NÀY
+## PHẦN III. QUY TẮC MÔ HÌNH AI VÀ GRAD-CAM TRÊN ANDROID
 
-### 1. Công nghệ và Chức năng hệ thống
-- **Công nghệ cốt lõi**: Ứng dụng di động sử dụng **React Native + TypeScript**; Backend sử dụng **FastAPI (Python)**.
-- **Dịch vụ phụ trợ**: Firebase, bộ lưu trữ cục bộ (local storage / SQLite / MMKV), cơ chế phân quyền người dùng và chính sách đồng bộ dữ liệu phải bám sát theo đặc tả người dùng cung cấp (`docs/requirements/`).
-- Tuyệt đối không tự ý thay đổi framework, không tự ý nới lỏng hoặc sửa đổi chính sách offline hay phạm vi nghiệp vụ.
-- Phân biệt minh bạch giữa mã nguồn dùng chung (`shared`) và logic chuyên biệt cho Android / iOS.
-- Bản đặc tả chức năng là căn cứ cao nhất để triển khai tính năng; prompt khởi tạo này không thay thế cho toàn bộ đặc tả chi tiết.
-- **Quy chuẩn giao diện người dùng (UI/UX) và Bộ Icon Hệ Thống**: 
-  - Giao diện người dùng trên điện thoại phải sạch sẽ, thân thiện, mang tính y tế chuyên nghiệp; **không hiển thị URL backend, thông tin log/debug kỹ thuật** không phục vụ thao tác của bác sĩ / người dùng.
-  - **Bộ icon đồ họa chuẩn**: Toàn bộ icon hệ thống được lưu trữ nguyên bản tại `LungCT-Icons/` (gồm 3 thư mục: `svg/`, `png-32px/`, `png-64px/` với 48 icon y tế đồng nhất).
-  - **Nguyên tắc quản lý asset**: Tuyệt đối giữ nguyên cấu trúc, tên tệp và phong cách của `LungCT-Icons/`. Khi phát triển giao diện ứng dụng, chỉ chọn lọc và đóng gói những icon thực sự sử dụng vào ứng dụng di động (`mobile/assets/icons/`), không đưa toàn bộ thư mục `LungCT-Icons/` vào bundle cài đặt nhằm kiểm soát dung lượng cài đặt (.apk, .ipa) trên điện thoại.
+1. **Pipeline On-Device Native**:
+   - Toàn bộ chuỗi xử lý: Chọn/chụp ảnh → Lưu vào sandbox ứng dụng → Tiền xử lý ma trận (Nearest Resampling, chuẩn hóa Float32) → ViT ONNX Runtime trích token CLS (768 chiều) → Fusion TFLite (LiteRT) phân loại 3 lớp → Xuất điểm số điểm tin cậy → Hiển thị và lưu trữ lịch sử.
+   - Cặp runtime hiện tại (ViT ONNX + Fusion TFLite) được giữ làm chuẩn đối chứng đang hoạt động ổn định trên Android.
+   - Thứ tự lớp đầu ra cố định từ cấu hình huấn luyện: `0: Benign`, `1: Malignant`, `2: Normal`. Không thay đổi thứ tự đầu ra.
+   - Điểm số là dự đoán hỗ trợ tham khảo, không phải xác suất mắc bệnh đã được xác nhận lâm sàng.
+   - Khi suy luận gặp lỗi, báo lỗi thật minh bạch và cho người dùng thử lại; tuyệt đối không dùng kết quả mock giả tạo, không dùng điểm cũ hay gọi API máy chủ.
+   - Tách biệt kết quả theo owner / case / image / version; khi thay đổi ảnh, kết quả cũ phải lập tức mất hiệu lực.
 
-### 2. Mô hình AI và Triển khai trên Thiết bị Di động (On-Device Edge AI)
-- **Kiến trúc mô hình chính**: Mô hình chính là **Adaptive AACNN-ViT**. Phải bảo toàn đầy đủ các nhánh CNN (kèm module trích xuất đặc trưng / fusion), khối Vision Transformer (ViT) và các bước tiền xử lý chuyên biệt (preprocessing).
-- Tuyệt đối không tự ý thay thế bằng kiến trúc khác (như MobileNet thuần, ResNet...) hoặc tùy tiện cắt bỏ một nhánh để làm nhẹ mô hình khi chưa được phép.
-- **Bảo toàn gói nguồn**: Gói tệp ZIP và mã băm `.sha256` trong `ai/models/source/` phải được giữ nguyên bản làm mốc đối chứng.
-- **Tích hợp mô hình**:
-  - Khi được giao lệnh tích hợp, giải nén vào `ai/models/extracted/{primary|light_candidate}/`. Tránh nhân bản trọng số dư thừa.
-  - Tuyệt đối không đóng gói toàn bộ gói nghiên cứu, checkpoint huấn luyện vào bộ cài đặt của ứng dụng di động.
-  - Artifact tối ưu cho di động sẽ được lưu tại:
-    - `mobile/assets/models/android/`
-    - `mobile/assets/models/ios/`
-    *(Chưa tạo hai thư mục này ở bước khởi tạo khung)*.
-  - Backend sử dụng mô hình đặt trong đồ án với đường dẫn tương đối tính từ thư mục gốc ổn định hoặc qua biến môi trường; không phụ thuộc thư mục chạy lệnh hay đường dẫn tuyệt đối của máy cá nhân.
-  - **Lưu ý kỹ thuật**: Tệp ZIP, `.keras`, hay `.h5` **không phải** là artifact có thể tự chạy trực tiếp trong React Native.
-  - Việc lựa chọn runtime di động (TFLite, ONNX Runtime, ExecuTorch, CoreML...) chỉ được quyết định sau khi kiểm tra khả năng thực thi đồng thời cả **phân loại (classification)** và **bản đồ nhiệt (Grad-CAM)**. Không khẳng định tương thích trước khi kiểm chứng thực tế.
-  - Bảo tồn toàn vẹn processor, custom layers, thứ tự nhãn lớp (class order: Benign, Malignant, Normal), pipeline tiền xử lý, phiên bản và checksum.
-  - **Mô hình ứng viên nhẹ (LightCandidate)**: Là phương án nghiên cứu so sánh, đánh giá tối ưu hóa; không được tự ý dùng nó để thay thế mô hình chính (Primary).
-  - Mọi manifest phải phản ánh đúng tệp và kết quả đo đạc thực tế. Việc tối ưu dung lượng, RAM, thời gian đáp ứng phải có số liệu đo lường cụ thể; không suy diễn hiệu năng thiết bị chỉ dựa trên kích thước tệp nén ZIP.
+2. **Quy tắc về Grad-CAM**:
+   - Grad-CAM là yêu cầu trong đề cương cần tiếp tục nghiên cứu và thực hiện trực tiếp trên Android, không tự bỏ khỏi phạm vi.
+   - Tuyệt đối không gọi server/API để sinh bản đồ nhiệt.
+   - Tuyệt đối không dùng overlay ảnh chụp sẵn, không dùng attention map hay bản đồ kích hoạt trung bình rồi gán nhãn là Grad-CAM.
+   - Không mô tả heatmap là vị trí tổn thương đã được xác nhận lâm sàng.
+   - Nếu tính năng Grad-CAM on-device chưa hoàn thành hoặc đang trong giai đoạn chuyển đổi runtime, phải giữ nguyên trạng thái chưa hoàn thành (`gradcamAvailable: false`), thông báo rõ nguyên nhân kỹ thuật và giải pháp tiếp theo.
 
-### 3. Grad-CAM và Kiểm thử trên Thiết bị Thực tế
-- **Yêu cầu On-Device Offline hoàn toàn**: Tính năng suy luận mô hình Adaptive và xuất bản đồ nhiệt Grad-CAM thật sự **phải chạy trực tiếp trên điện thoại** trong điều kiện:
-  - Tắt toàn bộ kết nối mạng (Wifi, 4G/5G).
-  - Ngắt kết nối cáp USB với máy tính.
-  - Tắt máy chủ đóng gói Metro Bundler.
-  - Hoạt động độc lập không phụ thuộc máy tính cá nhân.
-- Tuyệt đối không sử dụng server trung gian, không dùng kết quả giả lập hay ảnh CAM sinh sẵn để thay thế cho yêu cầu tính toán on-device cục bộ.
-- **Phạm vi toán học của Grad-CAM**: Phải bảo toàn đúng cơ chế của nghiên cứu gốc: giải thích trên các lớp tích chập của nhánh CNN khi vector CLS của nhánh ViT được cố định (fixed/conditioned).
-- Kiểm tra đối chiếu ma trận tiền xử lý, thứ tự lớp, vector điểm số, nhãn dự đoán và bản đồ nhiệt CAM giữa môi trường nghiên cứu (Python/Colab) và runtime di động trước và sau khi chuyển đổi.
-- **Môi trường kiểm thử thực tế**:
-  - Phân hệ Android: Kiểm thử thực tế trên thiết bị **Redmi 13**.
-  - Phân hệ iOS: Kiểm thử thực tế trên thiết bị **iPhone thực tế** được cấp phát.
-- Phải lưu trữ riêng biệt số đo và minh chứng của từng nền tảng (`evidence/android/`, `evidence/ios/`).
-- Đo đạc chi tiết: Thời gian suy luận (inference latency), thời gian tính CAM, lượng tiêu thụ RAM đỉnh, dung lượng artifact và kích thước file cài đặt (`.apk`, `.ipa`).
-- Tuyệt đối không lấy số đo trên Colab hoặc Android để gán sang kết quả của iOS và ngược lại.
+---
 
-### 4. Dữ liệu, Huấn luyện và Đánh giá Nghiên cứu
-- Tỷ lệ phân chia tập dữ liệu chuẩn: **Train / Validation / Test tương ứng 70 / 15 / 15** (cho phép sai số nhỏ do làm tròn và phân tầng stratified).
+## PHẦN IV. QUY TRÌNH THỰC HIỆN VÀ BÁO CÁO CHUẨN
+
+1. **Quy trình triển khai**:
+   - Đọc kỹ hiện trạng mã nguồn, tài liệu và đề cương trước khi sửa đổi.
+   - Thực hiện thay đổi tập trung, đúng phạm vi Android On-Device.
+   - Chạy kiểm thử tự động (`npm test`, `npm run typecheck`, `npm run lint`) và thu thập minh chứng thực tế.
+   - Cập nhật tài liệu kỹ thuật trong `docs/` và bản thảo khóa luận duy nhất của Đăng trong `reports/android/`.
+   - Kiểm tra `git status` và `git diff` sạch sẽ, chuẩn bị thông điệp commit chuẩn conventional commits.
+
+2. **Mẫu báo cáo kết quả trên khung chat (6 mục bắt buộc)**:
+   - **Mục 1. Yêu cầu vừa thực hiện**: Mục tiêu và phạm vi lệnh.
+   - **Mục 2. Công việc đã làm**: Thay đổi cụ thể, lý do; danh sách tệp tạo/sửa (dùng đường dẫn tương đối trong đồ án).
+   - **Mục 3. Kiểm tra và kết quả**: Kiểm tra thực tế đã chạy (typecheck, tests, build) và kết quả chi tiết.
+   - **Mục 4. Tài liệu và khóa luận**: Nêu tài liệu và mục đã cập nhật trong bản thảo khóa luận của Đăng.
+   - **Mục 5. Git và Repository mới**: Tóm tắt thay đổi chờ commit, trạng thái remote và hướng dẫn push.
+   - **Mục 6. Vấn đề còn lại và bước tiếp theo**: Nêu rõ lỗi, phần còn thiếu hoặc bước tiếp theo cụ thể.
 - Cố định (lock) tệp manifest phân chia và giá trị random seed.
 - Kỹ thuật tăng cường dữ liệu (Data Augmentation) chỉ áp dụng trên tập Train; nhánh CNN và nhánh ViT phải nhận cùng một ảnh biến đổi đồng nhất cho mỗi mẫu tương ứng.
 - Kiểm tra nguy cơ trùng lặp ảnh (duplicate images) và nguy cơ rò rỉ dữ liệu cùng bệnh nhân (patient leakage) giữa các tập khi có siêu dữ liệu nhóm bệnh nhân.

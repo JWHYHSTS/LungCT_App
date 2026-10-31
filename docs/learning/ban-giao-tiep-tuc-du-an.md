@@ -1,38 +1,45 @@
-# BIÊN BẢN BÀN GIAO DỰ ÁN LUNGCT - TIẾP TỤC TRIỂN KHAI THEO ĐẶC TẢ
+# BIÊN BẢN TIẾP QUẢN & BÀN GIAO DỰ ÁN LUNGCT TRÊN MÔI TRƯỜNG MỚI
 
-> **Thời điểm cập nhật**: 27/10/2026 (Phiên rà soát chuyên sâu & đính chính toàn diện MOB-02)  
-> **Mục đích**: Bàn giao hiện trạng mã nguồn, tài nguyên, tiến trình và kết quả thử nghiệm cho phiên làm việc/tài khoản Antigravity mới để tiếp tục hoàn thiện toàn bộ ứng dụng theo đặc tả kỹ thuật mà không làm mất mát dữ liệu hoặc phá vỡ tính toàn vẹn của dự án.  
-> **Nguyên tắc cốt lõi**: **KHÔNG** tự ý stage, commit, push hoặc xóa bỏ các tệp đang làm việc; duy trì tính trung thực tuyệt đối giữa những gì đã chạy thật trong app, những gì chỉ chạy qua runner và những gì chưa kiểm chứng; mọi số liệu đối chiếu ghi rõ giá trị thực và sai lệch số học, không gọi "khớp 100%" nếu chỉ là làm tròn giống nhau.
+> **Thời điểm cập nhật mới nhất**: 11/11/2026  
+> **Sinh viên tiếp nhận & thực hiện đề tài**: **DƯƠNG HẢI ĐĂNG** — MSSV: **49.01.103.020** (Sư phạm Tin học, ĐH Sư phạm TP.HCM)  
+> **Giảng viên hướng dẫn**: **ThS. TRỊNH HUY HOÀNG**  
+> **Tên đề tài**: “Phát triển ứng dụng chẩn đoán ung thư phổi trên thiết bị di động”  
+> **Ứng dụng**: **LungCT** (Chỉ phát triển, kiểm thử và đóng gói Android)  
+> **Repository mới**: `LungCT_App` (GitHub: Dương Hải Đăng)  
+> **Lịch sử kế thừa**: Dự án kế thừa mã nguồn cơ sở từ giai đoạn nghiên cứu trước đây (remote cũ `JWHYHSTS/LungCT_App.git`), bảo toàn nguyên trạng quyền tác giả, lịch sử commit và các giấy phép nguồn.
 
 ---
 
-## 1. Thông Tin Workspace & Hiện Trạng Git
+## 1. Thông Tin Workspace & Môi Trường Laptop Hiện Tại
 
-### 1.1 Đường dẫn Workspace chính xác
-- **Thư mục dự án gốc (Git Workspace)**:
+### 1.1 Đường dẫn Workspace thực tế trên máy Đăng
+- **Thư mục workspace hiện tại**:
+  ```text
+  D:\TAILIEUDAIHOC\HK7\KLTN\Code_App\lungct-thesis
   ```
-  c:\Users\thudi\OneDrive\Desktop\LungCT_Workspace\LungCT_DoAn
-  ```
-- **Thư mục bản build Android cục bộ (Local Build Root - ngoài OneDrive)**:
-  ```
-  C:\LungCT\mobile
-  ```
-  *(Thư mục này được sử dụng để tránh lỗi giới hạn độ dài đường dẫn Windows `MAX_PATH` và xung đột khóa tệp của OneDrive khi AGP/CMake/Ninja biên dịch C++).*
-- **Đồng bộ mã giữa Workspace và Local Build Root**:
-  - Toàn bộ các thay đổi trong mã nguồn Kotlin native (`LungCtPipelineModule.kt`, `LungCtNativePackage.kt`, `MainApplication.kt`), cấu hình Gradle (`app/build.gradle`), component UI (`AIImageResultScreen.tsx`), và JS bundle (`index.android.bundle` SHA-256: `86AB54BD80A74BAD0627F202EAB1BD86DBBCBA80A47D8BE0E59A823F41FB971E`) đã được đồng bộ 100% giữa `c:\Users\thudi\OneDrive\Desktop\LungCT_Workspace\LungCT_DoAn\mobile` và `C:\LungCT\mobile`.
+- **Môi trường công cụ trên máy tính hiện tại**:
+  - Hệ điều hành: Windows 11 (10.0.26200)
+  - Node.js: `v22.19.0` | npm: `10.9.3`
+  - Java: OpenJDK `17.0.21.0.2` LTS (Microsoft)
+  - Android SDK: `C:\Users\John\AppData\Local\Android\Sdk`
+  - ADB: `1.0.41` (Platform-tools 37.0.1)
+  - Python: `3.13.7`
+  - Git: `2.50.1.windows.1`
+  - Git local author: `user.name=JWHYHSTS`, `user.email=haidangblck@gmail.com`
+- **Lưu ý quan trọng về đường dẫn**:
+  - **TUYỆT ĐỐI KHÔNG** sử dụng đường dẫn máy cũ (`C:\Users\thudi\...` hoặc `C:\LungCT\...`). Mọi script, cấu hình và lệnh chạy phải trỏ đúng đường dẫn thực tế trên laptop của Đăng (`D:\TAILIEUDAIHOC\HK7\KLTN\Code_App\lungct-thesis`).
 
 ### 1.2 Trạng thái Git & Remote
-- **Nhánh hiện tại**: `master` (ahead of `origin/master` by 1 commit).
-- **Remote URL**:
-  ```
-  origin  https://github.com/ThuDiem011/lungct-thesis.git (fetch)
-  origin  https://github.com/ThuDiem011/lungct-thesis.git (push)
-  ```
-- **Commit gần nhất trên Git**:
-  - Mã băm: `8918e3cec6a559acf34b33c3fd0d3d8f8f9f56a3`
-  - Tiêu đề: `feat(ai): chuyển đổi hai nhánh mô hình và đối chiếu pipeline FP32 trên 30 ảnh CT (MOB-01)`
-  - Tác giả: `Dương Thị Thu Diểm <thudiemtv123@gmail.com>`
-  - Thời gian: `Tue Oct 27 02:00:29 2026 +0700`
+- **Nhánh hiện tại**: `master`
+- **Nhánh bảo toàn checkpoint**: `checkpoint-handoff-pre-scope-update`
+- **Remote cũ (kế thừa)**: `origin https://github.com/JWHYHSTS/LungCT_App.git`
+- **Remote mới (chuẩn bị kết nối)**: `LungCT_App` thuộc tài khoản GitHub của Dương Hải Đăng.
+
+---
+
+## 2. Tài Liệu Bàn Giao Lịch Sử (Lưu Trữ Để Tham Chiếu)
+
+*(Phần dưới đây lưu trữ nguyên trạng nội dung biên bản bàn giao kỹ thuật của phiên rà soát 27/10/2026)*
 
 ### 1.3 Danh sách các tệp thay đổi và tệp mới (Chưa commit)
 Tuyệt đối **không thực hiện `git checkout -- .`, `git clean -fd`, `git add .` hay `git commit`** khi chưa có yêu cầu từ người dùng:

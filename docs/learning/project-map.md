@@ -22,8 +22,8 @@ LungCT_DoAn/
 │   └── shared/              # Minh chứng dùng chung (Unit tests, UI theme)
 ├── mobile/                  # Mã nguồn ứng dụng di động React Native + TypeScript + Expo
 ├── reports/                 # Báo cáo khóa luận tốt nghiệp
-│   ├── android/             # Báo cáo chuyên đề Android (Dương Thị Thu Diểm)
-│   └── ios/                 # Báo cáo chuyên đề iOS (Dương Hải Đăng)
+│   ├── android/             # Báo cáo khóa luận 5 chương của Dương Hải Đăng
+│   └── ios/                 # Khu vực lưu trữ tài liệu tham khảo phân hệ iOS cũ
 ├── AGENTS.md                # Quy tắc cốt lõi bắt buộc dành cho trợ lý AI và nhà phát triển
 └── README.md                # Hướng dẫn tổng quan đồ án
 ```

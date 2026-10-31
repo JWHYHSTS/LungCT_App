@@ -30,8 +30,8 @@ def build_android_curriculum(output_path):
         doc,
         title="GIÁO TRÌNH TỰ CODE ỨNG DỤNG LUNGCT\nCHO HỆ ĐIỀU HÀNH ANDROID",
         subtitle="Hướng dẫn chi tiết từng bước xây dựng ứng dụng di động hỗ trợ chẩn đoán ung thư phổi\nbằng Trí tuệ nhân tạo cạnh (Edge AI) & CSDL mã hóa SQLCipher từ thư mục trống",
-        author_name="DƯƠNG THỊ THU DIỄM",
-        mssv="49.01.103.011",
+        author_name="DƯƠNG HẢI ĐĂNG",
+        mssv="49.01.103.020",
         platform_name="Android (Windows 11 / Redmi 13 / Emulator API 34)"
     )
 

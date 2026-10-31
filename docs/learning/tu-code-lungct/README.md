@@ -1,11 +1,11 @@
 # BỘ GIÁO TRÌNH TỰ CODE LẠI LUNGCT TỪ ĐẦU CHO ANDROID VÀ IOS
 ### Hướng dẫn xây dựng ứng dụng di động hỗ trợ chẩn đoán ung thư phổi bằng Edge AI từ thư mục trống
 
-> **Phiên bản tài liệu**: 1.1.0 (Bản thảo đang biên soạn - Chưa đạt mục tiêu >300 trang, chưa hướng dẫn trọn vẹn toàn bộ 121 tệp của app)  
-> **Người thực hiện**:
-> - **Phân hệ Android**: Dương Thị Thu Diễm (MSSV: 49.01.103.011)
-> - **Phân hệ iOS**: Dương Hải Đăng (MSSV: 49.01.103.020)  
-> **Giảng viên hướng dẫn**: ThS. Trịnh Huy Hoàng  
+> **Phiên bản tài liệu**: 1.2.0 (Cập nhật phạm vi đề tài Android On-Device)  
+> **Sinh viên thực hiện**: **DƯƠNG HẢI ĐĂNG** (MSSV: **49.01.103.020**)  
+> **Giảng viên hướng dẫn**: **ThS. Trịnh Huy Hoàng**  
+> **Đề tài**: “Phát triển ứng dụng chẩn đoán ung thư phổi trên thiết bị di động”  
+> **Trọng tâm thực hành**: Xây dựng ứng dụng Android trên máy tính Windows với On-Device AI (ONNX Runtime + LiteRT) và Firebase. Tài liệu iOS được lưu trữ làm tài liệu tham khảo mở rộng.
 > **Đối tượng người học mục tiêu**: Người học đã nắm kiến thức C++ cơ bản và một ít Python; **chưa từng biết** JavaScript, TypeScript, React, React Native, Kotlin, Swift, SQL hay các công cụ build di động.
 > **Hiện trạng**: Tài liệu Word/PDF xuất bản hiện tại đạt 68 trang (Android) và 55 trang (iOS), đóng vai trò bản thảo thực hành các mốc cốt lõi ban đầu và đang tiếp tục được bổ sung tuần tự song song với việc hoàn thiện ứng dụng.
 

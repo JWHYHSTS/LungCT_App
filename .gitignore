@@ -4,6 +4,7 @@
 node_modules/
 .pnp
 .pnp.js
+LungCT_Drive_Upload/
 
 # Python virtual environment & cache
 venv/
@@ -25,13 +26,6 @@ mobile/android/build/
 mobile/android/app/build/
 *.keystore
 !mobile/android/app/debug.keystore
-
-# iOS
-mobile/ios/Pods/
-mobile/ios/build/
-*.xcworkspace/xcuserdata/
-*.xcodeproj/xcuserdata/
-DerivedData/
 
 # Metro & Bundler
 .metro/
@@ -84,11 +78,8 @@ desktop.ini
 # Build artifacts & Packaging outputs
 dist/
 build/
-backend/build/
-backend/dist/
 release/android/*.apk
 release/android/*.aab
-release/ios/*.ipa
 mobile/release/
 *.apk
 *.xml

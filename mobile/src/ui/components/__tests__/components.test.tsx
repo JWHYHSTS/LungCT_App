@@ -455,11 +455,11 @@ describe('Thư viện Component lõi đợt 1 (UI-03)', () => {
       // 1. Kiểm tra cấu trúc Modal và onRequestClose (Android Back)
       expect(destructiveDialog.props.onRequestClose).toBe(onCancelMock);
 
-      // Pressable scrim -> dialogContainer -> children: [title, body, actionsRow]
-      const scrim = destructiveDialog.props.children;
-      expect(scrim.props.onPress).toBe(onCancelMock);
+      // Modal -> scrim wrapper -> [backdrop Pressable, dialogContainer View]
+      const scrimWrapper = destructiveDialog.props.children;
+      const [backdropPressable, dialogContainer] = scrimWrapper.props.children;
+      expect(backdropPressable.props.onPress).toBe(onCancelMock);
 
-      const dialogContainer = scrim.props.children;
       const actionsRow = dialogContainer.props.children[2];
       const [cancelBtn, confirmBtn] = actionsRow.props.children;
 

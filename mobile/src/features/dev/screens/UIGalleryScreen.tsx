@@ -52,7 +52,7 @@ export const UIGalleryScreen: React.FC = () => {
 
   // Trạng thái thử nghiệm các component đợt 1
   const [searchValue, setSearchValue] = useState('');
-  const [textFieldVal, setTextFieldVal] = useState('Dương Thị Thu Diểm');
+  const [textFieldVal, setTextFieldVal] = useState('Dương Hải Đăng');
   const [selectedChip, setSelectedChip] = useState('all');
   const [activeTab, setActiveTab] = useState('home');
   const [btnLoading, setBtnLoading] = useState(false);
