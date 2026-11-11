@@ -122,14 +122,9 @@ graph TD
 - [ ] **4.2 Xây dựng Native Module iOS (Swift / Objective-C++)**
   - *Trạng thái*: Chưa làm.
   - *Phần còn thiếu*: Triển khai cầu nối Native Module tương đương `LungCtPipelineModule` cho iOS, quản lý luồng ảnh qua CoreGraphics/vImage với thuật toán Nearest Resampling tương thích.
-- [ ] **4.3 Cấu hình quyền truy cập và Document/Photo Picker trên iOS**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Cấu hình `Info.plist` (quyền Photos/Camera), xử lý mở `PHPickerViewController` hoặc `UIDocumentPickerViewController` cho phép bác sĩ chọn ảnh CT bất kỳ từ iPhone/iCloud.
-- [ ] **4.4 Kiểm thử trên iOS Simulator**
-  - *Trạng thái*: Chưa làm (Yêu cầu môi trường macOS + Xcode).
-- [ ] **4.5 Kiểm thử trên thiết bị vật lý iPhone thật**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Đo đạc thời gian suy luận (latency), tiêu thụ RAM đỉnh trên chip Apple A-series và lưu trữ minh chứng vào `reports/ios/`.
+- [x] **4.3 Cấu hình quyền truy cập và Document/Photo Picker trên Android**
+  - *Căn cứ*: `mobile/android/app/src/main/AndroidManifest.xml`, xử lý mở Picker cho phép bác sĩ chọn ảnh CT bất kỳ từ thiết bị Android.
+  - *Minh chứng*: Đã kiểm thử thành công trên Redmi Note 12 Turbo.
 
 ---
 
@@ -259,21 +254,15 @@ graph TD
 
 ---
 
-### GIAI ĐOẠN 9: ĐÓNG GÓI, NGHIỆM THU & ĐỒNG BỘ HAI BÁO CÁO KHÓA LUẬN
+### GIAI ĐOẠN 9: ĐÓNG GÓI, NGHIỆM THU & CẬP NHẬT BÁO CÁO KHÓA LUẬN
 
 - [ ] **9.1 Đóng gói bộ cài đặt Android Release (APK & AAB)**
-  - *Trạng thái*: Đã sinh thử nghiệm `app-release.apk` (534 MB). Cần tối ưu loại bỏ file thừa, kiểm tra lại cờ ProGuard/R8.
-- [ ] **9.2 Đóng gói bộ cài đặt iOS Release (IPA / TestFlight)**
-  - *Trạng thái*: Chưa làm.
-- [ ] **9.3 Cập nhật Báo cáo Khóa luận Phân hệ Android (`reports/android/`) — ĐANG SOẠN THẢO**
+  - *Trạng thái*: Đã sinh thử nghiệm `app-release.apk` và APK v1.0.5 độc lập. Cần tối ưu loại bỏ file thừa, kiểm tra lại cờ ProGuard/R8.
+- [ ] **9.2 Cập nhật Báo cáo Khóa luận Phân hệ Android (`reports/android/`) — ĐANG SOẠN THẢO**
   - *Căn cứ*: Bản thảo khóa luận tại [`reports/android/khoa-luan-android.md`](../../reports/android/khoa-luan-android.md) và Bảng đối chiếu đề cương tại [`docs/learning/bang-doi-chieu-de-cuong-kltn.md`](bang-doi-chieu-de-cuong-kltn.md).
-  - *Trạng thái*: **Đang phát triển theo cấu trúc 5 chương chuẩn của Đề cương chi tiết đã duyệt** (Mở đầu, Chương 1 Tổng quan tình hình nghiên cứu, Chương 2 Cơ sở lý thuyết và nền tảng công nghệ, Chương 3 Phân tích và thiết kế hệ thống, Chương 4 Cài đặt thực nghiệm và đánh giá, Chương 5 Kết luận và hướng phát triển). Đã tích hợp đề xuất nâng cấp On-Device Edge AI, phân định rõ chức năng ngoại tuyến (AI chẩn đoán On-Device, lưu trữ cục bộ) và trực tuyến (xác thực, đồng bộ đám mây qua FastAPI/Firebase).
-  - *Phần còn thiếu*: Tiếp tục cập nhật số liệu đo kiểm thực tế trên thiết bị vật lý Xiaomi Redmi 13 và xin ý kiến GVHD (ThS. Trịnh Huy Hoàng) về các điểm điều chỉnh đề xuất.
-- [ ] **9.4 Cập nhật Báo cáo Khóa luận Phân hệ iOS (`reports/ios/`) — ĐANG SOẠN THẢO**
-  - *Căn cứ*: Bản thảo khóa luận tại [`reports/ios/khoa-luan-ios.md`](../../reports/ios/khoa-luan-ios.md) và Bảng đối chiếu đề cương tại [`docs/learning/bang-doi-chieu-de-cuong-kltn.md`](bang-doi-chieu-de-cuong-kltn.md).
-  - *Trạng thái*: **Đang phát triển theo cấu trúc 5 chương chuẩn của Đề cương chi tiết đã duyệt**, làm rõ các đặc thù công nghệ Apple (Apple Neural Engine, CoreML, iOS Keychain & Secure Enclave, tuân thủ Apple HIG, so sánh với Android).
-  - *Phần còn thiếu*: Tiếp tục cập nhật số đo thực nghiệm khi biên dịch bản build IPA trên macOS/Xcode và thử nghiệm trên thiết bị iPhone thật.
-- [ ] **9.5 Nghiệm thu tổng thể & Bàn giao sản phẩm độc lập cho Hội đồng**
+  - *Trạng thái*: **Đang phát triển theo cấu trúc 5 chương chuẩn của Đề cương chi tiết đã duyệt** (Mở đầu, Chương 1 Tổng quan tình hình nghiên cứu, Chương 2 Cơ sở lý thuyết và nền tảng công nghệ, Chương 3 Phân tích và thiết kế hệ thống, Chương 4 Cài đặt thực nghiệm và đánh giá, Chương 5 Kết luận và hướng phát triển). Đã tích hợp kiến trúc On-Device Edge AI thuần túy (AI chẩn đoán On-Device, lưu trữ cục bộ SQLite mã hóa) và trực tuyến (xác thực, đồng bộ đám mây qua Firebase).
+  - *Phần còn thiếu*: Tiếp tục cập nhật số liệu đo kiểm thực tế trên thiết bị vật lý Redmi Note 12 Turbo và xin ý kiến GVHD (ThS. Trịnh Huy Hoàng) về các điểm điều chỉnh đề xuất.
+- [ ] **9.3 Nghiệm thu tổng thể & Bàn giao sản phẩm độc lập cho Hội đồng**
   - *Trạng thái*: Chưa làm.
 
 ---

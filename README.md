@@ -1,6 +1,7 @@
 # Dự Án Khóa Luận Tốt Nghiệp: Ứng Dụng Chẩn Đoán Ung Thư Phổi Trên Thiết Bị Di Động (LungCT)
 
 > **Thông tin đề tài khóa luận**:
+>
 > - **Tên đề tài**: Phát triển ứng dụng chẩn đoán ung thư phổi trên thiết bị di động
 > - **Sinh viên thực hiện**: **DƯƠNG HẢI ĐĂNG** — MSSV: **49.01.103.020**
 > - **Ngành đào tạo**: Sư phạm Tin học (Khóa 49, Niên khóa 2026 – 2027) — Trường Đại học Sư phạm Thành phố Hồ Chí Minh
@@ -11,7 +12,9 @@
 ---
 
 ## 1. Giới thiệu tổng quan
+
 Dự án khóa luận **LungCT** tập trung vào việc nghiên cứu, xây dựng và đánh giá ứng dụng di động hỗ trợ chẩn đoán ung thư phổi từ ảnh chụp cắt lớp vi tính lồng ngực (Chest CT) với 3 phân lớp mục tiêu:
+
 1. **Benign** (Tổn thương lành tính)
 2. **Malignant** (Tổn thương ác tính / Ung thư phổi)
 3. **Normal** (Nhu mô phổi bình thường)
@@ -23,6 +26,7 @@ Hệ thống triển khai mô hình học sâu lai kết hợp cơ chế chú ý
 ## 2. Kiến trúc giải pháp & Phạm vi triển khai
 
 Hệ thống được thiết kế theo kiến trúc **On-Device Edge AI kết hợp Dịch vụ Đám mây (Firebase)**:
+
 - **Tầng ứng dụng di động Android (React Native + TypeScript)**:
   - Giao diện người dùng sạch sẽ, tuân thủ Design System y tế với 48 icon đồ họa chuẩn từ `LungCT-Icons/`.
   - Nghiệp vụ dành cho hai tác nhân: **Bác sĩ** (quản lý bệnh nhân, ca bệnh, chụp/chọn ảnh CT, xem kết quả phân loại, xuất phiếu PDF) và **Quản trị viên** (quản lý tài khoản, phân quyền, thống kê).
@@ -36,8 +40,6 @@ Hệ thống được thiết kế theo kiến trúc **On-Device Edge AI kết h
   - **Cloud Firestore**: Đồng bộ danh mục bệnh nhân, ca chẩn đoán và quản lý trạng thái tài khoản.
   - **Cloud Storage**: Lưu trữ an toàn ảnh hồ sơ và phiếu báo cáo khi người dùng trực tuyến.
   - **Firebase Cloud Messaging**: Gửi thông báo đẩy về các sự kiện ca bệnh và trạng thái tài khoản.
-- **Kế thừa & Lưu trữ tài liệu cũ**:
-  - Toàn bộ tài liệu, cấu hình nghiên cứu phân hệ iOS trước đây được chuyển vào khu vực lưu trữ tham khảo (`reports/ios/`), bảo toàn nguyên trạng ghi nhận đóng góp lịch sử. Dự án hiện tại tập trung toàn diện vào nền tảng Android.
 
 ---
 
@@ -52,7 +54,7 @@ LungCT_App/
 ├── mobile/                 # Mã nguồn ứng dụng di động Android (React Native + TypeScript)
 │   ├── android/            # Thư mục build native Android
 │   ├── native-templates/   # Bản mẫu cấu hình & mã nguồn native Kotlin bảo toàn trong Git
-│   ├── assets/             # Biểu tượng, phông chữ và tài nguyên đồ họa
+│   ├── assets/             # Biểu tượng, phông chữ và tài nguyên đồ họa (icon chính thức)
 │   └── src/                # Mã nguồn logic, giao diện, dịch vụ và kiểm thử
 │
 ├── ai/                     # Nghiên cứu mô hình, chuyển đổi & đánh giá AI
@@ -71,8 +73,7 @@ LungCT_App/
 │   └── learning/           # Hướng dẫn tự code, bảng đối chiếu đề cương, ghi chú kỹ thuật
 │
 ├── reports/                # Báo cáo khóa luận tốt nghiệp
-│   ├── android/            # Báo cáo khóa luận 5 chương của Dương Hải Đăng
-│   └── ios/                # Khu vực lưu trữ tài liệu tham khảo phân hệ iOS cũ
+│   └── android/            # Báo cáo khóa luận 5 chương của Dương Hải Đăng
 │
 ├── tests/                  # Bộ mã kiểm thử tự động (Unit test, Integration test)
 ├── evidence/               # Minh chứng kiểm thử thực tế và số đo thực nghiệm
@@ -84,6 +85,7 @@ LungCT_App/
 ## 4. Phân biệt các tầng mô hình AI
 
 Dự án phân biệt rạch ròi 3 trạng thái của mô hình để đảm bảo tính toàn vẹn nghiên cứu và tối ưu hiệu năng:
+
 1. **Gói mô hình nguồn (`ai/models/source/`)**:
    - Lưu trữ các tệp `.zip` và mã băm xác thực `.sha256` nguyên bản thu được từ Colab/nghiên cứu.
    - Luôn giữ nguyên tệp gốc để đối chiếu, không chỉnh sửa trực tiếp bên trong.
@@ -98,6 +100,7 @@ Dự án phân biệt rạch ròi 3 trạng thái của mô hình để đảm b
 ---
 
 ## 5. Nguyên tắc độc lập và cô lập dự án
+
 - `LungCT_DoAn` là dự án độc lập, hoàn chỉnh, tự chứa đựng đầy đủ thành phần cần thiết để xây dựng, vận hành, kiểm thử và bàn giao.
 - Không chứa bất kỳ liên kết, đường dẫn tương đối, symlink hay phụ thuộc nào sang thư mục làm việc riêng bên ngoài (`LungCT_LamViecRieng`).
 - Mọi hướng dẫn phát triển và quy tắc cốt lõi được lưu trữ tại [`AGENTS.md`](AGENTS.md).
@@ -105,9 +108,11 @@ Dự án phân biệt rạch ròi 3 trạng thái của mô hình để đảm b
 ---
 
 ## 6. Trạng thái tiếp nhận tài nguyên thực tế
+
 Dự án đã hoàn tất việc **tiếp nhận và kiểm kê tài nguyên đầu vào**. Chi tiết đối chiếu kỹ thuật được ghi nhận tại [`docs/requirements/TiepNhan_DauVao.md`](docs/requirements/TiepNhan_DauVao.md).
 
 ### Hiện trạng tài nguyên đã có trong đồ án:
+
 1. **Sơ đồ kiến trúc & pipeline**: Đã tiếp nhận đầy đủ tại [`docs/architecture/`](docs/architecture/) gồm `LungCT_KienTruc.drawio` (4 trang) và `LungCT_Pipeline.drawio` (5 trang).
 2. **Notebook nghiên cứu**: Đã tiếp nhận `LungCT_Reproduction_Improved.ipynb` tại [`ai/notebooks/`](ai/notebooks/) (chứa 49 cell tái lập và cải tiến mô hình).
 3. **Mô hình nguồn chính (Primary FP32)**: Đã tiếp nhận `LungCT_Primary_20261024T050904_329781Z.zip` (923 MB) kèm tệp xác thực `.sha256` khớp mã băm tuyệt đối tại [`ai/models/source/primary/`](ai/models/source/primary/).
@@ -116,10 +121,10 @@ Dự án đã hoàn tất việc **tiếp nhận và kiểm kê tài nguyên đ�
 6. **Biên bản tiếp nhận kỹ thuật**: Đã tạo [`docs/requirements/TiepNhan_DauVao.md`](docs/requirements/TiepNhan_DauVao.md).
 
 ### Các hạng mục sẽ được bổ sung và xây dựng ở bước tiếp theo:
+
 - **Đặc tả chức năng toàn diện (`LumaCT_DacTa`)**: Sẽ tiếp nhận và cập nhật vào `docs/requirements/` khi người dùng cung cấp.
-- **Đề cương và Hai báo cáo khóa luận**: Thư mục `reports/android/` và `reports/ios/` sẽ tiếp nhận bản thảo báo cáo để cập nhật trực tiếp nội dung đóng góp của từng nền tảng qua mỗi lệnh phát triển.
+- **Bản thảo khóa luận**: Thư mục `reports/android/` lưu trữ bản thảo khóa luận 5 chương của Dương Hải Đăng theo đề cương chi tiết đã duyệt.
 - **Tài liệu tham khảo chính thức**: Đặt tại `docs/references/`.
 
 > [!IMPORTANT]
 > Việc chưa có đặc tả ứng dụng toàn diện và hai báo cáo ở bước này là bình thường và không coi là lỗi. Đồ án hoạt động hoàn toàn độc lập, không có bất kỳ phụ thuộc nào sang thư mục làm việc riêng `LungCT_LamViecRieng`.
-
