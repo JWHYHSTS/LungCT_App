@@ -35,8 +35,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const { t, i18n } = useTranslation();
   const { login, isOnline, setIsOnline } = useAuth();
 
-  const [email, setEmail] = useState('bs.an@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -208,7 +208,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               setEmail(txt);
               setGeneralError(null);
             }}
-            placeholder="bs.an@example.com"
+            placeholder="bs.haidang@lungct.vn"
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
