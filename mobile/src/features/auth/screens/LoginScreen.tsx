@@ -56,16 +56,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setGeneralError(null);
 
     try {
-      // Giả lập độ trễ mạng
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const result = await login(email);
+      const result = await login(email, password);
 
       if (!result.success) {
         if (result.status === 'pending' || result.status === 'locked') {
           onNavigateToAccountStatus(result.status);
         } else {
-          setGeneralError(t('ui.email_hoac_mat_khau_khong_ung', 'Email hoặc mật khẩu không đúng'));
+          setGeneralError(result.error || t('ui.email_hoac_mat_khau_khong_ung', 'Email hoặc mật khẩu không đúng'));
         }
       }
     } catch {

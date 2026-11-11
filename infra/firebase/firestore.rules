@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Hàm tiện ích kiểm tra xác thực
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Hàm lấy thông tin tài khoản hiện tại từ bộ sưu tập users
+    function getCurrentUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Kiểm tra người dùng có quyền Quản trị viên (admin)
+    function isAdmin() {
+      return isAuthenticated() && getCurrentUserData().role == 'admin' && getCurrentUserData().status == 'active';
+    }
+
+    // Kiểm tra bác sĩ đang hoạt động (active)
+    function isActiveDoctor() {
+      return isAuthenticated() && getCurrentUserData().status == 'active';
+    }
+
+    // 1. Quản lý tài khoản người dùng (/users/{userId})
+    match /users/{userId} {
+      // Người dùng được đọc thông tin của chính mình; Quản trị viên được đọc toàn bộ danh sách
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+
+      // Tạo tài khoản mới: Cho phép tạo hồ sơ đăng ký bác sĩ với trạng thái 'pending' (chờ duyệt).
+      // Không phụ thuộc vào độ trễ đồng bộ token của request.auth trên client di động.
+      allow create: if request.resource.data.role == 'doctor'
+                    && request.resource.data.status == 'pending';
+
+      // Cập nhật thông tin:
+      // - Bác sĩ tự sửa thông tin cá nhân (họ tên, đơn vị, chuyên khoa), KHÔNG được tự ý nâng cấp vai trò hay sửa trạng thái duyệt
+      // - Quản trị viên có toàn quyền duyệt tài khoản (đổi status thành 'active' hoặc 'locked')
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId
+         && request.resource.data.role == resource.data.role
+         && request.resource.data.status == resource.data.status)
+        || isAdmin()
+      );
+
+      // Chỉ Quản trị viên mới được xóa tài khoản
+      allow delete: if isAdmin();
+    }
+
+    // 2. Hồ sơ bệnh nhân (/patients/{patientId})
+    match /patients/{patientId} {
+      allow read: if isActiveDoctor() || isAdmin();
+      allow create, update: if isActiveDoctor() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 3. Hồ sơ ca bệnh / kết quả phân tích AI (/cases/{caseId})
+    match /cases/{caseId} {
+      allow read: if isActiveDoctor() || isAdmin();
+      // Bác sĩ chỉ tạo và cập nhật ca bệnh do chính mình phụ trách
+      allow create: if isActiveDoctor() && request.resource.data.doctorId == request.auth.uid;
+      allow update: if (isActiveDoctor() && resource.data.doctorId == request.auth.uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
+

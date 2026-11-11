@@ -58,30 +58,36 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
   const { colors, spacing } = theme;
   const { t } = useTranslation();
   const { isOnline, user } = useAuth();
-  const ownerId = user?.id || 'usr-doc-01';
+  const ownerId = user?.id || '';
 
   const [isLoading] = useState(isLoadingInitial);
   const [isEmpty] = useState(isEmptyInitial);
   const [isModelError] = useState(isModelErrorInitial);
   const [isSelectPatientSheetVisible, setIsSelectPatientSheetVisible] = useState(false);
 
-  const [casesList, setCasesList] = useState<MockCase[]>(() => getMockCases());
-  const [patientsList, setPatientsList] = useState<MockPatient[]>(() => getMockPatients());
+  const [casesList, setCasesList] = useState<MockCase[]>([]);
+  const [patientsList, setPatientsList] = useState<MockPatient[]>([]);
 
-  // Nạp dữ liệu ca bệnh và bệnh nhân trực tiếp từ Kho lưu trữ mã hóa cục bộ
+  // Nạp dữ liệu ca bệnh và bệnh nhân trực tiếp từ Kho lưu trữ mã hóa cục bộ theo ownerId (Firebase UID)
   React.useEffect(() => {
     let isMounted = true;
+
+    if (!ownerId) {
+      setCasesList([]);
+      setPatientsList([]);
+      return;
+    }
 
     const loadRealStorageData = async () => {
       try {
         const storedPatients = await PatientRepository.getPatientsForUI(ownerId, false);
-        if (isMounted && storedPatients && storedPatients.length > 0) {
-          setPatientsList(storedPatients);
+        if (isMounted) {
+          setPatientsList(storedPatients || []);
         }
 
         const storedCases = await CaseRepository.getCasesForUI(ownerId, undefined, false);
-        if (isMounted && storedCases && storedCases.length > 0) {
-          setCasesList(storedCases);
+        if (isMounted) {
+          setCasesList(storedCases || []);
         }
       } catch (err) {
         console.warn('[DoctorHomeScreen] Lỗi đọc dữ liệu từ kho lưu trữ mã hóa:', err);
@@ -90,14 +96,11 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
 
     loadRealStorageData();
 
-    // Lắng nghe thay đổi từ cả PatientRepository, CaseRepository và Mock Store
+    // Lắng nghe thay đổi từ cả PatientRepository và CaseRepository
     const unsubPatientRepo = subscribePatientRepository(() => {
       loadRealStorageData();
     });
     const unsubCaseRepo = subscribeCaseRepository(() => {
-      loadRealStorageData();
-    });
-    const unsubMockStore = subscribeDoctorStore(() => {
       loadRealStorageData();
     });
 
@@ -105,7 +108,6 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
       isMounted = false;
       unsubPatientRepo();
       unsubCaseRepo();
-      unsubMockStore();
     };
   }, [ownerId]);
 
@@ -133,10 +135,12 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
     : casesList.filter((c) => c.status === 'COMPLETED').length;
   const recentPatients = isEmpty ? [] : patientsList.slice(0, 3);
 
+  const greetingName = user?.fullName || 'Bác sĩ';
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg.app }]}>
       <TopBar
-        title={t('ui.xin_chao_bs_an', 'Xin chào, BS. An')}
+        title={`Xin chào, ${greetingName}`}
         type="root"
         rightActions={
           <View style={styles.topBarActions}>

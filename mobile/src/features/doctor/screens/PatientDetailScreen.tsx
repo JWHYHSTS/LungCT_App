@@ -54,7 +54,7 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
   const { user } = useAuth();
-  const ownerId = user?.id || 'usr-doc-01';
+  const ownerId = user?.id || '';
 
   const [patient, setPatient] = useState<MockPatient | undefined>(() => findPatientById(patientId));
   const [cases, setCases] = useState(() => getCasesByPatientId(patientId));

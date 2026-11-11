@@ -48,7 +48,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
   const { user } = useAuth();
-  const ownerId = user?.id || 'usr-doc-01';
+  const ownerId = user?.id || '';
 
   const [currentCase, setCurrentCase] = useState<MockCase | undefined>(() => findCaseById(caseId));
   const [notesText, setNotesText] = useState(currentCase?.notes ?? '');

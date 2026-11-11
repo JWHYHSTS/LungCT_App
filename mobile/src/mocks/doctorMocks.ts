@@ -85,7 +85,7 @@ export interface MockStatsData {
     imageUnit: 'ảnh';
     syncFormulaNote: string;
   };
-  isMock: true;
+  isMock: boolean;
 }
 
 export interface MockDoctorProfile {

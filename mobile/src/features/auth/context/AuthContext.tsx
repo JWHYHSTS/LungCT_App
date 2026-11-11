@@ -1,4 +1,13 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, firestore } from '../../../services/firebase/firebaseConfig';
+import {
+  firebaseLogin,
+  firebaseRegisterDoctor,
+  firebaseLogout,
+  RegisterDoctorParams,
+} from '../../../services/firebase/authService';
 import { resetDoctorStore } from '../../../mocks/doctorMocks';
 
 export type UserRole = 'doctor' | 'admin';
@@ -19,21 +28,20 @@ export interface AuthContextType {
   isOnline: boolean;
   setIsOnline: (val: boolean) => void;
   /**
-   * Đăng nhập giả lập để demo UI (UI-05).
-   * TODO(AUTH-02): Thay thế bằng xác thực thật qua backend JWT / Keystore.
+   * Đăng nhập người dùng qua Firebase Authentication & Cloud Firestore.
+   * Phân quyền thực tế và trạng thái phê duyệt (active/pending/locked)
+   * được kiểm soát nghiêm ngặt từ Firestore; không gán admin theo từ khóa email.
    */
-  login: (email: string) => Promise<{ success: boolean; status?: 'active' | 'pending' | 'locked' }>;
-  logout: () => void;
+  login: (
+    email: string,
+    password?: string,
+  ) => Promise<{ success: boolean; status?: 'active' | 'pending' | 'locked'; error?: string }>;
+  logout: () => Promise<void>;
   /**
-   * Đăng ký tài khoản bác sĩ giả lập.
-   * Chuyển trạng thái sang PENDING (Chờ duyệt).
+   * Đăng ký tài khoản bác sĩ mới trên Firebase Authentication.
+   * Trạng thái ban đầu bắt buộc là 'pending' (Chờ duyệt) theo đặc tả SCR-A04.
    */
-  registerDoctor: (data: {
-    fullName: string;
-    email: string;
-    workplace: string;
-    specialty: string;
-  }) => Promise<{ success: boolean }>;
+  registerDoctor: (data: RegisterDoctorParams) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,51 +50,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(true);
 
-  // TODO(AUTH-02): Triển khai xác thực thật qua AuthService / SecureStore.
-  const login = async (email: string) => {
-    const trimmed = email.trim().toLowerCase();
+  // Lắng nghe trạng thái phiên đăng nhập Firebase khi khởi chạy app
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (!fbUser) {
+        setUser(null);
+        return;
+      }
 
-    // Giả lập trạng thái tài khoản theo đặc tả UI-05
-    if (trimmed.includes('pending')) {
-      return { success: false, status: 'pending' as const };
-    }
-    if (trimmed.includes('locked')) {
-      return { success: false, status: 'locked' as const };
+      try {
+        const userDocRef = doc(firestore, 'users', fbUser.uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (userSnap.exists()) {
+          const docData = userSnap.data();
+          const role: UserRole = docData.role === 'admin' ? 'admin' : 'doctor';
+          const status: 'active' | 'pending' | 'locked' =
+            docData.status === 'locked'
+              ? 'locked'
+              : docData.status === 'pending'
+                ? 'pending'
+                : 'active';
+
+          if (status === 'active') {
+            setUser({
+              id: fbUser.uid,
+              email: fbUser.email || '',
+              fullName: docData.fullName || fbUser.displayName || 'Bác sĩ',
+              role,
+              workplace: docData.workplace,
+              specialty: docData.specialty,
+              status: 'active',
+            });
+            return;
+          }
+        }
+        // Nếu chưa được duyệt hoặc bị khóa, không duy trì phiên hoạt động
+        await firebaseLogout();
+        setUser(null);
+      } catch {
+        // Lỗi kết nối đám mây, giữ nguyên trạng thái phiên hiện tại
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (email: string, password?: string) => {
+    if (!isOnline) {
+      return {
+        success: false,
+        error: 'Thiết bị đang ở chế độ ngoại tuyến. Vui lòng kết nối Internet để xác thực tài khoản.',
+      };
     }
 
-    // QUY TẮC MÔ PHỎNG (MOCK DEMO ONLY):
-    // Phân quyền theo từ khóa email chỉ dùng tạm trong môi trường phát triển (UI-05) để phục vụ kiểm thử hai giao diện.
-    // TUYỆT ĐỐI KHÔNG dùng quy tắc email.includes('admin') trong backend/xác thực thật (AUTH-02);
-    // vai trò người dùng trong hệ thống thật sẽ do Backend API trả về thông qua JWT claim / database role.
-    const role: UserRole = trimmed.includes('admin') ? 'admin' : 'doctor';
-    const profile: UserProfile = {
-      id: trimmed.includes('admin') ? 'usr-admin-01' : 'usr-doc-01',
-      email: trimmed,
-      fullName: trimmed.includes('admin') ? 'Quản trị viên' : 'BS. Nguyễn Minh An',
-      role,
-      workplace: 'Bệnh viện Thực hành A',
-      specialty: 'Chẩn đoán hình ảnh',
-      status: 'active',
+    const res = await firebaseLogin(email, password);
+    if (res.success && res.profile) {
+      setUser(res.profile);
+      return { success: true, status: 'active' as const };
+    }
+
+    return {
+      success: false,
+      status: res.status,
+      error: res.error,
     };
-
-    setUser(profile);
-    return { success: true, status: 'active' as const };
   };
 
-  const logout = () => {
-    // Đảm bảo không lộ dữ liệu phiên mô phỏng của tài khoản trước
-    resetDoctorStore();
-    setUser(null);
+  const logout = async () => {
+    try {
+      await firebaseLogout();
+    } finally {
+      resetDoctorStore();
+      setUser(null);
+    }
   };
 
-  const registerDoctor = async (data: {
-    fullName: string;
-    email: string;
-    workplace: string;
-    specialty: string;
-  }) => {
-    // Demo chuyển sang chờ duyệt (SCR-A04)
-    return { success: true };
+  const registerDoctor = async (data: RegisterDoctorParams) => {
+    if (!isOnline) {
+      return {
+        success: false,
+        error: 'Thiết bị đang ở chế độ ngoại tuyến. Không thể đăng ký tài khoản mới.',
+      };
+    }
+
+    const res = await firebaseRegisterDoctor(data);
+    return {
+      success: res.success,
+      error: res.error,
+    };
   };
 
   return (

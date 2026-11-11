@@ -19,6 +19,7 @@ import {
   type AdminDoctorAccount,
   type DoctorAccountStatus,
 } from '../../../mocks/adminMocks';
+import { subscribeDoctorAccounts } from '../../../services/firebase/adminService';
 import { useAuth } from '../../auth/context/AuthContext';
 
 export interface AdminAccountsScreenProps {
@@ -41,14 +42,21 @@ export const AdminAccountsScreen: React.FC<AdminAccountsScreenProps> = ({ onNavi
   const { colors, spacing, radius } = theme;
   const { isOnline } = useAuth();
 
-  const [doctors, setDoctors] = useState<AdminDoctorAccount[]>(getAdminDoctors);
+  const [doctors, setDoctors] = useState<AdminDoctorAccount[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<FilterKey>('pending');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
-    const unsubscribe = subscribeAdminStore(() => {
-      setDoctors(getAdminDoctors());
-    });
+    // Lắng nghe dữ liệu thật từ Cloud Firestore theo thời gian thực
+    const unsubscribe = subscribeDoctorAccounts(
+      (firestoreDoctors) => {
+        setDoctors(firestoreDoctors);
+      },
+      (err) => {
+        // Fallback local mock nếu offline hoặc gặp lỗi
+        setDoctors(getAdminDoctors());
+      },
+    );
     return unsubscribe;
   }, []);
 

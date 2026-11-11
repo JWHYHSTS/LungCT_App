@@ -22,6 +22,11 @@ import {
   type AdminAuditLog,
   type AdminDoctorAccount,
 } from '../../../mocks/adminMocks';
+import {
+  approveDoctorInFirestore,
+  getDoctorAccountById,
+  lockDoctorInFirestore,
+} from '../../../services/firebase/adminService';
 import { useAuth } from '../../auth/context/AuthContext';
 
 export interface AdminAccountDetailScreenProps {
@@ -62,11 +67,22 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    // Tải dữ liệu thật từ Cloud Firestore
+    let isMounted = true;
+    getDoctorAccountById(accountId).then((docData) => {
+      if (isMounted && docData) {
+        setAccount(docData);
+      }
+    });
+
     const unsubscribe = subscribeAdminStore(() => {
-      setAccount(findAdminDoctorById(accountId));
+      setAccount((prev) => prev || findAdminDoctorById(accountId));
       setAuditLogs(getAuditLogsForDoctor(accountId));
     });
-    return unsubscribe;
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [accountId]);
 
   if (!account) {
@@ -90,12 +106,19 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
     );
   }
 
-  const handleConfirmApprove = () => {
+  const handleConfirmApprove = async () => {
     if (!isOnline || isSubmitting) return;
     setIsSubmitting(true);
     setShowApproveDialog(false);
-    approveDoctorAccount(account.id);
-    setIsSubmitting(false);
+    try {
+      await approveDoctorInFirestore(account.id);
+      setAccount((prev) => (prev ? { ...prev, status: 'active' } : prev));
+      approveDoctorAccount(account.id);
+    } catch (err) {
+      console.error('[AdminAccountDetail] approve error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenLockDialog = () => {
@@ -111,7 +134,7 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
     setShowLockDialog(false);
   };
 
-  const handleConfirmLock = () => {
+  const handleConfirmLock = async () => {
     if (!isOnline || isSubmitting) return;
     const trimmed = lockReason.trim();
     if (!trimmed) {
@@ -121,11 +144,18 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
       return;
     }
     setIsSubmitting(true);
-    lockDoctorAccount(account.id, trimmed);
-    setShowLockDialog(false);
-    setLockReason('');
-    setLockError(null);
-    setIsSubmitting(false);
+    try {
+      await lockDoctorInFirestore(account.id, trimmed);
+      setAccount((prev) => (prev ? { ...prev, status: 'locked' } : prev));
+      lockDoctorAccount(account.id, trimmed);
+    } catch (err) {
+      console.error('[AdminAccountDetail] lock error:', err);
+    } finally {
+      setShowLockDialog(false);
+      setLockReason('');
+      setLockError(null);
+      setIsSubmitting(false);
+    }
   };
 
   const isLockSubmitDisabled = !lockReason.trim() || !isOnline || isSubmitting;

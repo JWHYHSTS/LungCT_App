@@ -15,7 +15,14 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
   const { t, i18n } = useTranslation();
   const { theme, preference, setPreference } = useTheme();
   const { colors, spacing } = theme;
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+
+  const doctorName = user?.fullName || MOCK_DOCTOR_PROFILE.fullName;
+  const doctorEmail = user?.email || MOCK_DOCTOR_PROFILE.email;
+  const doctorWorkplace = user?.workplace || MOCK_DOCTOR_PROFILE.workplace;
+  const doctorSpecialty = user?.specialty || MOCK_DOCTOR_PROFILE.specialty;
+  const doctorRole = user?.role === 'doctor' ? t('ui.bac_si', 'Bác sĩ') : t('ui.quan_tri_vien', 'Quản trị viên');
+  const doctorStatus = user?.status === 'active' ? t('admin.status_active', 'Hoạt động') : user?.status === 'pending' ? t('admin.status_pending', 'Chờ duyệt') : t('admin.status_locked', 'Đã khóa');
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
@@ -66,9 +73,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
           <View style={styles.profileHeaderRow}>
             <Icon name="profile" size={48} color={colors.brand.primary} />
             <View style={styles.profileHeaderInfo}>
-              <AppText variant="titleM">{MOCK_DOCTOR_PROFILE.fullName}</AppText>
+              <AppText variant="titleM">{doctorName}</AppText>
               <AppText variant="bodyS" style={{ color: colors.text.secondary, marginTop: 2 }}>
-                {MOCK_DOCTOR_PROFILE.email}
+                {doctorEmail}
               </AppText>
             </View>
           </View>
@@ -78,9 +85,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
               {t('ui.noi_cong_tac_2', 'Nơi công tác')}
             </AppText>
             <AppText variant="bodyM">
-              {MOCK_DOCTOR_PROFILE.workplace === 'Bệnh viện Thực hành A'
-                ? t('ui.benh_vien_thuc_hanh_a', 'Bệnh viện Thực hành A')
-                : MOCK_DOCTOR_PROFILE.workplace}
+              {doctorWorkplace}
             </AppText>
           </View>
 
@@ -89,9 +94,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
               {t('ui.chuyen_khoa_2', 'Chuyên khoa')}
             </AppText>
             <AppText variant="bodyM">
-              {MOCK_DOCTOR_PROFILE.specialty === 'Chẩn đoán hình ảnh'
-                ? t('ui.chan_oan_hinh_anh', 'Chẩn đoán hình ảnh')
-                : MOCK_DOCTOR_PROFILE.specialty}
+              {doctorSpecialty}
             </AppText>
           </View>
 
@@ -100,19 +103,15 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
               {t('ui.vai_tro', 'Vai trò')}
             </AppText>
             <AppText variant="bodyM">
-              {MOCK_DOCTOR_PROFILE.role === 'Bác sĩ' ? t('ui.bac_si', 'Bác sĩ') : MOCK_DOCTOR_PROFILE.role}
+              {doctorRole}
             </AppText>
           </View>
 
           <View style={[styles.statusBadgeWrapper, { marginTop: spacing.sm }]}>
             <StatusBadge
-              label={
-                MOCK_DOCTOR_PROFILE.status === 'Hoạt động'
-                  ? t('ui.hoat_ong', 'Hoạt động')
-                  : MOCK_DOCTOR_PROFILE.status
-              }
-              tone="success"
-              icon="success"
+              label={doctorStatus}
+              tone={user?.status === 'active' ? 'success' : user?.status === 'pending' ? 'warning' : 'danger'}
+              icon={user?.status === 'active' ? 'success' : user?.status === 'pending' ? 'pending' : 'lock'}
             />
           </View>
         </View>

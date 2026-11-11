@@ -91,25 +91,27 @@ export class PatientRepository {
       this.isInitialized = true;
     }
 
-    // Kiểm tra xem đã có bệnh nhân nào trong storage chưa
-    const existing = await localStorageService.getPatients(ownerId, true);
-    if (existing.length === 0) {
-      // Seed dữ liệu ban đầu cho bác sĩ này từ Mock Store để đảm bảo trải nghiệm offline mượt mà
-      const initialMockPatients = getMockPatients();
-      for (const p of initialMockPatients) {
-        try {
-          const sex = p.gender === 'Nữ' ? 'FEMALE' : p.gender === 'Khác' ? 'OTHER' : 'MALE';
-          await localStorageService.createPatient(ownerId, {
-            patientId: p.id,
-            patientCode: p.code,
-            fullName: p.fullName,
-            dateOfBirth: p.dob,
-            sex,
-            phone: p.phone,
-            symptoms: p.symptoms,
-          });
-        } catch {
-          // Bỏ qua nếu trùng mã
+    // Chỉ seed dữ liệu mẫu cho tài khoản test mock cục bộ 'usr-doc-01'.
+    // Tuyệt đối không tự động seed vào tài khoản thật của bác sĩ (Firebase UID).
+    if (ownerId === 'usr-doc-01') {
+      const existing = await localStorageService.getPatients(ownerId, true);
+      if (existing.length === 0) {
+        const initialMockPatients = getMockPatients();
+        for (const p of initialMockPatients) {
+          try {
+            const sex = p.gender === 'Nữ' ? 'FEMALE' : p.gender === 'Khác' ? 'OTHER' : 'MALE';
+            await localStorageService.createPatient(ownerId, {
+              patientId: p.id,
+              patientCode: p.code,
+              fullName: p.fullName,
+              dateOfBirth: p.dob,
+              sex,
+              phone: p.phone,
+              symptoms: p.symptoms,
+            });
+          } catch {
+            // Bỏ qua nếu trùng mã
+          }
         }
       }
     }

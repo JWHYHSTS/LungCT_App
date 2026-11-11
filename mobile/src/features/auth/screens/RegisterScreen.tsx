@@ -120,8 +120,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
     setIsLoading(true);
     try {
-      await registerDoctor({ fullName, email, workplace, specialty });
-      onNavigateToPendingApproval();
+      const res = await registerDoctor({ fullName, email, password, workplace, specialty });
+      if (res.success) {
+        onNavigateToPendingApproval();
+      } else {
+        setErrors((prev) => ({ ...prev, email: res.error || t('ui.dang_ky_that_bai', 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.') }));
+      }
     } finally {
       setIsLoading(false);
     }

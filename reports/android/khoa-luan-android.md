@@ -46,7 +46,7 @@
   - [3.5 Thiết kế giao diện người dùng](#35-thiết-kế-giao-diện-người-dùng)
 - [CHƯƠNG 4: CÀI ĐẶT, THỰC NGHIỆM VÀ ĐÁNH GIÁ](#chương-4-cài-đặt-thực-nghiệm-và-đánh-giá)
   - [4.1 Môi trường cài đặt và triển khai](#41-môi-trường-cài-đặt-và-triển-khai)
-  - [4.2 Cài đặt máy chủ và các dịch vụ đám mây (FastAPI, Firebase)](#42-cài-đặt-máy-chủ-và-các-dịch-vụ-đám-mây-fastapi-firebase)
+  - [4.2 Cài đặt các dịch vụ đám mây Firebase (Authentication, Firestore, Storage)](#42-cài-đặt-các-dịch-vụ-đám-mây-firebase-authentication-firestore-storage)
   - [4.3 Cài đặt ứng dụng React Native và Tầng suy luận On-Device Android](#43-cài-đặt-ứng-dụng-react-native-và-tầng-suy-luận-on-device-android)
   - [4.4 Cấu hình, đóng gói và phát hành phân hệ Android](#44-cấu-hình-đóng-gói-và-phát-hành-phân-hệ-android)
   - [4.5 Thực nghiệm và đo lường kết quả](#45-thực-nghiệm-và-đo-lường-kết-quả)
@@ -65,7 +65,7 @@ Ung thư phổi hiện là loại ung thư phổ biến hàng đầu và là ngu
 
 Khóa luận này nghiên cứu và phát triển **phân hệ Android** trong giải pháp di động toàn diện **LungCT**, hỗ trợ bác sĩ đánh giá phân loại ảnh CT phổi ngay trên điện thoại thông minh. Dựa trên đề cương đã được phê duyệt, đề tài được nâng cấp về mặt kiến trúc: Chuyển đổi mô hình học sâu lai kết hợp giữa mạng nơ-ron tích chập và biến đổi thị giác **AACNN-ViT Adaptive** sang định dạng tối ưu **ONNX Runtime Mobile (FP32)** kết hợp khối **Fusion LiteRT (FP32)**, cho phép **thực thi suy luận phân loại 3 lớp trực tiếp trên thiết bị (On-Device Edge AI) hoàn toàn ngoại tuyến không cần kết nối mạng Internet**.
 
-Về mặt thực nghiệm kỹ thuật, pipeline suy luận phân loại đã chạy thành công trên máy ảo Android Emulator x86_64 API 34 với thời gian suy luận kỹ thuật đạt ~1.580 ms trong ứng dụng APK và ~1.831 ms trong chương trình native C++ runner (đối với lát cắt CT đối chứng; không gọi là độ trễ lâm sàng). Khóa luận xây dựng hoàn chỉnh giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture (TypeScript), thiết kế tầng lưu trữ cục bộ (Repository Pattern) bảo vệ dữ liệu bằng mã hóa AES-256-GCM sandbox, sẵn sàng định hướng nâng cấp lên SQLite mã hóa (SQLCipher) và Android Keystore, đồng thời kiểm chứng thuật toán bảo toàn dữ liệu nháp AUTH-08 trên Jest. Đối với tính năng Grad-CAM on-device và xuất file PDF vật lý, khóa luận đã hoàn thiện giao diện mô phỏng và đang trong giai đoạn nghiên cứu/triển khai kỹ thuật. Hệ thống phía máy chủ (FastAPI, Firebase) giữ vai trò xác thực danh tính, lưu trữ sao lưu và đồng bộ đám mây khi có kết nối mạng.
+Về mặt thực nghiệm kỹ thuật, pipeline suy luận phân loại đã chạy thành công trên máy ảo Android Emulator x86_64 API 34 với thời gian suy luận kỹ thuật đạt ~1.580 ms trong ứng dụng APK và ~1.831 ms trong chương trình native C++ runner (đối với lát cắt CT đối chứng; không gọi là độ trễ lâm sàng). Khóa luận xây dựng hoàn chỉnh giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture (TypeScript), thiết kế tầng lưu trữ cục bộ (Repository Pattern) bảo vệ dữ liệu bằng mã hóa AES-256-GCM sandbox, sẵn sàng định hướng nâng cấp lên SQLite mã hóa (SQLCipher) và Android Keystore, đồng thời kiểm chứng thuật toán bảo toàn dữ liệu nháp AUTH-08 trên Jest. Đối với tính năng Grad-CAM on-device và xuất file PDF vật lý, khóa luận đã hoàn thiện giao diện mô phỏng và đang trong giai đoạn nghiên cứu/triển khai kỹ thuật. Hệ thống dịch vụ đám mây (Firebase Authentication, Cloud Firestore, Cloud Storage) giữ vai trò xác thực danh tính, lưu trữ sao lưu và đồng bộ đám mây khi có kết nối mạng.
 
 ---
 
@@ -102,7 +102,7 @@ Tuy nhiên, mỗi lần chụp ngực tạo ra hàng trăm lát cắt CT, đòi 
 ### 2. Mục đích nghiên cứu
 
 #### 2.1 Mục tiêu chung
-Xây dựng ứng dụng di động phân hệ Android bằng React Native (TypeScript), hỗ trợ bác sĩ đánh giá phân loại ảnh CT phổi của bệnh nhân, thông qua việc **tích hợp mô hình học sâu AACNN-ViT Adaptive chạy trực tiếp trên thiết bị (On-Device AI)** không phụ thuộc Internet, kết hợp giao diện trực quan hóa bản đồ nhiệt Grad-CAM. Đồng thời, xây dựng hệ thống máy chủ FastAPI và dịch vụ đám mây phục vụ xác thực người dùng, lưu trữ sao lưu và đồng bộ dữ liệu khi trực tuyến. Sản phẩm được đóng gói bộ cài đặt APK để cài đặt thử nghiệm trên điện thoại Android.
+Xây dựng ứng dụng di động phân hệ Android bằng React Native (TypeScript), hỗ trợ bác sĩ đánh giá phân loại ảnh CT phổi của bệnh nhân, thông qua việc **tích hợp mô hình học sâu AACNN-ViT Adaptive chạy trực tiếp trên thiết bị (On-Device AI)** không phụ thuộc Internet, kết hợp giao diện trực quan hóa bản đồ nhiệt Grad-CAM. Đồng thời, kết nối dịch vụ đám mây Firebase phục vụ xác thực người dùng, phân quyền bác sĩ, lưu trữ sao lưu và đồng bộ dữ liệu khi trực tuyến. Sản phẩm được đóng gói bộ cài đặt APK để cài đặt thử nghiệm trên điện thoại Android.
 
 #### 2.2 Mục tiêu cụ thể
 1. **Nghiên cứu lý thuyết**: Tổng quan về ung thư phổi, ảnh CT, mô hình lai tích hợp CNN và Vision Transformer (AACNN-ViT Adaptive), cơ chế giải thích mô hình Grad-CAM và các công nghệ AI On-Device trên Android (ONNX Runtime Mobile, Google LiteRT).
@@ -117,7 +117,7 @@ Xây dựng ứng dụng di động phân hệ Android bằng React Native (Type
 - Ảnh CT phổi dạng lát cắt hai chiều (2D CT slices) và bài toán phân loại đa lớp mức độ tổn thương.
 - Mô hình học sâu lai AACNN-ViT Adaptive và kỹ thuật giải thích mô hình Grad-CAM.
 - Công nghệ Trí tuệ nhân tạo biên (Edge AI): ONNX Runtime Mobile, Google LiteRT trên hệ điều hành Android.
-- Công nghệ phát triển ứng dụng di động đa nền tảng React Native New Architecture (TypeScript) và dịch vụ đám mây (FastAPI, Firebase).
+- Công nghệ phát triển ứng dụng di động đa nền tảng React Native New Architecture (TypeScript) và dịch vụ đám mây Firebase.
 
 #### 3.2 Phạm vi nghiên cứu
 - **Dữ liệu**: Bộ dữ liệu ảnh CT phổi công khai **IQ-OTH/NCCD** gồm 1.190 lát cắt phân loại 3 lớp (Normal, Benign, Malignant) ở định dạng JPEG/PNG. Khóa luận tập trung phân loại ảnh lát cắt 2D, chưa xử lý khối ảnh CT 3D thể tích đầy đủ.
@@ -140,9 +140,9 @@ Xây dựng ứng dụng di động phân hệ Android bằng React Native (Type
 ### 5. Cấu trúc của khóa luận tốt nghiệp
 Khóa luận được kết cấu theo **5 chương chuẩn** của Đề cương chi tiết:
 - **Chương 1: Tổng quan tình hình nghiên cứu**: Trình bày bài toán chẩn đoán ung thư phổi trên ảnh CT, các nghiên cứu học sâu liên quan, xu hướng ứng dụng di động trong y tế và so sánh các phương án triển khai mô hình học sâu (Cloud-based vs. Edge AI On-Device).
-- **Chương 2: Cơ sở lý thuyết và nền tảng công nghệ**: Trình bày mô hình học sâu AACNN-ViT Adaptive, Grad-CAM, các độ đo đánh giá; nền tảng công nghệ React Native New Architecture (TypeScript), backend FastAPI, Firebase; đặc thù triển khai trên hệ điều hành Android (Android Keystore, SQLCipher, ONNX Runtime Android).
-- **Chương 3: Phân tích và thiết kế hệ thống**: Đặc tả yêu cầu chức năng/phi chức năng, mô hình hóa use case, thiết kế kiến trúc hệ thống Hybrid (Edge-First), thiết kế cơ sở dữ liệu và tầng lưu trữ mã hóa an toàn, thiết kế giao diện người dùng.
-- **Chương 4: Cài đặt, thực nghiệm và đánh giá**: Trình bày quá trình cài đặt tầng suy luận On-Device trên Android, cài đặt dịch vụ máy chủ FastAPI/Firebase, hiện thực hóa ứng dụng React Native, đóng gói phát hành APK, kịch bản thực nghiệm đo lường hiệu năng và so sánh hai phân hệ Android - iOS.
+- **Chương 2: Cơ sở lý thuyết và nền tảng công nghệ**: Trình bày mô hình học sâu AACNN-ViT Adaptive, Grad-CAM, các độ đo đánh giá; nền tảng công nghệ React Native New Architecture (TypeScript), dịch vụ đám mây Firebase; đặc thù triển khai trên hệ điều hành Android (Android Keystore, SQLCipher, ONNX Runtime Android).
+- **Chương 3: Phân tích và thiết kế hệ thống**: Đặc tả yêu cầu chức năng/phi chức năng, mô hình hóa use case, thiết kế kiến trúc hệ thống Edge-First, thiết kế cơ sở dữ liệu và tầng lưu trữ mã hóa an toàn, thiết kế cấu trúc dữ liệu Cloud Firestore, thiết kế giao diện người dùng.
+- **Chương 4: Cài đặt, thực nghiệm và đánh giá**: Trình bày quá trình cài đặt tầng suy luận On-Device trên Android, kết nối dịch vụ đám mây Firebase (Authentication, Firestore, Storage), hiện thực hóa ứng dụng React Native, đóng gói phát hành APK, kịch bản thực nghiệm đo lường hiệu năng và đánh giá ứng dụng thực tế trên thiết bị Android.
 - **Chương 5: Kết luận và hướng phát triển**: Tổng kết các kết quả đạt được của phân hệ Android, các hạn chế còn tồn tại và đề xuất hướng phát triển tiếp theo.
 
 ---
@@ -186,8 +186,7 @@ Khóa luận chọn hướng tiếp cận **Kiến trúc Trí tuệ Nhân tạo 
 ### 2.2 Nền tảng công nghệ phát triển hệ thống
 - **React Native New Architecture**: Ứng dụng phiên bản 0.88.0 với engine JavaScript Hermes tối ưu hóa bytecode, Fabric Renderer và Nitro Modules.
 - **Ngôn ngữ TypeScript**: Bảo đảm tính chặt chẽ về kiểu dữ liệu (Strict Typing), giảm thiểu tối đa lỗi lúc chạy (Runtime Errors).
-- **Backend FastAPI**: Nền tảng web API hiệu năng cao dựa trên Python asyncio và Pydantic.
-- **Hệ sinh thái Firebase**: Firebase Authentication (xác thực), Cloud Firestore (đồng bộ dữ liệu), Cloud Storage (lưu trữ ảnh) và Firebase Cloud Messaging (thông báo đẩy).
+- **Hệ sinh thái Firebase**: Firebase Authentication (xác thực và phiên làm việc), Cloud Firestore (đồng bộ hồ sơ ca bệnh, phân quyền), Cloud Storage (lưu trữ sao lưu hồ sơ khi trực tuyến) và Firebase Cloud Messaging (thông báo đẩy).
 
 ### 2.3 Đặc thù triển khai trên hệ điều hành Android
 - **Cơ chế quản lý khóa phần cứng Android Keystore System**:
@@ -216,7 +215,7 @@ Khóa luận chọn hướng tiếp cận **Kiến trúc Trí tuệ Nhân tạo 
 - **Sơ đồ Use Case tổng quát**: Phân định rõ 2 tác nhân chính là **Bác sĩ (Doctor)** và **Quản trị viên (Administrator)**.
 - **Sơ đồ tuần tự (Sequence Diagram)**:
   - Luồng phân tích AI On-Device ngoại tuyến: Bác sĩ chọn ảnh -> Tiền xử lý native C++ -> ONNX/LiteRT suy luận -> Hiển thị kết quả & Grad-CAM -> Lưu hồ sơ mã hóa.
-  - Luồng đồng bộ hai chiều trực tuyến: Đồng bộ hàng đợi Outbox lên FastAPI/Firestore khi có mạng.
+  - Luồng đồng bộ hai chiều trực tuyến: Đồng bộ hàng đợi Outbox lên Cloud Firestore/Storage khi có mạng.
 - **Sơ đồ lớp và mô hình thực thể liên kết (ERD)**: 6 thực thể chuẩn hóa gồm `AccountEntity`, `PatientEntity`, `CaseEntity`, `CTImageEntity`, `AIPredictionResultEntity`, `DoctorStatsProjection`.
 
 ### 3.3 Thiết kế kiến trúc tổng thể
@@ -246,7 +245,7 @@ Hệ thống được thiết kế theo mô hình Clean Architecture đa tầng:
 |  | - Pillow Nearest Resample | | - Android Keystore Bridge| |
 |  +---------------------------+ +--------------------------+ |
 |  +--------------------------------------------------------+ |
-|  | Cloud Services (Khi Online): FastAPI / Firebase        | |
+|  | Cloud Services (Khi Online): Firebase Cloud Services   | |
 |  +--------------------------------------------------------+ |
 +-------------------------------------------------------------+
 ```
@@ -292,10 +291,16 @@ Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế F
   - Máy ảo: Android Studio Emulator (Pixel 6 Pro / API 34), kiến trúc x86_64, độ phân giải 1080x1920 (xxhdpi).
   - Thiết bị vật lý mục tiêu: **Xiaomi Redmi 13** (Chip MediaTek Helio G91-Ultra, 8GB RAM, Android 14 HyperOS).
 
-### 4.2 Cài đặt máy chủ và các dịch vụ đám mây (FastAPI, Firebase)
-- Trình bày cấu trúc API endpoints của dịch vụ FastAPI phục vụ đồng bộ dữ liệu.
-- Thiết lập cấu hình bảo mật Firebase Authentication và Cloud Firestore Security Rules.
-- *Lưu ý minh bạch*: Phân hệ máy chủ đang trong quá trình kết nối tích hợp; hiện tại ứng dụng đang tập trung hoàn thiện và kiểm chứng tầng suy luận On-Device ngoại tuyến và tầng lưu trữ cục bộ.
+### 4.2 Cài đặt các dịch vụ đám mây Firebase (Authentication, Firestore, Storage)
+- **Firebase Authentication**:
+  - Tích hợp phiên bản Firebase JS Modular SDK v11 kết hợp cơ chế lưu phiên đăng nhập bền vững trên thiết bị thông qua `@react-native-async-storage/async-storage`.
+  - Quy trình đăng ký tài khoản bác sĩ mới: Mọi tài khoản khởi tạo thành công trên Authentication sẽ được tự động ghi nhận vào Firestore với trạng thái `status: 'pending'` (Chờ duyệt) theo đặc tả SCR-A04; hệ thống lập tức ngắt phiên để ngăn chặn truy cập trái phép khi chưa được Quản trị viên kích hoạt.
+  - Phân quyền người dùng (`role: 'doctor' | 'admin'`): Được quản lý tập trung và xác thực từ Cloud Firestore, loại bỏ hoàn toàn cơ chế phân quyền tạm dựa trên chuỗi email giả lập.
+- **Cloud Firestore & Bộ quy tắc bảo mật (Security Rules)**:
+  - Thiết lập tệp cấu hình `infra/firebase/firestore.rules` phân định rạch ròi 3 tầng dữ liệu: Hồ sơ người dùng (`/users`), Hồ sơ bệnh nhân (`/patients`) và Ca bệnh chẩn đoán (`/cases`).
+  - Nghiêm cấm người dùng tự sửa vai trò hoặc trạng thái tài khoản; chỉ Quản trị viên đang hoạt động mới có quyền phê duyệt bác sĩ và xóa dữ liệu.
+- **Định hướng Cloud Storage & Cloud Messaging**:
+  - Dành riêng cho sao lưu hồ sơ trực tuyến và thông báo trạng thái ca bệnh; tuyệt đối không sử dụng Firebase làm máy chủ suy luận hay tải ảnh CT lên đám mây để phân loại AI.
 
 ### 4.3 Cài đặt ứng dụng React Native và Tầng suy luận On-Device Android
 1. **Triển khai giao diện và điều hướng**:
@@ -417,7 +422,7 @@ Phân tích giải pháp kỹ thuật đã triển khai trên Android (Dương H
 - Nạp bản build APK Release lên điện thoại Xiaomi Redmi 13 thật để đo kiểm độ trễ thực tế, nhiệt độ, mức tiêu hao pin và mức độ bảo vệ phần cứng TEE của Android Keystore.
 - Nghiên cứu hiện thực hóa thuật toán Grad-CAM On-Device không Autograd cho mô hình AACNN-ViT.
 - Khảo sát tích hợp thư viện sinh tệp PDF y tế theo chuẩn lâm sàng (gói PDF-01).
-- Hoàn thiện kết nối Backend FastAPI và cơ chế đồng bộ đám mây hai chiều khi trực tuyến.
+- Hoàn thiện kết nối đám mây Firebase (Cloud Firestore & Storage) và cơ chế đồng bộ hai chiều khi trực tuyến.
 
 ---
 

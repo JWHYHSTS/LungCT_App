@@ -169,7 +169,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
   }>({ visible: false, title: '', body: '' });
 
   const { user } = useAuth();
-  const ownerId = user?.id || 'usr-doc-01';
+  const ownerId = user?.id || '';
 
   // Nạp dữ liệu bệnh nhân ban đầu nếu ở chế độ Sửa (Edit Mode)
   React.useEffect(() => {

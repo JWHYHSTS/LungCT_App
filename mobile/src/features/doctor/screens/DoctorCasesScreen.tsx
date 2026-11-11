@@ -30,20 +30,25 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing } = theme;
   const { user } = useAuth();
-  const ownerId = user?.id || 'usr-doc-01';
+  const ownerId = user?.id || '';
 
-  const [cases, setCases] = useState<MockCase[]>(() => getMockCases());
+  const [cases, setCases] = useState<MockCase[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(CASE_FILTER_DECISION.defaultChip);
 
   React.useEffect(() => {
     let isMounted = true;
 
+    if (!ownerId) {
+      setCases([]);
+      return;
+    }
+
     const loadData = async () => {
       try {
         const storedCases = await CaseRepository.getCasesForUI(ownerId, undefined, true);
-        if (isMounted && storedCases && storedCases.length > 0) {
-          setCases(storedCases);
+        if (isMounted) {
+          setCases(storedCases || []);
         }
       } catch (err) {
         console.warn('[DoctorCasesScreen] Lỗi nạp ca bệnh từ kho mã hóa:', err);
@@ -55,14 +60,10 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
     const unsubRepo = subscribeCaseRepository(() => {
       loadData();
     });
-    const unsubMock = subscribeDoctorStore(() => {
-      loadData();
-    });
 
     return () => {
       isMounted = false;
       unsubRepo();
-      unsubMock();
     };
   }, [ownerId]);
 

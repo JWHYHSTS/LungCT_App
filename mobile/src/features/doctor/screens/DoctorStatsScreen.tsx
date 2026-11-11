@@ -17,17 +17,22 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
   const { theme } = useTheme();
   const { colors, spacing } = theme;
   const { user } = useAuth();
-  const ownerId = user?.id || 'usr-doc-01';
+  const ownerId = user?.id || '';
 
   const [selectedRange, setSelectedRange] = useState<'7d' | '30d' | 'all'>(initialRange);
   const [realStats, setRealStats] = useState<MockStatsData | null>(null);
 
   React.useEffect(() => {
     let isMounted = true;
+    if (!ownerId) {
+      setRealStats(null);
+      return;
+    }
+
     const fetchStats = async () => {
       try {
         const stats = await localStorageService.getDoctorStats(ownerId, selectedRange);
-        if (isMounted && stats && (stats.patientCount > 0 || stats.activeCaseCount > 0)) {
+        if (isMounted && stats) {
           setRealStats({
             period: selectedRange,
             patientCount: stats.patientCount,
@@ -40,7 +45,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
               imageUnit: 'ảnh',
               syncFormulaNote: `Dữ liệu tổng hợp kỳ ${selectedRange} từ SQLite mã hóa nội bộ thiết bị`,
             },
-            isMock: true, // Thỏa mãn type MockStatsData cho view component
+            isMock: false,
           });
         }
       } catch (err) {
@@ -76,7 +81,21 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
     if (realStats && realStats.period === selectedRange) {
       return realStats;
     }
-    return MOCK_STATS[selectedRange] ?? MOCK_STATS['30d'];
+    // Trả về số liệu rỗng (0) nếu là tài khoản bác sĩ thật chưa có dữ liệu
+    return {
+      period: selectedRange,
+      patientCount: 0,
+      completedCaseCount: 0,
+      draftCaseCount: 0,
+      analyzedImageCount: 0,
+      labelDistribution: { benign: 0, malignant: 0, normal: 0 },
+      unitNotes: {
+        caseUnit: 'ca',
+        imageUnit: 'ảnh',
+        syncFormulaNote: `Chưa có dữ liệu phân tích trong kỳ ${selectedRange}`,
+      },
+      isMock: false,
+    };
   }, [realStats, selectedRange]);
 
   const { benign, malignant, normal } = currentStats.labelDistribution;

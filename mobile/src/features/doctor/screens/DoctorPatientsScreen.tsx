@@ -31,21 +31,26 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing } = theme;
   const { user } = useAuth();
-  const ownerId = user?.id || 'usr-doc-01';
+  const ownerId = user?.id || '';
 
-  const [patients, setPatients] = useState<MockPatient[]>(() => getMockPatients());
+  const [patients, setPatients] = useState<MockPatient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(PATIENT_FILTER_DECISION.defaultChip);
 
-  // Nạp dữ liệu bệnh nhân từ Local Storage mã hóa
+  // Nạp dữ liệu bệnh nhân từ Local Storage mã hóa theo ownerId (Firebase UID)
   useEffect(() => {
     let isMounted = true;
+
+    if (!ownerId) {
+      setPatients([]);
+      return;
+    }
 
     const loadData = async () => {
       try {
         const storedPatients = await PatientRepository.getPatientsForUI(ownerId, true);
-        if (isMounted && storedPatients && storedPatients.length > 0) {
-          setPatients(storedPatients);
+        if (isMounted) {
+          setPatients(storedPatients || []);
         }
       } catch (err) {
         console.warn('[DoctorPatientsScreen] Lỗi đọc dữ liệu lưu trữ cục bộ:', err);
@@ -54,18 +59,14 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
 
     loadData();
 
-    // Lắng nghe thay đổi từ cả PatientRepository và Mock Store
+    // Lắng nghe thay đổi từ PatientRepository
     const unsubRepo = subscribePatientRepository(() => {
-      loadData();
-    });
-    const unsubMock = subscribeDoctorStore(() => {
       loadData();
     });
 
     return () => {
       isMounted = false;
       unsubRepo();
-      unsubMock();
     };
   }, [ownerId]);
 

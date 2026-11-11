@@ -151,35 +151,35 @@ export class CaseRepository {
       this.isInitialized = true;
     }
 
-    // Kiểm tra xem đã có ca bệnh nào trong storage của bác sĩ chưa
-    const existing = await localStorageService.getCases(ownerId, undefined, true);
-    if (existing.length === 0) {
-      // Seed dữ liệu ban đầu từ Mock Store để đảm bảo hiển thị offline
-      const initialMockCases = getMockCases();
-      for (const c of initialMockCases) {
-        try {
-          // Chuẩn hóa ngày chụp về YYYY-MM-DD
-          let scanDate = new Date().toISOString().substring(0, 10);
-          if (c.captureDate && c.captureDate.includes('/')) {
-            const p = c.captureDate.split('/');
-            if (p.length === 3) {
-              scanDate = `${p[2]}-${p[1]}-${p[0]}`;
+    // Chỉ seed dữ liệu mẫu cho tài khoản test mock cục bộ 'usr-doc-01'.
+    // Tuyệt đối không tự động seed vào tài khoản thật của bác sĩ (Firebase UID).
+    if (ownerId === 'usr-doc-01') {
+      const existing = await localStorageService.getCases(ownerId, undefined, true);
+      if (existing.length === 0) {
+        const initialMockCases = getMockCases();
+        for (const c of initialMockCases) {
+          try {
+            let scanDate = new Date().toISOString().substring(0, 10);
+            if (c.captureDate && c.captureDate.includes('/')) {
+              const p = c.captureDate.split('/');
+              if (p.length === 3) {
+                scanDate = `${p[2]}-${p[1]}-${p[0]}`;
+              }
             }
-          }
 
-          const created = await localStorageService.createCase(ownerId, {
-            patientId: c.patientId,
-            scanDate,
-            clinicalNote: c.notes,
-            doctorComment: c.notes,
-          });
+            const created = await localStorageService.createCase(ownerId, {
+              patientId: c.patientId,
+              scanDate,
+              clinicalNote: c.notes,
+              doctorComment: c.notes,
+            });
 
-          // Nếu ca ban đầu có trạng thái COMPLETED trong mock thì cập nhật trạng thái
-          if (c.status === 'COMPLETED') {
-            await localStorageService.completeCase(ownerId, created.caseId);
+            if (c.status === 'COMPLETED') {
+              await localStorageService.completeCase(ownerId, created.caseId);
+            }
+          } catch {
+            // Bỏ qua lỗi seed phụ
           }
-        } catch {
-          // Bỏ qua lỗi trùng mã hoặc lỗi seed phụ
         }
       }
     }
