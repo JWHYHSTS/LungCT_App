@@ -99,10 +99,9 @@ Dự án phân biệt rạch ròi 3 trạng thái của mô hình để đảm b
 
 ---
 
-## 5. Nguyên tắc độc lập và cô lập dự án
+## 5. Nguyên tắc độc lập của dự án
 
-- `LungCT_DoAn` là dự án độc lập, hoàn chỉnh, tự chứa đựng đầy đủ thành phần cần thiết để xây dựng, vận hành, kiểm thử và bàn giao.
-- Không chứa bất kỳ liên kết, đường dẫn tương đối, symlink hay phụ thuộc nào sang thư mục làm việc riêng bên ngoài (`LungCT_LamViecRieng`).
+- `LungCT` là dự án độc lập, hoàn chỉnh, tự chứa đựng đầy đủ thành phần cần thiết để xây dựng, vận hành, kiểm thử và bàn giao.
 - Mọi hướng dẫn phát triển và quy tắc cốt lõi được lưu trữ tại [`AGENTS.md`](AGENTS.md).
 
 ---
@@ -120,11 +119,7 @@ Dự án đã hoàn tất việc **tiếp nhận và kiểm kê tài nguyên đ�
 5. **Bộ icon đồ họa chuẩn**: Đã tiếp nhận và lập đặc tả 48 icon y tế tại [`docs/requirements/LungCT_Icons_DacTa.md`](docs/requirements/LungCT_Icons_DacTa.md).
 6. **Biên bản tiếp nhận kỹ thuật**: Đã tạo [`docs/requirements/TiepNhan_DauVao.md`](docs/requirements/TiepNhan_DauVao.md).
 
-### Các hạng mục sẽ được bổ sung và xây dựng ở bước tiếp theo:
+### Các tài liệu phục vụ đề tài khóa luận:
 
-- **Đặc tả chức năng toàn diện (`LumaCT_DacTa`)**: Sẽ tiếp nhận và cập nhật vào `docs/requirements/` khi người dùng cung cấp.
-- **Bản thảo khóa luận**: Thư mục `reports/android/` lưu trữ bản thảo khóa luận 5 chương của Dương Hải Đăng theo đề cương chi tiết đã duyệt.
-- **Tài liệu tham khảo chính thức**: Đặt tại `docs/references/`.
-
-> [!IMPORTANT]
-> Việc chưa có đặc tả ứng dụng toàn diện và hai báo cáo ở bước này là bình thường và không coi là lỗi. Đồ án hoạt động hoàn toàn độc lập, không có bất kỳ phụ thuộc nào sang thư mục làm việc riêng `LungCT_LamViecRieng`.
+- **Bản thảo khóa luận tốt nghiệp**: Lưu trữ bản thảo khóa luận 5 chương của Dương Hải Đăng tại [`reports/android/khoa-luan-android.md`](reports/android/khoa-luan-android.md) theo đề cương chi tiết đã duyệt.
+- **Tài liệu tham khảo và học liệu tự code**: Đặt tại [`docs/learning/`](docs/learning/).
