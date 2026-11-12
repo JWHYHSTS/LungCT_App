@@ -10,13 +10,16 @@ Do thư mục `mobile/android/` bị Git bỏ qua (`.gitignore`) để tránh l�
 - `NativeCryptoVaultModule.kt`: React Native Module viết bằng Kotlin triển khai Android Keystore System (`AndroidKeyStore`) quản lý khóa AES-256 phần cứng và mã hóa chứng thực AES-256-GCM.
 - `LungCtNativePackage.kt`: Đăng ký cả `LungCtPipelineModule` và `NativeCryptoVaultModule` vào hệ thống React Package.
 - `MainApplication.kt`: Mẫu đăng ký gói native vào danh sách package của ứng dụng Expo/React Native.
+- `root-build.gradle`: Cấu hình Gradle gốc (`mobile/android/build.gradle`), bao gồm cấu hình khắc phục giới hạn đường dẫn 260 ký tự (`MAX_PATH`) của CMake/Ninja trên Windows bằng `buildStagingDirectory` ngắn (`%TEMP%\lct_cxx\<subproject>`).
 - `build.gradle`: Cấu hình build cấp ứng dụng (`mobile/android/app/build.gradle`), bao gồm:
   - ONNX Runtime Android: `com.microsoft.onnxruntime:onnxruntime-android:1.31.0`
   - TensorFlow Lite (LiteRT): `com.google.ai.edge.litert:litert-api:1.4.0` và `litert:1.4.0`
+  - SQLCipher Android: `net.zetetic:sqlcipher-android:4.6.1@aar` và `androidx.sqlite:sqlite:2.4.0`
   - Cờ liên kết JNI: `useLegacyPackaging = true`
   - Cờ không nén tài nguyên mô hình: `noCompress 'tflite', 'onnx', 'data'`
-- `proguard-rules.pro`: Quy tắc bảo vệ (keep rules) cho ProGuard/R8 khi build Release APK: giữ lại các lớp `ai.onnxruntime.**`, `org.tensorflow.lite.**`, `com.anonymous.mobile.LungCtPipelineModule`, và `com.anonymous.mobile.NativeCryptoVaultModule`.
-- `gradle.properties`: Cấu hình JVM, Hermes engine, và AndroidX.
+- `AndroidManifest.xml` & `file_paths.xml`: Quyền truy cập Camera (`android.permission.CAMERA`), truy vấn `IMAGE_CAPTURE` và cấu hình `androidx.core.content.FileProvider` (`${applicationId}.fileprovider` -> `@xml/file_paths`).
+- `proguard-rules.pro`: Quy tắc bảo vệ (keep rules) cho ProGuard/R8 khi build Release APK: giữ lại các lớp `ai.onnxruntime.**`, `org.tensorflow.lite.**`, `net.zetetic.database.sqlcipher.**`, `com.anonymous.mobile.LungCtPipelineModule`, và `com.anonymous.mobile.NativeCryptoVaultModule`.
+- `gradle.properties`: Cấu hình JVM, Hermes engine, New Architecture và AndroidX.
 
 ## 2. Quy trình tái tạo sau khi chạy `npx expo prebuild`
 
@@ -28,7 +31,11 @@ Do thư mục `mobile/android/` bị Git bỏ qua (`.gitignore`) để tránh l�
 
 2. Khôi phục các tệp cấu hình và mã nguồn native:
    ```powershell
+   Copy-Item mobile\native-templates\android\root-build.gradle mobile\android\build.gradle
    Copy-Item mobile\native-templates\android\build.gradle mobile\android\app\build.gradle
+   Copy-Item mobile\native-templates\android\AndroidManifest.xml mobile\android\app\src\main\AndroidManifest.xml
+   New-Item -ItemType Directory -Force -Path mobile\android\app\src\main\res\xml
+   Copy-Item mobile\native-templates\android\file_paths.xml mobile\android\app\src\main\res\xml\file_paths.xml
    Copy-Item mobile\native-templates\android\proguard-rules.pro mobile\android\app\proguard-rules.pro
    Copy-Item mobile\native-templates\android\gradle.properties mobile\android\gradle.properties
    Copy-Item mobile\native-templates\android\LungCtPipelineModule.kt mobile\android\app\src\main\java\com\anonymous\mobile\LungCtPipelineModule.kt
