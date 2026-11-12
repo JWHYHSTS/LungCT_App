@@ -33,14 +33,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
   const { t, i18n } = useTranslation();
-  const { login, isOnline, setIsOnline } = useAuth();
+  const { login, isOnline, setIsOnline, resetPassword } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
+  const [resetNotice, setResetNotice] = useState<{
+    visible: boolean;
+    title: string;
+    body: string;
+  }>({ visible: false, title: '', body: '' });
 
   const isFormEmpty = !email.trim() || !password.trim();
 
@@ -71,6 +75,39 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setResetNotice({
+        visible: true,
+        title: t('ui.quen_mat_khau_2', 'Quên mật khẩu'),
+        body: t(
+          'ui.nhap_email_a_ang_ky_neu_email_hop_le_ban_se_nhan',
+          'Vui lòng nhập địa chỉ email vào ô Email trước khi bấm "Quên mật khẩu" để hệ thống gửi hướng dẫn đặt lại mật khẩu.',
+        ),
+      });
+      return;
+    }
+
+    try {
+      await resetPassword(cleanEmail);
+      setResetNotice({
+        visible: true,
+        title: t('ui.a_gui_yeu_cau', 'Đã gửi yêu cầu'),
+        body: t(
+          'ui.neu_email_ton_tai_trong_he_thong_huong_dan_se_uo',
+          'Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu sẽ được gửi đến hòm thư đó.',
+        ),
+      });
+    } catch (err: unknown) {
+      setResetNotice({
+        visible: true,
+        title: t('ui.khong_the_gui_email', 'Không thể gửi email'),
+        body: err instanceof Error ? err.message : 'Có lỗi xảy ra khi gửi yêu cầu.',
+      });
     }
   };
 
@@ -252,7 +289,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               disabled={!isOnline}
               accessibilityRole="button"
               accessibilityLabel="Quên mật khẩu"
-              onPress={() => setShowForgotPasswordDialog(true)}
+              onPress={handleForgotPassword}
             >
               <AppText variant="labelM" color={isOnline ? colors.text.link : colors.text.disabled}>
                 {t('ui.quen_mat_khau', 'Quên mật khẩu?')}
@@ -285,18 +322,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </View>
       </ScrollView>
 
-      {/* Hộp thoại thông báo tính năng Quên mật khẩu chưa triển khai */}
+      {/* Hộp thoại thông báo kết quả Quên mật khẩu */}
       <Dialog
-        visible={showForgotPasswordDialog}
+        visible={resetNotice.visible}
         type="default"
-        title={t('ui.quen_mat_khau', 'Quên mật khẩu?')}
-        body={t(
-          'ui.tinh_nang_quen_mat_khau_chua_trien_khai',
-          'Chức năng đặt lại mật khẩu qua email chưa được kích hoạt trong phiên bản này. Vui lòng liên hệ quản trị viên hệ thống để được hỗ trợ.',
-        )}
+        title={resetNotice.title}
+        body={resetNotice.body}
         confirmLabel={t('ui.da_hieu', 'Đã hiểu')}
-        onConfirm={() => setShowForgotPasswordDialog(false)}
-        onCancel={() => setShowForgotPasswordDialog(false)}
+        onConfirm={() => setResetNotice({ visible: false, title: '', body: '' })}
+        onCancel={() => setResetNotice({ visible: false, title: '', body: '' })}
       />
     </KeyboardAvoidingView>
   );

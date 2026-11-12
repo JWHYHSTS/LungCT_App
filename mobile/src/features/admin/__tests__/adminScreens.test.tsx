@@ -45,6 +45,7 @@ describe('UI-08: Admin Screens Unit Tests', () => {
       login: jest.fn(),
       logout: jest.fn(),
       registerDoctor: jest.fn(),
+      resetPassword: jest.fn().mockResolvedValue(true),
     });
 
     const internals = (React as any)

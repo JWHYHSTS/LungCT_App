@@ -106,6 +106,7 @@ describe('UI-05: Auth & Navigation Flow Unit Tests', () => {
       login: jest.fn(),
       logout: jest.fn(),
       registerDoctor: jest.fn(),
+      resetPassword: jest.fn().mockResolvedValue(true),
     });
 
     const onRegisterMock = jest.fn();
@@ -130,6 +131,7 @@ describe('UI-05: Auth & Navigation Flow Unit Tests', () => {
       login: jest.fn(),
       logout: jest.fn(),
       registerDoctor: jest.fn(),
+      resetPassword: jest.fn().mockResolvedValue(true),
     });
 
     const onBackMock = jest.fn();
@@ -153,6 +155,7 @@ describe('UI-05: Auth & Navigation Flow Unit Tests', () => {
       login: jest.fn(),
       logout: jest.fn(),
       registerDoctor: jest.fn(),
+      resetPassword: jest.fn().mockResolvedValue(true),
     });
 
     const onLoginMock = jest.fn();

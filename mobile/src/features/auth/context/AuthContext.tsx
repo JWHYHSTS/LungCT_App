@@ -6,6 +6,7 @@ import {
   firebaseLogin,
   firebaseRegisterDoctor,
   firebaseLogout,
+  firebaseResetPassword,
   RegisterDoctorParams,
 } from '../../../services/firebase/authService';
 import { resetDoctorStore } from '../../../mocks/doctorMocks';
@@ -42,6 +43,10 @@ export interface AuthContextType {
    * Trạng thái ban đầu bắt buộc là 'pending' (Chờ duyệt) theo đặc tả SCR-A04.
    */
   registerDoctor: (data: RegisterDoctorParams) => Promise<{ success: boolean; error?: string }>;
+  /**
+   * Gửi liên kết đặt lại mật khẩu qua email người dùng bằng Firebase Auth.
+   */
+  resetPassword: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -141,6 +146,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
+  const resetPassword = async (targetEmail: string) => {
+    if (!isOnline) {
+      return false;
+    }
+    return await firebaseResetPassword(targetEmail);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -151,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         registerDoctor,
+        resetPassword,
       }}
     >
       {children}
