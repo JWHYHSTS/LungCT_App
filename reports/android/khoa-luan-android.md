@@ -65,7 +65,7 @@ Ung thư phổi hiện là loại ung thư phổ biến hàng đầu và là ngu
 
 Khóa luận này nghiên cứu và phát triển **phân hệ Android** trong giải pháp di động toàn diện **LungCT**, hỗ trợ bác sĩ đánh giá phân loại ảnh CT phổi ngay trên điện thoại thông minh. Dựa trên đề cương đã được phê duyệt, đề tài được nâng cấp về mặt kiến trúc: Chuyển đổi mô hình học sâu lai kết hợp giữa mạng nơ-ron tích chập và biến đổi thị giác **AACNN-ViT Adaptive** sang định dạng tối ưu **ONNX Runtime Mobile (FP32)** kết hợp khối **Fusion LiteRT (FP32)**, cho phép **thực thi suy luận phân loại 3 lớp trực tiếp trên thiết bị (On-Device Edge AI) hoàn toàn ngoại tuyến không cần kết nối mạng Internet**.
 
-Về mặt thực nghiệm kỹ thuật, pipeline suy luận phân loại đã chạy thành công trên máy ảo Android Emulator x86_64 API 34 với thời gian suy luận kỹ thuật đạt ~1.580 ms trong ứng dụng APK và ~1.831 ms trong chương trình native C++ runner (đối với lát cắt CT đối chứng; không gọi là độ trễ lâm sàng). Khóa luận xây dựng hoàn chỉnh giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture (TypeScript), thiết kế tầng lưu trữ cục bộ (Repository Pattern) bảo vệ dữ liệu bằng mã hóa AES-256-GCM sandbox, sẵn sàng định hướng nâng cấp lên SQLite mã hóa (SQLCipher) và Android Keystore, đồng thời kiểm chứng thuật toán bảo toàn dữ liệu nháp AUTH-08 trên Jest. Đối với tính năng Grad-CAM on-device và xuất file PDF vật lý, khóa luận đã hoàn thiện giao diện mô phỏng và đang trong giai đoạn nghiên cứu/triển khai kỹ thuật. Hệ thống dịch vụ đám mây (Firebase Authentication, Cloud Firestore, Cloud Storage) giữ vai trò xác thực danh tính, lưu trữ sao lưu và đồng bộ đám mây khi có kết nối mạng.
+Về mặt thực nghiệm kỹ thuật, pipeline suy luận phân loại đã chạy thành công trên máy ảo Android Emulator x86_64 API 34 với thời gian suy luận kỹ thuật đạt ~1.580 ms trong ứng dụng APK và ~1.831 ms trong chương trình native C++ runner (đối với lát cắt CT đối chứng; không gọi là độ trễ lâm sàng). Khóa luận xây dựng hoàn chỉnh giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture (TypeScript), hiện thực hóa tầng lưu trữ cục bộ mã hóa toàn bộ tệp SQLite cấp trang bằng **SQLCipher 4.6.1** kết hợp **Android Keystore (`NativeCryptoVaultModule.kt`, AES-256-GCM)** và kiểm chứng thuật toán bảo toàn dữ liệu nháp AUTH-08. Đồng thời, ứng dụng đã tích hợp đầy đủ **Firebase Authentication (đăng nhập, đăng ký chờ duyệt, quên mật khẩu)**, **Cloud Firestore & Sync Engine Offline-First (hàng đợi Outbox, phát hiện xung đột, đồng bộ nền khi có mạng)**, **xuất phiếu kết quả PDF vật lý (`expo-print` & `expo-sharing`)**, và đóng gói thành công tệp **`app-release.apk` v1.0.6 (`versionCode 7`, 544.04 MB)** đạt 100% kiểm thử tự động Jest (**19/19 suites, 168/168 tests**). Tính năng Grad-CAM on-device hiện được cô lập trung thực (`gradcamAvailable: false`, thông điệp `MSG-11`) để tiếp tục nghiên cứu tính gradient trực tiếp trên thiết bị, tuyệt đối không dùng ảnh nhiệt giả lập hay gọi máy chủ suy luận. Hệ thống dịch vụ đám mây Firebase giữ vai trò xác thực danh tính, quản trị và đồng bộ hồ sơ khi có kết nối mạng.
 
 ---
 
@@ -107,9 +107,9 @@ Xây dựng ứng dụng di động phân hệ Android bằng React Native (Type
 #### 2.2 Mục tiêu cụ thể
 1. **Nghiên cứu lý thuyết**: Tổng quan về ung thư phổi, ảnh CT, mô hình lai tích hợp CNN và Vision Transformer (AACNN-ViT Adaptive), cơ chế giải thích mô hình Grad-CAM và các công nghệ AI On-Device trên Android (ONNX Runtime Mobile, Google LiteRT).
 2. **Tối ưu và tích hợp mô hình On-Device**: Chuyển đổi và đóng gói mô hình AACNN-ViT Adaptive sang định dạng FP32 di động; xây dựng native pipeline tiền xử lý ảnh chuẩn Pillow Nearest Resample trực tiếp trên Android; nghiên cứu giải pháp Grad-CAM on-device không cần Autograd.
-3. **Phân tích và thiết kế hệ thống**: Xây dựng kiến trúc Hybrid (Edge-First kết hợp Cloud Backend); mô hình hóa hệ thống bằng biểu đồ UML; thiết kế tầng lưu trữ cục bộ bảo vệ dữ liệu (Repository Pattern, AES-256-GCM sandbox, định hướng SQLCipher/Keystore) và xử lý chính sách AUTH-08.
-4. **Hiện thực hóa phân hệ Android**: Cài đặt 17 màn hình chính và các màn hình chi tiết chuẩn 59 khung thiết kế Figma bằng React Native (TypeScript); xây dựng phân hệ quản lý của Bác sĩ và Quản trị viên.
-5. **Thực nghiệm và đo lường kỹ thuật**: Đánh giá độ chính xác phân loại 3 lớp (Normal, Benign, Malignant) trên bộ dữ liệu IQ-OTH/NCCD; đo kiểm thời gian suy luận kỹ thuật On-Device, bộ nhớ RAM, tính bền vững lưu trữ qua vòng đời ứng dụng trên máy ảo Android x86_64 API 34 và chuẩn bị thiết bị vật lý đại diện (Xiaomi Redmi 13).
+3. **Phân tích và thiết kế hệ thống**: Xây dựng kiến trúc Offline-First Edge AI kết hợp dịch vụ đám mây Firebase; mô hình hóa hệ thống bằng biểu đồ UML; thiết kế tầng lưu trữ cục bộ mã hóa toàn bộ tệp (Repository Pattern, SQLCipher 4.6.1 + Android Keystore AES-256-GCM), cơ chế đồng bộ Outbox/xung đột hai chiều và xử lý chính sách AUTH-08.
+4. **Hiện thực hóa phân hệ Android**: Cài đặt các màn hình chuẩn theo hệ thống thiết kế Figma bằng React Native (TypeScript); hoàn thiện phân hệ Bác sĩ và Quản trị viên kết nối Cloud Firestore thật, xuất báo cáo PDF vật lý và đồng bộ ngoại tuyến/trực tuyến.
+5. **Thực nghiệm, đóng gói và đo lường kỹ thuật**: Đánh giá độ chính xác phân loại 3 lớp (Normal, Benign, Malignant) trên bộ dữ liệu IQ-OTH/NCCD; đóng gói tệp APK Release độc lập; kiểm thử tự động và đo kiểm thời gian suy luận kỹ thuật On-Device, tính bền vững lưu trữ qua vòng đời ứng dụng trên máy ảo Android x86_64 API 34 và chuẩn bị nghiệm thu trên điện thoại Android vật lý thật (dự kiến Xiaomi Redmi Note 12 Turbo).
 
 ### 3. Phạm vi nghiên cứu
 
@@ -121,21 +121,21 @@ Xây dựng ứng dụng di động phân hệ Android bằng React Native (Type
 
 #### 3.2 Phạm vi nghiên cứu
 - **Dữ liệu**: Bộ dữ liệu ảnh CT phổi công khai **IQ-OTH/NCCD** gồm 1.190 lát cắt phân loại 3 lớp (Normal, Benign, Malignant) ở định dạng JPEG/PNG. Khóa luận tập trung phân loại ảnh lát cắt 2D, chưa xử lý khối ảnh CT 3D thể tích đầy đủ.
-- **Mô hình**: Kế thừa kiến trúc và trọng số đã huấn luyện của mô hình AACNN-ViT Adaptive, tập trung vào bài toán chuyển đổi mô hình, tối ưu hóa suy luận On-Device và trực quan hóa kết quả trên thiết bị di động.
-- **Nền tảng thực nghiệm**: Phân hệ Android hỗ trợ từ Android 10.0 (API 29) đến Android 14.0 (API 34+). Thiết bị đo kiểm: Máy ảo Android Studio Emulator (Pixel 6 Pro / API 34) và điện thoại thật Xiaomi Redmi 13 (MediaTek Helio G91-Ultra, 8GB RAM).
+- **Mô hình**: Kế thừa kiến trúc và trọng số đã huấn luyện của mô hình AACNN-ViT Adaptive, tập trung vào bài toán chuyển đổi mô hình, tối ưu hóa suy luận On-Device và trực quan hóa kết quả trực tiếp trên thiết bị di động (không gọi API máy chủ suy luận hay FastAPI).
+- **Nền tảng thực nghiệm**: Phân hệ Android hỗ trợ từ Android 7.0 (`minSdkVersion = 24`) đến Android 16 (`targetSdkVersion = 36`, `compileSdk = 37`). Môi trường đo kiểm: Máy ảo Android Studio Emulator (API 34) và điện thoại Android vật lý đại diện (dự kiến Xiaomi Redmi Note 12 Turbo).
 - **Phân định phạm vi chức năng ngoại tuyến và trực tuyến**:
-  - *Ngoại tuyến (Offline)*: Tiền xử lý ảnh, suy luận phân loại AI On-Device, hiển thị bản đồ nhiệt Grad-CAM, quản lý hồ sơ bệnh nhân và ca bệnh trên bộ lưu trữ mã hóa cục bộ, xuất báo cáo PDF.
-  - *Trực tuyến (Online)*: Đăng nhập/Đăng ký tài khoản lần đầu qua máy chủ, đồng bộ dữ liệu đám mây hai chiều, sao lưu ảnh CT lên Cloud Storage, suy luận tham chiếu dự phòng trên GPU server.
+  - *Ngoại tuyến (Offline)*: Tiền xử lý ảnh, suy luận phân loại AI On-Device, hiển thị trạng thái giải thích mô hình (hoặc `MSG-11` khi Grad-CAM ngoại tuyến chưa khả dụng), quản lý hồ sơ bệnh nhân và ca bệnh trên bộ lưu trữ mã hóa SQLCipher cục bộ, ghi nhận thao tác vào hàng đợi Outbox, xuất báo cáo PDF vật lý.
+  - *Trực tuyến (Online)*: Đăng nhập/Đăng ký/Quên mật khẩu qua Firebase Authentication, kiểm tra trạng thái phê duyệt tài khoản trên Firestore, đồng bộ hai chiều hàng đợi Outbox (`SyncEngine`) và cập nhật thống kê quản trị viên. (*Firebase Cloud Storage sao lưu ảnh và FCM thông báo đẩy là phần mở rộng Cloud tiếp theo*).
 - **Khuyến cáo y khoa**: Kết quả của ứng dụng mang tính chất hỗ trợ tham khảo (Clinical Decision Support), không thay thế kết luận chẩn đoán chính thức của bác sĩ chuyên khoa; hệ thống chưa qua thử nghiệm lâm sàng thực địa trên bệnh nhân thật.
 
 ### 4. Phương pháp nghiên cứu
 1. **Phương pháp nghiên cứu lý thuyết**: Thu thập, tổng hợp các bài báo khoa học về chẩn đoán ung thư phổi, Vision Transformer, On-Device AI và tài liệu kỹ thuật chính thức của React Native, Android Developers, ONNX Runtime, Google LiteRT.
 2. **Phương pháp phân tích - thiết kế hướng đối tượng**: Mô hình hóa hệ thống bằng UML (Use Case, Activity, Sequence, Class/ERD diagram) tuân thủ tiêu chuẩn Clean Architecture.
-3. **Phương pháp phát triển phần mềm Agile/Scrum**: Phân chia các chu kỳ lặp (sprints) 2 tuần, nghiệm thu từng đầu việc bằng mã nguồn, test suite và hình ảnh minh chứng thực tế.
+3. **Phương pháp phát triển phần mềm Agile/Scrum**: Phân chia các chu kỳ lặp (sprints) ngắn, nghiệm thu từng đầu việc bằng mã nguồn, test suite, đóng gói APK và minh chứng thực tế.
 4. **Phương pháp thực nghiệm đa môi trường**: Phân tách minh bạch giữa:
-   - Môi trường Jest Sandbox: Kiểm chứng 100% logic nghiệp vụ, thuật toán mã hóa AES-256-GCM và kịch bản biên AUTH-08.
-   - Môi trường máy ảo Android Emulator: Đo kiểm thời gian suy luận native, tương tác giao diện và vòng đời lưu trữ qua ADB.
-   - Môi trường thiết bị vật lý thật (Xiaomi Redmi 13): Đo kiểm độ trễ thực tế, nhiệt độ, mức tiêu thụ pin và tài nguyên RAM.
+   - Môi trường Jest Sandbox: Kiểm chứng logic nghiệp vụ, Firebase Auth/Sync/PDF mocks, thuật toán mã hóa AES-256-GCM và kịch bản biên AUTH-08.
+   - Môi trường máy ảo Android Emulator: Đo kiểm thời gian suy luận native, tương tác giao diện và vòng đời lưu trữ SQLCipher qua ADB.
+   - Môi trường thiết bị Android vật lý thật: Đo kiểm độ trễ thực tế, bộ nhớ RAM, thao tác Camera/Picker, PDF, Sync và mức độ bảo vệ phần cứng Android Keystore (`KeyInfo`).
 
 ### 5. Cấu trúc của khóa luận tốt nghiệp
 Khóa luận được kết cấu theo **5 chương chuẩn** của Đề cương chi tiết:
@@ -285,53 +285,58 @@ Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế F
 
 ### 4.1 Môi trường cài đặt và triển khai
 - **Môi trường phát triển**:
-  - Máy tính phát triển: Windows 11 Pro 64-bit, CPU AMD Ryzen 7 / Intel Core i7, 32GB RAM.
-  - Môi trường di động: Node.js v20.x, React Native 0.88.0, TypeScript 5.x, OpenJDK 17, Android NDK r26c.
+  - Máy tính phát triển: Windows 11 64-bit, Node.js `v22.19.0`, Expo SDK `~58.0.19`, React Native `0.88.0`, TypeScript `~6.0.3`, OpenJDK 17, Android Build Tools `37.0.0`, Android NDK `27.1.12297006`.
 - **Môi trường thực nghiệm**:
-  - Máy ảo: Android Studio Emulator (Pixel 6 Pro / API 34), kiến trúc x86_64, độ phân giải 1080x1920 (xxhdpi).
-  - Thiết bị vật lý mục tiêu: **Xiaomi Redmi 13** (Chip MediaTek Helio G91-Ultra, 8GB RAM, Android 14 HyperOS).
+  - Máy ảo (giai đoạn kiểm chứng MOB-02 & SQLCipher): Android Studio Emulator (`sdk_gphone64_x86_64`, API 34, độ phân giải 1080x2400).
+  - Thiết bị vật lý mục tiêu nghiệm thu tổng thể: Điện thoại Android thật (dự kiến **Xiaomi Redmi Note 12 Turbo**, đang chờ kết nối ở Đầu việc 5 để đo kiểm thực tế).
 
-### 4.2 Cài đặt các dịch vụ đám mây Firebase (Authentication, Firestore, Storage)
-- **Firebase Authentication**:
-  - Tích hợp phiên bản Firebase JS Modular SDK v11 kết hợp cơ chế lưu phiên đăng nhập bền vững trên thiết bị thông qua `@react-native-async-storage/async-storage`.
-  - Quy trình đăng ký tài khoản bác sĩ mới: Mọi tài khoản khởi tạo thành công trên Authentication sẽ được tự động ghi nhận vào Firestore với trạng thái `status: 'pending'` (Chờ duyệt) theo đặc tả SCR-A04; hệ thống lập tức ngắt phiên để ngăn chặn truy cập trái phép khi chưa được Quản trị viên kích hoạt.
-  - Phân quyền người dùng (`role: 'doctor' | 'admin'`): Được quản lý tập trung và xác thực từ Cloud Firestore, loại bỏ hoàn toàn cơ chế phân quyền tạm dựa trên chuỗi email giả lập.
-- **Cloud Firestore & Bộ quy tắc bảo mật (Security Rules)**:
-  - Thiết lập tệp cấu hình `infra/firebase/firestore.rules` phân định rạch ròi 3 tầng dữ liệu: Hồ sơ người dùng (`/users`), Hồ sơ bệnh nhân (`/patients`) và Ca bệnh chẩn đoán (`/cases`).
-  - Nghiêm cấm người dùng tự sửa vai trò hoặc trạng thái tài khoản; chỉ Quản trị viên đang hoạt động mới có quyền phê duyệt bác sĩ và xóa dữ liệu.
-- **Định hướng Cloud Storage & Cloud Messaging**:
-  - Dành riêng cho sao lưu hồ sơ trực tuyến và thông báo trạng thái ca bệnh; tuyệt đối không sử dụng Firebase làm máy chủ suy luận hay tải ảnh CT lên đám mây để phân loại AI.
+### 4.2 Cài đặt các dịch vụ đám mây Firebase (Authentication, Firestore, Đồng bộ)
+- **Firebase Authentication (`firebase ^13.2.0` JS Modular SDK)**:
+  - Tích hợp phiên bản Firebase JS Modular SDK `^13.2.0` kết hợp cơ chế lưu phiên đăng nhập bền vững trên thiết bị thông qua `@react-native-async-storage/async-storage`, đồng thời hỗ trợ **đăng nhập, đăng ký tài khoản bác sĩ mới, khôi phục mật khẩu qua email (`resetPassword`) và cập nhật trạng thái tài khoản**.
+  - Quy trình đăng ký tài khoản bác sĩ mới: Mọi tài khoản khởi tạo thành công trên Authentication được ghi nhận vào Cloud Firestore với trạng thái `status: 'pending'` (Chờ duyệt) theo đặc tả SCR-A04; hệ thống kiểm soát truy cập theo trạng thái `pending` / `locked` / `active` trước khi cấp quyền vào màn hình Bác sĩ.
+  - Phân quyền người dùng (`role: 'doctor' | 'admin'`): Được xác thực tập trung từ Cloud Firestore, loại bỏ hoàn toàn cơ chế phân quyền mô phỏng dựa trên chuỗi email hay `mockUsers`.
+- **Cloud Firestore, Bộ quy tắc bảo mật & Đồng bộ hai chiều Offline-First (`SyncEngine`)**:
+  - Thiết lập tệp cấu hình `infra/firebase/firestore.rules` phân định rạch ròi 3 tầng dữ liệu: Hồ sơ người dùng (`/users`), Hồ sơ bệnh nhân (`/patients`) và Ca bệnh chẩn đoán (`/cases`), chỉ cho phép Quản trị viên đang hoạt động phê duyệt/khóa bác sĩ và đọc thống kê quản trị thực tế.
+  - Hiện thực hóa tầng đồng bộ hai chiều (`mobile/src/services/sync/` gồm `syncEngine.ts`, `syncService.ts`), hàng đợi thao tác ngoại tuyến Outbox (`SyncOperation` trong `localStorageService.ts`), phát hiện và xử lý xung đột chỉnh sửa bản ghi, tự động theo dõi trạng thái mạng để đồng bộ nền qua `expo-network`, cùng giao diện `SyncCenterModal` hiển thị trên 6 màn hình của phân hệ Bác sĩ.
+- **Phân định phạm vi Cloud Storage & Cloud Messaging**:
+  - Firebase chỉ phục vụ nghiệp vụ người dùng, đồng bộ hồ sơ và lưu trữ sao lưu khi trực tuyến; **tuyệt đối không sử dụng Firebase hay máy chủ từ xa làm backend suy luận AI hay sinh Grad-CAM**. Tích hợp upload ảnh CT/PDF lên Cloud Storage và thông báo đẩy FCM thuộc hạng mục mở rộng Cloud tiếp theo.
 
-### 4.3 Cài đặt ứng dụng React Native và Tầng suy luận On-Device Android
+### 4.3 Cài đặt ứng dụng React Native, AI On-Device và Xuất báo cáo PDF
 1. **Triển khai giao diện và điều hướng**:
-   - Hoàn thành toàn bộ 17 màn hình chính và các màn hình chi tiết, vượt qua 113/113 bài kiểm thử tự động giao diện.
+   - Hoàn thành hệ thống màn hình Auth, Bác sĩ và Quản trị viên kết nối dữ liệu thật qua Repository và Cloud Firestore, hỗ trợ song ngữ Việt - Anh và giao diện Sáng/Tối.
 2. **Cài đặt Engine suy luận On-Device Native C++**:
-   - Tích hợp `onnxruntime-react-native` (v1.24.3) và `react-native-fast-tflite` (v3.0.1) qua Nitro Modules.
-   - Cài đặt thuật toán nội suy ma trận **Pillow Nearest Resample** về kích thước ma trận `(1, 3, 224, 224)` trong mã native C++, giải quyết triệt để sự sai lệch kết quả giữa Python và Android Bitmap.
-   - Thực thi suy luận phiên bản mô hình FP32 nguyên bản (Adaptive ViT + LiteRT Fusion).
+   - Tích hợp `onnxruntime-react-native` (`^1.24.3`) và `react-native-fast-tflite` (`^3.0.1`) qua Nitro Modules, liên kết với `com.microsoft.onnxruntime:onnxruntime-android:1.31.0` và `com.google.ai.edge.litert:litert:1.4.0`.
+   - Cài đặt thuật toán nội suy ma trận **Pillow Nearest Resample** về kích thước `(1, 3, 224, 224)` trong `LungCtPipelineModule.kt` / mã native, giải quyết triệt để sự sai lệch kết quả giữa Python và Android Bitmap.
+   - Thực thi suy luận phiên bản mô hình FP32 nguyên bản (ViT ONNX + LiteRT Fusion) với thứ tự nhãn cố định `0: Benign`, `1: Malignant`, `2: Normal`.
 3. **Cài đặt Tầng lưu trữ cục bộ an toàn**:
-   - Hiện thực hóa lớp `EncryptedLocalStorageService` theo `ILocalStorageAdapter`.
-   - Cách ly nghiêm ngặt mã thử nghiệm `CryptoVault` bằng cờ `IS_DEV_SANDBOX_ONLY = true`, đảm bảo an toàn runtime cho ứng dụng di động.
-   - Cài đặt thuật toán bảo toàn dữ liệu nháp AUTH-08.
+   - Hiện thực hóa lớp `EncryptedLocalStorageService` theo `ILocalStorageAdapter` kết hợp `NativeCryptoVaultModule.kt` (Android Keystore AES-256-GCM + SQLCipher 4.6.1).
+   - Loại bỏ cơ chế mã hóa dự phòng thô sơ trên runtime sản phẩm; khi native vault chưa sẵn sàng, hệ thống từ chối lưu và báo lỗi rõ ràng.
+   - Cài đặt thuật toán bảo toàn dữ liệu nháp AUTH-08 và cô lập dữ liệu theo `ownerId`.
+4. **Cài đặt Xuất phiếu kết quả PDF vật lý (`pdfReportService.ts`)**:
+   - Tích hợp `expo-print` (`~58.0.9`) và `expo-sharing` (`~58.0.23`) kết xuất mẫu HTML chuẩn lâm sàng sang tệp `.pdf` vật lý, bao gồm thông tin hành chính ca bệnh, ảnh lát cắt CT, điểm tin cậy 3 lớp và khuyến cáo y khoa; **bảo đảm không đưa lớp phủ Grad-CAM giả vào báo cáo khi `gradcamAvailable: false`**.
 
-### 4.4 Cấu hình, đóng gói và phát hành phân hệ Android
-- Thiết lập cấu hình Gradle `build.gradle`, quy định `minSdkVersion = 29`, `targetSdkVersion = 34`.
-- Bổ sung thư viện `net.zetetic:sqlcipher-android:4.6.1@aar` và `androidx.sqlite:sqlite:2.4.0`.
-- Cấu hình nạp native thư viện SQLCipher `System.loadLibrary("sqlcipher")` trong `MainApplication.kt`.
-- Cấu hình phân tách kiến trúc APK (ABI Split) và tối ưu hóa ProGuard/R8 với quy tắc bảo toàn các lớp SQLCipher và CryptoVault.
+### 4.4 Cấu hình, đóng gói và phát hành phân hệ Android (`v1.0.6`)
+- Thiết lập cấu hình `mobile/android/app/build.gradle` với `applicationId = "com.anonymous.mobile"`, `versionCode = 7`, `versionName = "1.0.6"`, `minSdkVersion = 24`, `targetSdkVersion = 36`, `compileSdkVersion = 37`, bật `noCompress 'tflite', 'onnx', 'data'` và `useLegacyPackaging = true`.
+- Bổ sung thư viện `net.zetetic:sqlcipher-android:4.6.1@aar`, `androidx.sqlite:sqlite:2.4.0` và nạp `System.loadLibrary("sqlcipher")` trong `MainApplication.kt`.
+- Khắc phục triệt để lỗi giới hạn độ dài đường dẫn 260 ký tự (`MAX_PATH`) của CMake/Ninja trên Windows bằng cách cấu hình `buildStagingDirectory` ngắn (`%TEMP%\lct_cxx\<subproject>`) trong `mobile/android/build.gradle` trước plugin root, đồng thời đồng bộ bản mẫu này sang `mobile/native-templates/android/root-build.gradle`.
+- Đồng bộ đầy đủ `AndroidManifest.xml` (quyền `android.permission.CAMERA`, truy vấn `IMAGE_CAPTURE`, cấu hình `androidx.core.content.FileProvider` `${applicationId}.fileprovider`) và `res/xml/file_paths.xml` giữa `mobile/native-templates/android/` và `mobile/android/`.
+- Đóng gói thành công bản phát hành độc lập **`mobile/android/app/build/outputs/apk/release/app-release.apk`** qua `./gradlew assembleRelease` (`BUILD SUCCESSFUL`, 635 tasks) và kiểm tra thực tế cấu trúc APK bằng `apksigner`, `aapt2` và Python `zipfile`:
+  - **Dung lượng tệp**: `570,466,330` bytes (**544.04 MB**).
+  - **Mã băm SHA-256**: `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`.
+  - **Chữ ký số**: Xác thực thành công APK Signature Scheme v2 (`CN=Android Debug`, SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`), bảo toàn khóa ký để cài đè cập nhật mượt mà trên thiết bị đã cài bản trước.
+  - **Thành phần bên trong APK**: Chứa đủ 3 tệp trọng số AI lưu dưới dạng không nén (`STORED`) trong `assets/models/` (`vit_cls.onnx` `1,135,005` bytes, `vit_cls.onnx.data` `343,194,624` bytes, `fusion_model.tflite` `110,029,372` bytes), bundle Hermes bytecode `assets/index.android.bundle` (`3,799,148` bytes), `classes.dex` (`6,067,044` bytes) và thư viện native cho cả 4 kiến trúc (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) gồm `libonnxruntime.so`, `libNitroTflite.so`, `libsqlcipher.so`, `libhermesvm.so`.
 
 ### 4.5 Thực nghiệm và đo lường kết quả
 
-#### A. Kết quả kiểm thử tự động (Unit / Integration Tests)
-- Toàn bộ hệ thống vượt qua **16/16 test suites** với **150/150 test cases thành công (100%)** trong môi trường Jest sandbox:
-  - Giao diện người dùng và điều hướng: 116/116 test cases pass (bổ sung kiểm thử logic đếm ca nháp/hoàn tất trên trang chủ, lọc thống kê 7 ngày/30 ngày/tất cả, và nạp ca bệnh theo ID trên màn hình xuất PDF).
-  - Tầng lưu trữ và bảo mật (`localStorageService.test.ts`): 13/13 test cases pass (mã hóa chứng thực AES-256-GCM, bắt lỗi sai khóa, chống trùng lặp mã bệnh nhân Q-20, migration schema, cô lập dữ liệu đa người dùng và kịch bản biên AUTH-08).
-  - Tích hợp nghiệp vụ bệnh nhân (`patientRepository.test.ts`): 7/7 test cases pass (tự động seed dữ liệu mẫu giả lập ban đầu cho bác sĩ, thêm bệnh nhân mới có mã hóa không lưu plaintext, sửa thông tin, giả lập đóng app và mở lại đọc lại nguyên vẹn, tách biệt tuyệt đối giữa 2 bác sĩ, bắt lỗi sai khóa giải mã, và **kiểm tra chặn lưu dữ liệu khi thiếu module mã hóa an toàn**).
-  - Tích hợp nghiệp vụ ca bệnh và ảnh CT (`caseRepository.test.ts`): 6/6 test cases pass (tự động seed danh sách ca bệnh mẫu ban đầu, tạo ca mới cho bệnh nhân có mã hóa AES-256-GCM không lưu plaintext, cập nhật ghi chú bác sĩ bền vững, giả lập đóng app/kill tiến trình và mở lại nạp lại đầy đủ ca bệnh và ghi chú từ kho mã hóa, cô lập ca bệnh giữa 2 tài khoản bác sĩ, **đính kèm tệp ảnh CT vào vùng sandbox của app và lưu trữ kết quả suy luận On-Device AI an toàn bền vững**).
-  - Kiểm thử chuyển đổi SQLite (`sqliteMigration.test.ts`): 3/3 test cases pass (chuyển đổi an toàn từ AsyncStorage sang SQLite, kiểm tra tính toàn vẹn và phục hồi khi gián đoạn).
-  - Kiểm thử bảo mật SQLCipher (`sqlcipherVault.test.ts`): 5/5 test cases pass (mở bằng passphrase đúng, từ chối khóa sai `SQLITE_NOTADB`, kiểm tra tính ngẫu nhiên trang đĩa loại trừ 100% plaintext, phục hồi an toàn sau gián đoạn, và **cơ chế bảo vệ mã hóa bản sao lưu .encrypted.bak bằng AES-256-GCM kèm kiểm thử khôi phục thảm họa**).
-  - *Đính chính khoa học về phạm vi kiểm thử*: Kết quả kiểm thử trên Jest được thực thi trong môi trường mô phỏng (Node.js runtime); trên **máy ảo Android qua APK Release**, ta tiến hành đo kiểm thực tế trên tệp đĩa vật lý và giao diện người dùng. Tuyệt đối không đánh đồng kết quả mock trong bộ nhớ với việc đo kiểm trên thiết bị thật.
-  - *Chính sách bảo vệ*: Đã loại bỏ hoàn toàn cơ chế mã hóa dự phòng bằng hash/xor thô sơ; nếu native module chưa sẵn sàng thì hệ thống từ chối lưu và báo lỗi rõ ràng. Phân định rõ cơ chế đăng nhập hiện tại là Mock Auth (UI-05), lọc `ownerId` là cô lập logic ứng dụng chứ chưa phải phân quyền hoàn chỉnh. Không tự khẳng định phần cứng TEE/StrongBox nếu chưa đo kiểm qua `KeyInfo` trên thiết bị thật.
+#### A. Kết quả kiểm thử tĩnh và kiểm thử tự động (TypeScript, Lint, Jest)
+- **Kiểm tra kiểu TypeScript (`npm run typecheck`)**: Đạt **0 lỗi** trên toàn bộ dự án sau khi cập nhật phiên bản `1.0.6`.
+- **Kiểm tra bộ unit/integration test (`npm test -- --watchAll=false`)**: Toàn bộ hệ thống vượt qua **19/19 test suites** với **168/168 test cases thành công (100%)** trong môi trường Jest sandbox, bao gồm:
+  - Tích hợp dịch vụ mới: `authService.test.ts` (xác thực Firebase & khôi phục mật khẩu), `syncEngine.test.ts` (đồng bộ Outbox & xử lý xung đột), `pdfReportService.test.ts` (kết xuất HTML/PDF & ẩn Grad-CAM giả).
+  - Giao diện, điều hướng, i18n, Theme, Dev Audit: `authNavigation.test.tsx`, `doctorTabs.test.tsx`, `doctorDetailScreens.test.tsx`, `adminScreens.test.tsx`, `components.test.tsx`, `theme.test.ts`, `icons.test.ts`, `i18n.test.ts`, `settingsStorage.test.ts`, `sourceAudit.test.ts`.
+  - AI & Lưu trữ mã hóa: `onDevicePipeline.test.ts`, `localStorageService.test.ts`, `patientRepository.test.ts`, `caseRepository.test.ts`, `sqliteMigration.test.ts`, `sqlcipherVault.test.ts`.
+- **Kiểm tra quy chuẩn mã nguồn (`npm run lint`)**: Ghi nhận trung thực còn **23 vấn đề (4 errors `react-hooks/set-state-in-effect` tại `DoctorCasesScreen.tsx`, `DoctorPatientsScreen.tsx`, `DoctorStatsScreen.tsx` và 19 warnings về biến/import chưa sử dụng)** từ mã giao diện hiện có cần được dọn sạch trong bước rà soát UI tiếp theo.
+- *Đính chính khoa học về phạm vi kiểm thử*: Kết quả kiểm thử trên Jest được thực thi trong môi trường mô phỏng (Node.js runtime với mock cho Firebase SDK và Native Modules); trên **máy ảo Android qua APK Release**, ta đã kiểm chứng quá trình suy luận On-Device và lưu trữ SQLCipher trên tệp đĩa vật lý. Tuyệt đối không đánh đồng kết quả Jest hay máy ảo với việc đo kiểm trên điện thoại Android vật lý thật.
+- *Chính sách bảo vệ*: Đã loại bỏ cơ chế mã hóa dự phòng bằng hash/xor thô sơ; nếu native module chưa sẵn sàng thì hệ thống từ chối lưu và báo lỗi rõ ràng. Lọc `ownerId` bảo đảm cô lập dữ liệu cục bộ kết hợp phân quyền trên `firestore.rules`. Không tự khẳng định phần cứng TEE/StrongBox nếu chưa đo kiểm qua `KeyInfo` trên thiết bị thật.
 
 #### B. Kết quả thực nghiệm suy luận kỹ thuật AI On-Device trên Máy ảo Android x86_64 API 34
 Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trường giả lập Android Studio Emulator (`sdk_gphone64_x86_64`, Android 14 API 34, CPU x86_64, RAM 2.5 GB) ở chế độ ngoại tuyến hoàn toàn (`svc wifi disable` & `svc data disable`):
@@ -380,49 +385,51 @@ Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trư
      | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher 4.6.1) | Đạt | Đạt (`sqlcipherVault.test.ts`, 145/145 tests) | Đạt (Tệp 53.248 bytes, `strings` ra 0 byte plaintext) |
      | Sao lưu an toàn kho cũ (`.plaintext.bak`) | Đạt | Đạt | Đạt (Tệp backup 61.440 bytes bảo toàn) |
 
-#### D. Trạng thái thực nghiệm trên Thiết bị vật lý thật (Xiaomi Redmi 13)
-- **Trạng thái**: Đang trong quá trình chuẩn bị để cài đặt và đo kiểm trên thiết bị vật lý thật.
-- **Cam kết khoa học**: Khóa luận tuyệt đối không lấy kết quả trên máy ảo làm kết quả trên điện thoại thật. Số liệu thực tế về RAM, nhiệt độ, mức tiêu hao pin và thời gian suy luận trên chip MediaTek Helio G91-Ultra sẽ được cập nhật đầy đủ sau khi hoàn tất đo đạc trên thiết bị thật.
+#### D. Trạng thái thực nghiệm trên Thiết bị vật lý thật
+- **Trạng thái**: Đã sẵn sàng tệp cài đặt **`app-release.apk` v1.0.6 (`versionCode 7`, 544.04 MB, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`)**; đang chờ người dùng kết nối điện thoại Android thật (dự kiến **Xiaomi Redmi Note 12 Turbo**) để thực hiện Đầu việc 5.
+- **Cam kết khoa học**: Khóa luận tuyệt đối không lấy kết quả trên máy ảo làm kết quả trên điện thoại thật. Số liệu thực tế về RAM, nhiệt độ, mức tiêu hao pin, thời gian suy luận On-Device, thao tác Camera/Picker, xuất PDF, đồng bộ Firebase trực tuyến/ngoại tuyến và `KeyInfo` phần cứng sẽ được cập nhật trung thực sau khi đo đạc trực tiếp trên thiết bị thật.
 
-### 4.6 Đánh giá kiến trúc triển khai Android và đối sánh giải pháp nền tảng
-Phân tích giải pháp kỹ thuật đã triển khai trên Android (Dương Hải Đăng) và đối sánh với định hướng nền tảng iOS phục vụ khả năng mở rộng tương lai:
+### 4.6 Đánh giá kiến trúc triển khai Android và đối sánh phạm vi đề tài
+Phân tích giải pháp kỹ thuật đã triển khai chính thức trên Android (**Dương Hải Đăng**) và đối chiếu với định hướng lưu trữ lịch sử của đề tài:
 
-| Tiêu chí | Phân hệ Android (Triển khai chính thức) | Khảo sát nền tảng iOS (Định hướng mở rộng) |
+| Tiêu chí | Phân hệ Android (Phạm vi chính thức hiện tại) | Ghi chú đối sánh kiến trúc |
 | :--- | :--- | :--- |
-| **Sinh viên thực hiện** | **Dương Hải Đăng** | **Khảo sát tài liệu / Tham khảo** |
-| **Nền tảng kiểm thử mục tiêu**| Android SDK 34 / Thiết bị Android | iOS 17+ / Thiết bị iOS |
-| **Runtime AI On-Device** | ONNX Runtime Native C++ + LiteRT C API | CoreML / ONNX Runtime iOS |
-| **Tăng tốc phần cứng** | CPU đa luồng / NNAPI / Vulkan | Apple Neural Engine (ANE) / Metal |
-| **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Page-level AES-256)** | CoreData mã hóa / SQLite mã hóa |
-| **Quản lý khóa an toàn** | Android Keystore System (AES-256-GCM, định hướng TEE/StrongBox) | iOS Keychain Services & Secure Enclave |
-| **Trạng thái thực nghiệm AI** | **Đã chạy phân loại trên Android (1.580 ms)** | **Khảo sát lý thuyết định hướng mở rộng** |
+| **Sinh viên thực hiện** | **Dương Hải Đăng** (MSSV: 49.01.103.020) | Toàn bộ phạm vi Android On-Device |
+| **Nền tảng mục tiêu** | `minSdk 24` / `targetSdk 36` / `compileSdk 37` | Đã đóng gói `app-release.apk` v1.0.6 |
+| **Runtime AI On-Device** | ONNX Runtime (`1.31.0`) + LiteRT (`1.4.0`) C++/Kotlin | Chạy 100% trực tiếp trên thiết bị, không API suy luận |
+| **Tăng tốc phần cứng** | CPU đa luồng / NNAPI / Vulkan | Tùy cấu hình phần cứng thiết bị Android |
+| **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Page-level AES-256)** | Bảo vệ dữ liệu ngoại tuyến trên đĩa |
+| **Quản lý khóa an toàn** | Android Keystore System (AES-256-GCM, chờ đo `KeyInfo` trên máy thật) | Chặt chẽ, không fallback mã hóa yếu |
+| **Xác thực & Đồng bộ** | **Firebase JS SDK `^13.2.0` + `SyncEngine` Outbox/Conflict** | Kết nối Auth/Firestore trực tuyến & offline-first |
+| **Báo cáo PDF & Giải thích AI** | `expo-print` + `expo-sharing` (**Grad-CAM tạm hoãn `MSG-11`**) | Không đưa heatmap giả vào phiếu PDF |
 
 ---
 
 ## CHƯƠNG 5: KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
 
 ### 5.1 Kết quả đạt được
-1. Hiện thực hóa thành công bộ khung giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture trên Android, vượt qua 113/113 bài kiểm thử UI.
+1. Hiện thực hóa thành công ứng dụng **LungCT** trên nền tảng Android (React Native `0.88.0`, TypeScript, New Architecture) với đầy đủ các phân hệ Bác sĩ và Quản trị viên, vượt qua kiểm tra kiểu TypeScript (`0` lỗi) và **19/19 test suites với 168/168 tests Jest thành công (100%)**.
 2. Tích hợp và kiểm chứng thành công pipeline suy luận phân loại Trí tuệ nhân tạo biên (On-Device AI) trên Android với mô hình AACNN-ViT Adaptive FP32 (ONNX Runtime Mobile + LiteRT), đạt thời gian suy luận kỹ thuật ~1.580 ms trên máy ảo Android x86_64 hoàn toàn ngoại tuyến.
 3. Giải quyết triệt để vấn đề sai lệch tiền xử lý ảnh bằng thuật toán Native C++ Pillow Nearest Resample, sai số so với Python chỉ ở mức giải mã JPEG ($\le 9.89 \times 10^{-5}$).
 4. Hiện thực hóa và kiểm chứng thành công tầng lưu trữ cục bộ mã hóa toàn diện:
    - Module Native Android Keystore kết hợp SQLCipher 4.6.1 (`NativeCryptoVaultModule.kt`) quản lý mã hóa toàn bộ tệp nhị phân cấp trang đĩa (Page-level Full Database Encryption), bảo vệ khóa passphrase hai tầng qua Android Keystore Master Key.
-   - Cơ chế chuyển đổi an toàn Zero Data Loss Migration từ SQLite plaintext sang SQLCipher, tự động sao lưu dự phòng kho cũ (`.plaintext.bak`).
-   - Kiểm chứng thực nghiệm trên máy ảo Android API 34 bằng lệnh `strings` cho kết quả **0 byte plaintext**, loại trừ hoàn toàn nguy cơ rò rỉ dữ liệu y tế kể cả khi trích xuất tệp vật lý trực tiếp.
-   - Vượt qua **16/16 test suites** với **145/145 tests Jest thành công (100%)**, chứng minh tính toàn vẹn, bảo toàn dữ liệu nháp AUTH-08 và khả năng phục hồi sau gián đoạn.
+   - Cơ chế chuyển đổi an toàn Zero Data Loss Migration từ SQLite plaintext sang SQLCipher, tự động sao lưu dự phòng kho cũ (`.plaintext.bak` và `.encrypted.bak`).
+   - Kiểm chứng thực nghiệm trên máy ảo Android API 34 bằng lệnh `strings` cho kết quả **0 byte plaintext** tại DB mã hóa và kiểm chứng logic bảo toàn nháp AUTH-08 qua Jest.
+5. Hoàn thiện nghiệp vụ Firebase & Y tế bổ sung: tích hợp Firebase Authentication (bao gồm khôi phục mật khẩu), Cloud Firestore & `firestore.rules`, **Sync Engine Offline-First** (`SyncCenterModal`, Outbox, phát hiện xung đột, đồng bộ nền qua `expo-network`), thống kê Quản trị viên thời gian thực và **xuất báo cáo PDF vật lý** (`expo-print` + `expo-sharing`).
+6. Khắc phục thành công lỗi `CMake MAX_PATH` trên Windows qua cấu hình `root-build.gradle`, đồng bộ đầy đủ `AndroidManifest.xml` (quyền `CAMERA`, `FileProvider`) vào `mobile/native-templates/android/` và đóng gói xác thực thành công **`app-release.apk` v1.0.6 (`versionCode 7`, `544.04 MB`, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`)**.
 
 ### 5.2 Hạn chế
-- **Grad-CAM On-Device**: Chưa hoàn thành giải pháp trích xuất activation maps thuần C++ không cần Autograd trên thiết bị di động; giao diện hiện tại mới hiển thị bản đồ nhiệt giả lập/mô phỏng UI.
-- **Bảo vệ phần cứng thực tế**: Cơ chế bảo vệ khóa qua TEE/StrongBox hiện mới chạy trên Software Keymaster của máy ảo và cần đo kiểm bằng `KeyInfo` trên điện thoại Xiaomi Redmi 13 thật.
-- **Xuất báo cáo PDF**: Mới dừng lại ở màn hình cấu hình xem trước theo Figma (`ExportPdfScreen.tsx`), chưa tích hợp thư viện native tạo tệp PDF vật lý.
-- **Đo kiểm thiết bị thật**: Chưa hoàn tất nạp APK và đo kiểm thực tế trên điện thoại vật lý Xiaomi Redmi 13.
+- **Grad-CAM On-Device**: Chưa hoàn thành giải pháp trích xuất activation maps/gradient trực tiếp trên thiết bị Android không cần Autograd; tính năng này đang được tạm hoãn sau Đầu việc 4 và giao diện/PDF cô lập trung thực trạng thái `gradcamAvailable: false` (`MSG-11`).
+- **Bảo vệ phần cứng thực tế**: Cơ chế bảo vệ khóa qua TEE/StrongBox hiện mới kiểm chứng trên Software Keymaster của máy ảo và cần đo kiểm bằng `KeyInfo` trên điện thoại Android vật lý thật.
+- **Đo kiểm thiết bị thật (Đầu việc 5)**: Chưa hoàn tất nạp `app-release.apk` v1.0.6 lên điện thoại Android thật để kiểm thử toàn luồng trực tiếp và đo RAM/nhiệt độ/pin.
+- **Cloud Storage & Push Notifications**: Chưa hoàn thiện sao lưu ảnh CT/PDF lên Firebase Cloud Storage và thông báo đẩy Firebase Cloud Messaging (FCM).
+- **Chất lượng lint mã nguồn UI cũ**: Lệnh `npm run lint` còn ghi nhận 4 lỗi `react-hooks/set-state-in-effect` và 19 cảnh báo ở một số màn hình cũ cần rà soát khắc phục.
 - **Quy chuẩn y tế & Pháp lý**: Hệ thống chỉ tham khảo các nguyên tắc thiết kế bảo vệ dữ liệu cá nhân; chưa có chứng nhận hoặc kiểm định pháp lý lâm sàng/HIPAA.
 
 ### 5.3 Hướng phát triển
-- Nạp bản build APK Release lên điện thoại Xiaomi Redmi 13 thật để đo kiểm độ trễ thực tế, nhiệt độ, mức tiêu hao pin và mức độ bảo vệ phần cứng TEE của Android Keystore.
-- Nghiên cứu hiện thực hóa thuật toán Grad-CAM On-Device không Autograd cho mô hình AACNN-ViT.
-- Khảo sát tích hợp thư viện sinh tệp PDF y tế theo chuẩn lâm sàng (gói PDF-01).
-- Hoàn thiện kết nối đám mây Firebase (Cloud Firestore & Storage) và cơ chế đồng bộ hai chiều khi trực tuyến.
+- **Ưu tiên ngay kế tiếp (Đầu việc 5)**: Cài đặt `app-release.apk` v1.0.6 lên điện thoại Android vật lý thật (dự kiến Xiaomi Redmi Note 12 Turbo) để nghiệm thu đầy đủ Firebase Auth/Sync, Camera/Photo Picker, On-Device AI, PDF và đo đạc RAM, độ trễ, nhiệt độ, `KeyInfo` TEE.
+- Nghiên cứu hiện thực hóa thuật toán Grad-CAM On-Device không Autograd cho mô hình AACNN-ViT trên Android (giữ nguyên tắc không gọi server suy luận).
+- Hoàn thiện Firebase Cloud Storage (sao lưu ảnh/tệp) và Firebase Cloud Messaging (thông báo đẩy), đồng thời dọn sạch các lỗi/cảnh báo ESLint hiện còn.
 
 ---
 
