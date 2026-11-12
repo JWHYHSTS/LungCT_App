@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
@@ -11,6 +11,7 @@ import {
   TopBar,
 } from '../../../ui/components';
 import { getAdminStatsByPeriod, type AdminOverviewStats } from '../../../mocks/adminMocks';
+import { fetchAdminOverviewStatsFromFirestore } from '../../../services/firebase/adminService';
 
 /**
  * SCR-M03 (10-admin-stats): Màn hình Quản trị viên · Thống kê tổng hợp.
@@ -26,10 +27,30 @@ export const AdminStatsScreen: React.FC = () => {
   const { colors, spacing, radius } = theme;
 
   const [period, setPeriod] = useState<string>('30d');
+  const [cloudStats, setCloudStats] = useState<AdminOverviewStats | null>(null);
 
-  const stats: AdminOverviewStats = useMemo(() => {
-    return getAdminStatsByPeriod(period as '7d' | '30d' | 'all');
+  useEffect(() => {
+    let isMounted = true;
+    const loadStats = async () => {
+      try {
+        const res = await fetchAdminOverviewStatsFromFirestore(
+          period as '7d' | '30d' | 'all',
+        );
+        if (isMounted) {
+          setCloudStats(res);
+        }
+      } catch (err) {
+        console.warn('[AdminStatsScreen] Lỗi nạp thống kê từ Firestore:', err);
+      }
+    };
+    loadStats();
+    return () => {
+      isMounted = false;
+    };
   }, [period]);
+
+  const stats: AdminOverviewStats =
+    cloudStats || getAdminStatsByPeriod(period as '7d' | '30d' | 'all');
 
   const totalImages = stats.analyzedImages || 1;
   const benignPercent = Math.round((stats.aiBreakdown.benign / totalImages) * 100);

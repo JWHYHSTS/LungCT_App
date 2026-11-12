@@ -10,7 +10,11 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { firestore } from './firebaseConfig';
-import { AdminDoctorAccount, DoctorAccountStatus } from '../../mocks/adminMocks';
+import {
+  AdminDoctorAccount,
+  AdminOverviewStats,
+  DoctorAccountStatus,
+} from '../../mocks/adminMocks';
 
 /**
  * Lắng nghe danh sách toàn bộ tài khoản bác sĩ theo thời gian thực từ Cloud Firestore.
@@ -95,5 +99,66 @@ export async function lockDoctorInFirestore(doctorId: string, reason: string): P
     lockReason: reason,
     updatedAt: new Date().toISOString(),
   });
+}
+
+/**
+ * Thống kê tổng hợp hệ thống cho Quản trị viên trực tiếp từ Cloud Firestore.
+ * TUÂN THỦ BR-OWN-03: Chỉ tổng hợp số đếm ẩn danh (trạng thái tài khoản bác sĩ,
+ * số ca hoàn tất và số lượng phân bố nhãn AI), tuyệt đối không trích xuất PII/PHI hay ảnh CT.
+ */
+export async function fetchAdminOverviewStatsFromFirestore(
+  period: '7d' | '30d' | 'all',
+): Promise<AdminOverviewStats> {
+  let activeDoctors = 0;
+  let pendingDoctors = 0;
+
+  const doctorsQuery = query(collection(firestore, 'users'), where('role', '==', 'doctor'));
+  const userSnaps = await getDocs(doctorsQuery);
+  userSnaps.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (data.status === 'active') activeDoctors += 1;
+    else if (data.status === 'pending') pendingDoctors += 1;
+  });
+
+  let completedCases = 0;
+  let analyzedImages = 0;
+  const aiBreakdown = { benign: 0, malignant: 0, normal: 0 };
+
+  const nowMs = Date.now();
+  const days = period === '7d' ? 7 : 30;
+  const thresholdMs = nowMs - days * 24 * 60 * 60 * 1000;
+
+  const casesSnaps = await getDocs(collection(firestore, 'cases'));
+  casesSnaps.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (data.status === 'TRASHED') return;
+
+    if (period !== 'all') {
+      const scanMs = new Date(data.scanDate || data.updatedAt || data.createdAt).getTime();
+      if (!isNaN(scanMs) && scanMs < thresholdMs) return;
+    }
+
+    if (data.status === 'COMPLETED') {
+      completedCases += 1;
+    }
+
+    const summary = data.aiSummary;
+    if (summary && typeof summary.analyzedCount === 'number') {
+      analyzedImages += summary.analyzedCount;
+      const counts = summary.labelCounts || {};
+      aiBreakdown.benign += typeof counts.benign === 'number' ? counts.benign : 0;
+      aiBreakdown.malignant += typeof counts.malignant === 'number' ? counts.malignant : 0;
+      aiBreakdown.normal += typeof counts.normal === 'number' ? counts.normal : 0;
+    }
+  });
+
+  return {
+    period,
+    activeDoctors,
+    pendingDoctors,
+    completedCases,
+    analyzedImages,
+    aiBreakdown,
+  };
 }
 

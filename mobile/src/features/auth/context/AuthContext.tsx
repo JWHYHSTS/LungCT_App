@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import * as Network from 'expo-network';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../../services/firebase/firebaseConfig';
@@ -9,6 +10,7 @@ import {
   firebaseResetPassword,
   RegisterDoctorParams,
 } from '../../../services/firebase/authService';
+import { SyncEngine } from '../../../services/sync';
 import { resetDoctorStore } from '../../../mocks/doctorMocks';
 
 export type UserRole = 'doctor' | 'admin';
@@ -54,6 +56,48 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(true);
+
+  // Lắng nghe trạng thái kết nối mạng thực tế của thiết bị Android
+  useEffect(() => {
+    let sub: { remove: () => void } | undefined;
+    try {
+      if (typeof Network?.getNetworkStateAsync === 'function') {
+        Network.getNetworkStateAsync()
+          .then((state) => {
+            if (typeof state.isConnected === 'boolean') {
+              const reachable = state.isInternetReachable !== false;
+              setIsOnline(state.isConnected && reachable);
+            }
+          })
+          .catch(() => {});
+      }
+      if (typeof Network?.addNetworkStateListener === 'function') {
+        sub = Network.addNetworkStateListener((state) => {
+          const connected = Boolean(state.isConnected);
+          const reachable = state.isInternetReachable !== false;
+          setIsOnline(connected && reachable);
+        });
+      }
+    } catch {
+      // Bỏ qua trong môi trường test không có native module expo-network
+    }
+    return () => {
+      try {
+        sub?.remove();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
+  // Tự động đồng bộ Outbox nền khi Bác sĩ đăng nhập hợp lệ và thiết bị trực tuyến
+  useEffect(() => {
+    if (user && user.status === 'active' && user.role === 'doctor' && isOnline) {
+      SyncEngine.syncAll(user.id, true).catch((err) => {
+        console.warn('[AuthContext] Đồng bộ nền gặp lỗi:', err);
+      });
+    }
+  }, [user, isOnline]);
 
   // Lắng nghe trạng thái phiên đăng nhập Firebase khi khởi chạy app
   useEffect(() => {
