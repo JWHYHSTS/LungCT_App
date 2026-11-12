@@ -24,7 +24,7 @@ export function subscribePatientRepository(listener: PatientChangeListener): () 
   };
 }
 
-function notifyListeners() {
+export function notifyPatientListeners() {
   listeners.forEach((listener) => {
     try {
       listener();
@@ -173,7 +173,7 @@ export class PatientRepository {
       symptoms: data.symptoms,
     });
 
-    notifyListeners();
+    notifyPatientListeners();
     return entityToMockPatient(created, []);
   }
 
@@ -210,7 +210,7 @@ export class PatientRepository {
     });
 
     const cases = await localStorageService.getCases(ownerId, patientId, true);
-    notifyListeners();
+    notifyPatientListeners();
     return entityToMockPatient(updated, cases);
   }
 
@@ -221,7 +221,7 @@ export class PatientRepository {
     await this.ensureReady(ownerId);
     const success = await localStorageService.trashPatient(ownerId, patientId);
     if (success) {
-      notifyListeners();
+      notifyPatientListeners();
     }
     return success;
   }
@@ -233,7 +233,7 @@ export class PatientRepository {
     await this.ensureReady(ownerId);
     const success = await localStorageService.restorePatient(ownerId, patientId);
     if (success) {
-      notifyListeners();
+      notifyPatientListeners();
     }
     return success;
   }

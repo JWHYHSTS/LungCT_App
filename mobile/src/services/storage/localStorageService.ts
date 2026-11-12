@@ -722,6 +722,162 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
   }
 
   // ==========================================
+  // ĐỒNG BỘ HÓA (SYNC OUTBOX & MERGE)
+  // ==========================================
+
+  public async getAllPredictionsForOwner(ownerId: string): Promise<AIPredictionResultEntity[]> {
+    const keys = this.getKeys(ownerId);
+    return await this.readEncryptedTable<AIPredictionResultEntity>(ownerId, keys.predictions);
+  }
+
+  public async getPendingSyncItems(ownerId: string): Promise<{
+    patients: PatientEntity[];
+    cases: CaseEntity[];
+  }> {
+    const allPatients = await this.getPatients(ownerId, true);
+    const allCases = await this.getCases(ownerId, undefined, true);
+    return {
+      patients: allPatients.filter((p) => p.syncState === 'pending'),
+      cases: allCases.filter((c) => c.syncState === 'pending'),
+    };
+  }
+
+  public async markPatientSynced(
+    ownerId: string,
+    patientId: string,
+    syncedRevision: number,
+  ): Promise<boolean> {
+    const keys = this.getKeys(ownerId);
+    const patients = await this.getPatients(ownerId, true);
+    const target = patients.find((p) => p.patientId === patientId);
+    if (!target) return false;
+
+    // Chỉ đánh dấu synced nếu bác sĩ chưa sửa đổi tiếp (revision không vượt quá bản vừa đẩy)
+    if (target.revision <= syncedRevision) {
+      target.syncState = 'synced';
+      await this.writeEncryptedTable(ownerId, keys.patients, patients);
+
+      try {
+        await CryptoVault.executeSecureSqlAsync(
+          ownerId,
+          `UPDATE secure_patients SET sync_state = 'synced' WHERE patient_id = ? AND revision <= ?`,
+          [patientId, syncedRevision],
+        );
+      } catch {
+        // Bỏ qua nếu môi trường test không mở SQLite native
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public async markCaseSynced(
+    ownerId: string,
+    caseId: string,
+    syncedRevision: number,
+  ): Promise<boolean> {
+    const keys = this.getKeys(ownerId);
+    const cases = await this.getCases(ownerId, undefined, true);
+    const target = cases.find((c) => c.caseId === caseId);
+    if (!target) return false;
+
+    if (target.revision <= syncedRevision) {
+      target.syncState = 'synced';
+      await this.writeEncryptedTable(ownerId, keys.cases, cases);
+
+      try {
+        await CryptoVault.executeSecureSqlAsync(
+          ownerId,
+          `UPDATE secure_cases SET sync_state = 'synced' WHERE case_id = ? AND revision <= ?`,
+          [caseId, syncedRevision],
+        );
+      } catch {
+        // Bỏ qua nếu môi trường test không mở SQLite native
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public async upsertPatientFromCloud(
+    ownerId: string,
+    remotePatient: PatientEntity,
+  ): Promise<'inserted' | 'updated' | 'skipped' | 'conflict'> {
+    const keys = this.getKeys(ownerId);
+    const patients = await this.getPatients(ownerId, true);
+    const idx = patients.findIndex((p) => p.patientId === remotePatient.patientId);
+
+    if (idx === -1) {
+      const inserted: PatientEntity = {
+        ...remotePatient,
+        ownerId,
+        syncState: 'synced',
+      };
+      patients.unshift(inserted);
+      await this.writeEncryptedTable(ownerId, keys.patients, patients);
+      return 'inserted';
+    }
+
+    const local = patients[idx];
+    if (local.syncState === 'pending' && remotePatient.revision > local.revision) {
+      local.syncState = 'conflict';
+      await this.writeEncryptedTable(ownerId, keys.patients, patients);
+      return 'conflict';
+    }
+
+    if (local.syncState === 'synced' && remotePatient.revision > local.revision) {
+      patients[idx] = {
+        ...remotePatient,
+        ownerId,
+        syncState: 'synced',
+      };
+      await this.writeEncryptedTable(ownerId, keys.patients, patients);
+      return 'updated';
+    }
+
+    return 'skipped';
+  }
+
+  public async upsertCaseFromCloud(
+    ownerId: string,
+    remoteCase: CaseEntity,
+  ): Promise<'inserted' | 'updated' | 'skipped' | 'conflict'> {
+    const keys = this.getKeys(ownerId);
+    const cases = await this.getCases(ownerId, undefined, true);
+    const idx = cases.findIndex((c) => c.caseId === remoteCase.caseId);
+
+    if (idx === -1) {
+      const inserted: CaseEntity = {
+        ...remoteCase,
+        ownerId,
+        syncState: 'synced',
+      };
+      cases.unshift(inserted);
+      await this.writeEncryptedTable(ownerId, keys.cases, cases);
+      return 'inserted';
+    }
+
+    const local = cases[idx];
+    if (local.syncState === 'pending' && remoteCase.revision > local.revision) {
+      local.syncState = 'conflict';
+      await this.writeEncryptedTable(ownerId, keys.cases, cases);
+      return 'conflict';
+    }
+
+    if (local.syncState === 'synced' && remoteCase.revision > local.revision) {
+      cases[idx] = {
+        ...remoteCase,
+        ownerId,
+        syncState: 'synced',
+      };
+      await this.writeEncryptedTable(ownerId, keys.cases, cases);
+      return 'updated';
+    }
+
+    return 'skipped';
+  }
+
+  // ==========================================
   // BẢO MẬT & DỌN DẸP DỮ LIỆU TÀI KHOẢN BỊ KHÓA (AUTH-08)
   // ==========================================
 

@@ -101,6 +101,23 @@ export interface ILocalStorageAdapter {
   // === THỐNG KÊ (PROJECTION) ===
   getDoctorStats(ownerId: string, period?: '7d' | '30d' | 'all'): Promise<DoctorStatsProjection>;
 
+  // === ĐỒNG BỘ HÓA (SYNC OUTBOX & MERGE) ===
+  getAllPredictionsForOwner(ownerId: string): Promise<AIPredictionResultEntity[]>;
+  getPendingSyncItems(ownerId: string): Promise<{
+    patients: PatientEntity[];
+    cases: CaseEntity[];
+  }>;
+  markPatientSynced(ownerId: string, patientId: string, syncedRevision: number): Promise<boolean>;
+  markCaseSynced(ownerId: string, caseId: string, syncedRevision: number): Promise<boolean>;
+  upsertPatientFromCloud(
+    ownerId: string,
+    remotePatient: PatientEntity,
+  ): Promise<'inserted' | 'updated' | 'skipped' | 'conflict'>;
+  upsertCaseFromCloud(
+    ownerId: string,
+    remoteCase: CaseEntity,
+  ): Promise<'inserted' | 'updated' | 'skipped' | 'conflict'>;
+
   // === BẢO MẬT & XỬ LÝ TÀI KHOẢN BỊ KHÓA (AUTH-08) ===
   /**
    * Xử lý dữ liệu khi tài khoản bị khóa theo đặc tả AUTH-08:

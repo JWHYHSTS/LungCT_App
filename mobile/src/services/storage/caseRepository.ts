@@ -36,7 +36,7 @@ export function subscribeCaseRepository(listener: CaseChangeListener): () => voi
   };
 }
 
-function notifyCaseListeners() {
+export function notifyCaseListeners() {
   listeners.forEach((listener) => {
     try {
       listener();
@@ -199,11 +199,7 @@ export class CaseRepository {
     const patientMap = new Map<string, PatientEntity>();
     patients.forEach((p) => patientMap.set(p.patientId, p));
 
-    const keys = (localStorageService as any).getKeys(ownerId);
-    const predictions = await (localStorageService as any).readEncryptedTable(
-      ownerId,
-      keys.predictions,
-    );
+    const predictions = await localStorageService.getAllPredictionsForOwner(ownerId);
 
     const casesWithImages: MockCase[] = [];
     for (const entity of entities) {
@@ -228,11 +224,7 @@ export class CaseRepository {
 
     const patient = await localStorageService.getPatientById(ownerId, entity.patientId);
     const ctImages = await localStorageService.getImagesByCaseId(ownerId, caseId);
-    const keys = (localStorageService as any).getKeys(ownerId);
-    const predictions = await (localStorageService as any).readEncryptedTable(
-      ownerId,
-      keys.predictions,
-    );
+    const predictions = await localStorageService.getAllPredictionsForOwner(ownerId);
     return entityToMockCase(entity, patient, ctImages, predictions);
   }
 

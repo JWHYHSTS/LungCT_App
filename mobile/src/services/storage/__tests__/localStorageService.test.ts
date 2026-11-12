@@ -500,4 +500,54 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       expect(remainingCases[0].patientId).toBe(p1.patientId); // Liên kết khóa ngoại hoàn toàn nguyên vẹn!
     });
   });
+
+  describe('7. Đồng bộ hóa Outbox & Hợp nhất đám mây (Sync Outbox & Merge)', () => {
+    it('đánh dấu synced theo đúng revision và bảo vệ dữ liệu pending khi phát hiện xung đột', async () => {
+      const p = await storage.createPatient(DOC_A, {
+        patientCode: 'BN-SYNC-01',
+        fullName: 'Phạm Minh Tuấn',
+        dateOfBirth: '12/12/1982',
+        sex: 'MALE',
+      });
+      const c = await storage.createCase(DOC_A, {
+        patientId: p.patientId,
+        scanDate: '2026-11-12',
+      });
+
+      const pendingBefore = await storage.getPendingSyncItems(DOC_A);
+      expect(pendingBefore.patients).toHaveLength(1);
+      expect(pendingBefore.cases).toHaveLength(1);
+
+      // Đánh dấu đã đồng bộ đúng revision
+      await storage.markPatientSynced(DOC_A, p.patientId, p.revision);
+      await storage.markCaseSynced(DOC_A, c.caseId, c.revision);
+
+      const pendingAfter = await storage.getPendingSyncItems(DOC_A);
+      expect(pendingAfter.patients).toHaveLength(0);
+      expect(pendingAfter.cases).toHaveLength(0);
+
+      // Kéo bản mới từ cloud về khi local đang synced -> updated
+      const mergeUpdated = await storage.upsertPatientFromCloud(DOC_A, {
+        ...p,
+        fullName: 'Phạm Minh Tuấn (Cập nhật)',
+        revision: 3,
+      });
+      expect(mergeUpdated).toBe('updated');
+      const reloadedP = await storage.getPatientById(DOC_A, p.patientId);
+      expect(reloadedP?.fullName).toBe('Phạm Minh Tuấn (Cập nhật)');
+      expect(reloadedP?.syncState).toBe('synced');
+
+      // Sửa cục bộ (trở về pending với revision 4) nhưng nhận được bản cloud revision 6 -> conflict
+      await storage.updatePatient(DOC_A, p.patientId, { phone: '0909123456' });
+      const mergeConflict = await storage.upsertPatientFromCloud(DOC_A, {
+        ...p,
+        fullName: 'Tên từ thiết bị khác',
+        revision: 6,
+      });
+      expect(mergeConflict).toBe('conflict');
+      const conflictedP = await storage.getPatientById(DOC_A, p.patientId);
+      expect(conflictedP?.syncState).toBe('conflict');
+      expect(conflictedP?.phone).toBe('0909123456'); // Giữ nguyên dữ liệu cục bộ, không ghi đè
+    });
+  });
 });

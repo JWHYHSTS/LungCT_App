@@ -23,13 +23,13 @@ export interface ClinicalReportData {
     latencyMs?: number;
     modelName?: string;
   };
-  slices?: Array<{
+  slices?: {
     id: string;
     label: string;
     imageUri?: string;
     hasGradCam?: boolean;
     gradCamUri?: string;
-  }>;
+  }[];
   language: 'vi' | 'en';
   includeGradCam: boolean;
   version?: string;
