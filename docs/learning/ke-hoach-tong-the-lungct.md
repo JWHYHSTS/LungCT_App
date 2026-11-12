@@ -1,43 +1,41 @@
 # KẾ HOẠCH TỔNG THỂ HOÀN THIỆN ĐỒ ÁN LUNGCT (MASTER ROADMAP)
-### Ứng Dụng Hỗ Trợ Chẩn Đoán Ung Thư Phổi Trên Ảnh CT Bằng Trí Tuệ Nhân Tạo Cạnh (Edge AI) Đa Nền Tảng (Android & iOS)
+### Ứng Dụng Chẩn Đoán Ung Thư Phổi Trên Thiết Bị Di Động Android Bằng Trí Tuệ Nhân Tạo Cạnh (On-Device Edge AI) & Firebase
 
 > **Trạng thái tài liệu**: Tài liệu theo dõi xuyên suốt (Living Document).  
-> **Cập nhật lần cuối**: 27/10/2026 (Sau hoàn thành kiểm thử mốc MOB-02 trên máy ảo Android).  
-> **Căn cứ quy chuẩn**: Tuân thủ tuyệt đối quy tắc [`AGENTS.md`](../../AGENTS.md), đặc tả nghiệp vụ [`docs/requirements/LungCT_DacTa_ChucNang.docx`](../requirements/LungCT_DacTa_ChucNang.docx), đặc tả giao diện [`docs/ui_handoff/README.md`](../ui_handoff/README.md) và thiết kế Figma 59 khung.
+> **Cập nhật lần cuối**: 12/11/2026 (Hoàn tất Đầu việc 1–4: Export PDF vật lý, Quên mật khẩu Firebase, Sync Engine Offline-First + Firestore + Auto-Sync, và Đóng gói kiểm chứng APK Release v1.0.6 `versionCode 7`).  
+> **Sinh viên thực hiện**: **Dương Hải Đăng** — MSSV: **49.01.103.020** (Giảng viên hướng dẫn: **ThS. Trịnh Huy Hoàng**).  
+> **Căn cứ quy chuẩn**: Tuân thủ tuyệt đối [`AGENTS.md`](../../AGENTS.md) — phạm vi **duy nhất Android + On-Device Edge AI thuần túy + Firebase phục vụ quản lý nghiệp vụ & đồng bộ**; dừng toàn bộ nhánh iOS và máy chủ suy luận FastAPI.
 
 ---
 
 ## 📌 QUY TẮC ĐÁNH DẤU TIẾN ĐỘ & BẰNG CHỨNG
-- `[x]`: **Đã hoàn thành và có bằng chứng xác thực** (kèm đường dẫn mã nguồn, test suite, logcat hoặc ảnh chụp màn hình kiểm thử thực tế).
-- `[ ]`: **Chưa làm, đang làm dở, mô phỏng (Mock) hoặc chưa xác minh trên thiết bị thật**.
-- **Phân định môi trường**: Ghi rõ [Dùng chung / Shared], [Android Emulator], [Android Redmi 13], [iOS Simulator], [iPhone thật].
-- **Tuyệt đối không tự nhận tính năng mô phỏng (Mock UI) là đã hoàn thành chức năng nghiệp vụ**.
+- `[x]`: **Đã hoàn thành và có bằng chứng xác thực** (kèm đường dẫn mã nguồn, test suite, logcat, SHA-256 hoặc ảnh chụp kiểm thử thực tế).
+- `[ ]`: **Chưa làm, đang làm dở, tạm hoãn hoặc chưa xác minh trên thiết bị Android vật lý thật**.
+- **Phân định môi trường**: Ghi rõ `[Dùng chung TS/Jest]`, `[Android Emulator API 34]`, `[APK Build PC]`, `[Điện thoại Android thật]`.
+- **Tuyệt đối không tự nhận tính năng mô phỏng (Mock UI) hoặc chưa đo kiểm trên máy thật là đã nghiệm thu thiết bị thật**.
 
 ---
 
-## 🗺️ VỊ TRÍ HIỆN TẠI VÀ PHÂN CÔNG SONG SONG
+## 🗺️ VỊ TRÍ HIỆN TẠI VÀ LỘ TRÌNH TIẾP THEO
 
 ```mermaid
 graph TD
-    A[Giai đoạn 1: Khung & Thiết kế UI] -->|Đã dựng 17 màn hình Mock UI Shell| B[Giai đoạn 2: Nghiên cứu & Chuyển đổi Model AI]
-    B -->|Đã chuyển đổi FP32| C[Giai đoạn 3: AI On-Device Android]
-    C -->|MOB-02 Máy ảo Emulator Đạt| D{VỊ TRÍ HIỆN TẠI}
-    D -.->|Ưu tiên 1| E[Nghiệm thu MOB-02 trên Xiaomi Redmi 13 thật]
-    D -.->|Ưu tiên 2| F[Giai đoạn 4: Khảo sát & Chuyển đổi AI On-Device iOS]
-    D -.->|Ưu tiên 3| G[Giai đoạn 5: Giải pháp Grad-CAM On-Device không Autograd]
-    D -.->|Song song Hải Đăng/Jim| H[Giai đoạn 7: Backend FastAPI & Đồng bộ Cloud]
-    D -.->|Song song Hải Đăng/Jim| I[Giai đoạn 6: CSDL Cục bộ Local-First]
+    A[Giai đoạn 1–2: UI & Chuyển đổi AACNN-ViT FP32] --> B[Giai đoạn 3 & 6: On-Device AI + SQLCipher/Keystore]
+    B --> C[Đầu việc 1–3: PDF thật, Firebase Auth/Firestore, SyncEngine]
+    C --> D[Đầu việc 4: Đóng gói & Kiểm chứng APK Release v1.0.6]
+    D -->|Ưu tiên 1 - Kế tiếp| E[Đầu việc 5: Kết nối điện thoại Android thật & Nghiệm thu E2E]
+    D -.->|Sau Đầu việc 5| F[Giai đoạn 5: Nghiên cứu Grad-CAM On-Device MSG-11]
+    D -.->|Mở rộng Cloud| G[Giai đoạn 7: Cloud Storage sao lưu & FCM thông báo đẩy]
 ```
 
-- **Vị trí hiện tại**: Đã hoàn thành mốc **MOB-02 trên máy ảo Android (Emulator API 34)** — tích hợp thành công pipeline Adaptive FP32 (ViT ONNX 1.31.0 + Fusion LiteRT 1.4.0), thuật toán Pillow Nearest Resample và trình chọn ảnh Android System Picker (`content://`). Đang lưu trữ mã native tại `mobile/native-templates/android/` và chuẩn bị các bước tiếp theo.
+- **Vị trí hiện tại (Sau Đầu việc 4 — 12/11/2026)**:
+  - Đã hoàn tất toàn bộ tính năng nghiệp vụ cốt lõi trên mã nguồn: **Firebase Auth (đăng nhập/đăng ký chờ duyệt/quên mật khẩu)**, **Cloud Firestore & Rules**, **Repository SQLCipher + Keystore**, **Sync Engine Offline-First (Outbox, phát hiện xung đột, tự động đồng bộ nền qua `expo-network`, `SyncCenterModal` trên 6 màn hình Bác sĩ)**, **Thống kê Admin Firestore**, và **Xuất báo cáo PDF thật (`expo-print` + `expo-sharing`)**.
+  - Kiểm thử tự động Jest đạt **19/19 suites, 168/168 tests PASS** và `tsc --noEmit` **0 lỗi**. (`npm run lint` còn 4 lỗi `react-hooks/set-state-in-effect` và 19 cảnh báo ở code cũ cần rà soát riêng nếu dọn lint).
+  - Đã đóng gói & xác thực thành công **`app-release.apk` v1.0.6 (`versionCode 7`)** dung lượng **570,466,330 bytes (544.04 MB)**, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`, đầy đủ 3 tệp mô hình `STORED`, bundle Hermes, 4 ABIs native, quyền `CAMERA` và `FileProvider` đã đồng bộ vào `mobile/native-templates/android/`.
 - **Ưu tiên kỹ thuật tiếp theo**:
-  1. Kiểm thử APK Release trên thiết bị vật lý thật **Xiaomi Redmi 13** (đo RAM, pin, độ trễ chip Helio G91-Ultra).
-  2. Khảo sát và lựa chọn công nghệ cho nhánh **iOS Edge AI** (đối chiếu giữa ONNX Runtime iOS / ExecuTorch / CoreML tùy thuộc tính khả thi với custom layers của ViT).
-  3. Nghiên cứu giải pháp **Grad-CAM On-Device (MSG-11)** không cần Autograd.
-- **Hạng mục có thể làm song song (Jim / Hải Đăng)**:
-  - Xây dựng Backend FastAPI chuẩn RESTful y tế và schema cơ sở dữ liệu bệnh nhân/ca bệnh.
-  - Cấu hình Firebase Authentication, bộ lưu trữ đám mây cho ảnh CT và phân quyền Firestore.
-  - Chuyển đổi tầng lưu trữ cục bộ từ Mock sang cơ sở dữ liệu nhúng (SQLite / WatermelonDB / MMKV / Expo SQLite tùy thuộc đặc tả chốt).
+  1. **Đầu việc 5 (Ưu tiên cao nhất)**: Kết nối điện thoại Android vật lý (dự kiến **Xiaomi Redmi Note 12 Turbo**, bật USB Debugging), cài đặt `app-release.apk` v1.0.6, kiểm thử E2E tất cả các luồng (Auth, Camera/Photo Picker, On-Device AI, PDF, Sync Offline/Online, AUTH-08) và đo RAM/latency/`KeyInfo`.
+  2. **Mở rộng Cloud**: Sao lưu tệp ảnh CT/PDF lên Firebase Cloud Storage (chỉ lưu trữ, không suy luận) và thông báo đẩy FCM.
+  3. **Grad-CAM On-Device (`MSG-11`)**: Tạm hoãn theo chỉ đạo sau Đầu việc 4; tiếp tục nghiên cứu tính gradient/activation maps hợp lệ khoa học trên thiết bị Android không phụ thuộc server.
 
 ---
 
@@ -51,20 +49,20 @@ graph TD
   - *Căn cứ*: [`AGENTS.md`](../../AGENTS.md), [`docs/requirements/TiepNhan_DauVao.md`](../requirements/TiepNhan_DauVao.md).
   - *Môi trường*: Dùng chung.
 - [x] **1.2 Bộ Design System Tokens & Theme Đa Nền Tảng (Sáng / Tối)**
-  - *Căn cứ*: `mobile/src/ui/theme/` (`palette.ts`, `light.ts`, `dark.ts`, `spacing.ts`, `typography.ts`). 33/33 tests pass tại `src/ui/theme/__tests__/theme.test.ts`.
+  - *Căn cứ*: `mobile/src/ui/theme/` (`palette.ts`, `light.ts`, `dark.ts`, `spacing.ts`, `typography.ts`), `theme.test.ts` PASS.
   - *Môi trường*: Dùng chung React Native.
 - [x] **1.3 Bộ Icon Hệ Thống Y Tế 48/64 Icon Chuẩn Hóa**
-  - *Căn cứ*: `LungCT-Icons/` và `docs/ui_handoff/file-name-mapping.md`.
+  - *Căn cứ*: `LungCT-Icons/` và `docs/ui_handoff/file-name-mapping.md`, `icons.test.ts` PASS.
   - *Môi trường*: Dùng chung.
-- [ ] **1.4 Khung Giao Diện 17 Màn Hình Chuẩn Figma**
-  - *Trạng thái*: **Đang ở mức UI Mock Shell / Tích hợp AI một phần**. Đã dựng 17 màn hình với bố cục, màu sắc chuẩn Figma, vượt qua 113/113 unit tests. Tuy nhiên dữ liệu bệnh nhân, ca bệnh, tài khoản vẫn đang dùng dữ liệu giả lập (`doctorMocks.ts`, `adminMocks.ts`), chưa kết nối CSDL thật hay Backend.
-  - *Phần còn thiếu*: Kết nối cơ sở dữ liệu cục bộ và API thật.
+- [x] **1.4 Giao Diện Ứng Dụng Android Chuẩn Figma & Đấu nối Dữ liệu Thật**
+  - *Trạng thái*: **ĐÃ ĐẤU NỐI REPOSITORY & FIREBASE**. Các màn hình Auth, Doctor và Admin đã kết nối tầng lưu trữ cục bộ mã hóa và Firebase Auth/Firestore thay cho dữ liệu giả lập UI thuần. Vượt qua kiểm thử tự động Jest (`19/19 suites, 168/168 tests`).
+  - *Lưu ý*: Vẫn giữ chế độ cô lập theo `ownerId` và tiếp tục nghiệm thu thực tế trên điện thoại ở Đầu việc 5.
 - [x] **1.5 Hỗ trợ Đa Ngôn Ngữ Song Ngữ (i18n Tiếng Việt - Tiếng Anh)**
-  - *Căn cứ*: `mobile/src/i18n/` (`vi.json`, `en.json`) với 16 thông điệp chuẩn y tế `MSG-01` đến `MSG-16`, chuyển ngữ mượt mà trong giao diện.
+  - *Căn cứ*: `mobile/src/i18n/` (`vi.json`, `en.json`) với thông điệp chuẩn y tế `MSG-01`–`MSG-16` cùng chuỗi Sync/PDF/Auth mới, `i18n.test.ts` PASS.
   - *Môi trường*: Dùng chung.
-- [ ] **1.6 Kiểm thử giao diện và độ phản hồi trên màn hình thực tế (Tablet / Dynamic Island / Notches)**
-  - *Trạng thái*: Chưa kiểm chứng. Mới kiểm tra trên máy ảo Android 1080x2400.
-  - *Phần còn thiếu*: Kiểm thử giao diện trên màn hình giọt nước của Xiaomi Redmi 13 và tai thỏ / Dynamic Island của iPhone.
+- [ ] **1.6 Kiểm thử giao diện và độ phản hồi trên màn hình điện thoại Android thật**
+  - *Trạng thái*: Chưa kiểm chứng trên phần cứng hiện tại ở bước Đầu việc 5. Mới kiểm tra trên máy ảo Android 1080x2400 và các test UI trước đó.
+  - *Phần còn thiếu*: Kiểm thử giao diện `v1.0.6` trực tiếp trên điện thoại Android thật (Redmi Note 12 Turbo) ở cả Light/Dark mode và Việt/Anh.
 
 ---
 
@@ -102,29 +100,22 @@ graph TD
 - [x] **3.4 Kiểm thử ngoại tuyến hoàn toàn (Offline Verification)**
   - *Căn cứ*: Tắt Wifi, 4G, tắt Metro Bundler; app khởi động độc lập và suy luận trên máy ảo Android (Emulator API 34).
   - *Minh chứng*: `docs/evidence/mob-02/offline_relaunch.png`.
-- [ ] **3.5 Kiểm thử thực tế trên thiết bị vật lý thật Xiaomi Redmi 13**
-  - *Trạng thái*: **CHƯA THỰC HIỆN** (Thiếu thiết bị kết nối adb).
-  - *Phần còn thiếu*: Cài đặt file `app-release.apk` (534 MB) lên điện thoại thật Redmi 13 (MediaTek Helio G91-Ultra), dùng Android Studio Profiler đo đạc: RAM tiêu thụ đỉnh, thời gian suy luận (latency ms), nhiệt độ và mức sụt giảm pin.
+- [ ] **3.5 Kiểm thử thực tế trên thiết bị Android vật lý thật (Đầu việc 5)**
+  - *Trạng thái*: **CHƯA THỰC HIỆN** (Điện thoại chưa kết nối `adb` ở thời điểm đóng gói Đầu việc 4).
+  - *Phần còn thiếu*: Kết nối điện thoại Android thật (dự kiến **Xiaomi Redmi Note 12 Turbo**, bật USB Debugging), cài đặt bản `app-release.apk` v1.0.6 (`570,466,330` bytes ≈ `544.04 MB`, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`), kiểm tra quyền Camera/`FileProvider` và đo đạc RAM đỉnh, thời gian suy luận (latency ms), nhiệt độ thực tế.
 - [ ] **3.6 Kiểm chứng tái tạo độc lập từ bộ mẫu `mobile/native-templates`**
-  - *Trạng thái*: **CHƯA KIỂM CHỨNG TRÊN BẢN SAO SẠCH**.
-  - *Phần còn thiếu*: Clone dự án sang máy mới hoặc thư mục tạm, chạy `npx expo prebuild --platform android --clean`, copy template và build thành công APK Release không cần can thiệp thủ công.
+  - *Trạng thái*: **ĐÃ ĐỒNG BỘ TEMPLATE MỚI NHẤT (`root-build.gradle`, `AndroidManifest.xml`, `file_paths.xml`, `build.gradle`), CHỜ KIỂM CHỨNG TRÊN BẢN CLONE SẠCH**.
+  - *Phần còn thiếu*: Clone dự án sang thư mục sạch mới, chạy `npx expo prebuild --platform android --clean`, khôi phục theo [`mobile/native-templates/README.md`](../../mobile/native-templates/README.md) và build thành công APK Release để kiểm chứng độ độc lập 100%.
 
 ---
 
-### GIAI ĐOẠN 4: AI ON-DEVICE TRÊN IOS (LỰA CHỌN RUNTIME PHÙ HỢP)
+### GIAI ĐOẠN 4: PHẠM VI LƯU TRỮ LỊCH SỬ IOS & PHÂN QUYỀN ANDROID
 
-- [ ] **4.1 Khảo sát và lựa chọn Runtime AI phù hợp cho iOS (ONNX Runtime / CoreML / ExecuTorch)**
-  - *Trạng thái*: **Đang khảo sát, chưa chốt**.
-  - *Phân tích kỹ thuật*:
-    - Lựa chọn 1: **ONNX Runtime for iOS / React Native**: Đồng nhất mô hình với Android (`vit_cls.onnx` FP32), giảm thiểu công sức chuyển đổi, nhưng cần kiểm tra hiệu năng GPU/NPU qua Execution Provider (CoreML EP).
-    - Lựa chọn 2: **Apple CoreML (`.mlpackage`)**: Tối ưu tối đa cho Apple Neural Engine (ANE), nhưng cần kiểm tra khả năng chuyển đổi các lớp custom attention của nhánh ViT và Fusion qua `coremltools`.
-    - Lựa chọn 3: **ExecuTorch (PyTorch Mobile)**: Nếu các runtime trên gặp vấn đề tương thích.
-- [ ] **4.2 Xây dựng Native Module iOS (Swift / Objective-C++)**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Triển khai cầu nối Native Module tương đương `LungCtPipelineModule` cho iOS, quản lý luồng ảnh qua CoreGraphics/vImage với thuật toán Nearest Resampling tương thích.
-- [x] **4.3 Cấu hình quyền truy cập và Document/Photo Picker trên Android**
-  - *Căn cứ*: `mobile/android/app/src/main/AndroidManifest.xml`, xử lý mở Picker cho phép bác sĩ chọn ảnh CT bất kỳ từ thiết bị Android.
-  - *Minh chứng*: Đã kiểm thử thành công trên Redmi Note 12 Turbo.
+- [x] **4.1 Khảo sát & lưu trữ lịch sử phát triển iOS (Theo chỉ đạo chuyển phạm vi)**
+  - *Trạng thái*: **ĐÃ DỪNG NHÁNH IOS THEO `AGENTS.md`**. Theo phạm vi khóa luận mới của Dương Hải Đăng, đề tài **chỉ phát triển, kiểm thử và đóng gói Android**; các nghiên cứu/mẫu iOS cũ chỉ được lưu giữ lịch sử (nếu có), không phát triển hay đồng bộ song song.
+- [x] **4.3 Cấu hình quyền Camera, FileProvider và Document/Photo Picker trên Android**
+  - *Căn cứ*: `mobile/android/app/src/main/AndroidManifest.xml`, `mobile/android/app/src/main/res/xml/file_paths.xml` và bản sao đồng bộ tại `mobile/native-templates/android/`. `aapt2 dump` xác nhận APK `v1.0.6` có `android.permission.CAMERA`, `IMAGE_CAPTURE` và `${applicationId}.fileprovider`.
+  - *Lưu ý kiểm thử*: Cần kiểm thử lại thao tác mở Camera và Picker trực tiếp trên điện thoại thật ở Đầu việc 5.
 
 ---
 
@@ -205,65 +196,58 @@ graph TD
       | Vòng đời sau khởi động lại app (`am force-stop` & `start`) | Đạt (logic repo) | Đạt (Jest sandbox) | Đạt (Tiến trình khởi chạy lại an toàn) |
       | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher 4.6.1) | Đạt | Đạt (`sqlcipherVault.test.ts`, 150/150 tests) | Đạt (Không tìm thấy chuỗi dò bằng lệnh đã chạy) |
       | Bảo vệ bản sao lưu kho cũ (`.plaintext.bak` & `.encrypted.bak`) | Đạt | Đạt (Test 5 phục hồi sandbox) | Đạt (Tệp backup 61.440 bytes giữ nguyên bản rõ) |
-  - [ ] **6.3c Hệ thống Xác thực thật và Phân quyền Backend (JWT Token & FastAPI Server)**
-    - *Trạng thái*: **Chưa làm (Hiện tại đang mô phỏng Mock Auth UI-05)**.
-    - *Mục tiêu kỹ thuật*: Thay thế đăng nhập giả lập bằng hệ thống xác thực thật qua JWT Token, kết nối dịch vụ FastAPI Backend, quản lý phiên làm việc và phân quyền bảo mật cấp API thay vì chỉ cô lập ở tầng logic ứng dụng (`ownerId`).
-  - [ ] **6.3d Kiểm thử Tầng Lưu trữ trên iOS và Thiết bị vật lý thật (Xiaomi Redmi 13 / iPhone)**
-    - *Trạng thái*: **Chưa thực hiện**.
-    - *Nhiệm vụ*: Cài đặt bản build APK Release lên điện thoại vật lý Xiaomi Redmi 13 để kiểm tra `KeyInfo` xác định cơ chế bảo vệ phần cứng (TEE/StrongBox); biên dịch IPA trên macOS/Xcode để kiểm thử native Keychain Services trên iPhone. Không tự đánh đồng kết quả máy ảo giả lập với thiết bị thật.
+  - [x] **6.3c Hệ thống Xác thực thật & Phân quyền Cloud Firebase (Firebase Auth + Firestore Rules)**
+    - *Trạng thái*: **ĐÃ TÍCH HỢP CODE & UNIT TEST (`authService.test.ts`, `authNavigation.test.tsx` PASS)**.
+    - *Chi tiết kỹ thuật*: Tích hợp Firebase JS Modular SDK (`firebase ^13.2.0`) với `authService.ts`, giữ phiên qua AsyncStorage, đăng ký bác sĩ ở trạng thái `pending` chờ Admin duyệt, quên mật khẩu qua email (`resetPassword`), và phân quyền dữ liệu trong `infra/firebase/firestore.rules`. Chờ kiểm thử luồng trực tuyến thật trên điện thoại ở Đầu việc 5.
+  - [ ] **6.3d Kiểm thử Tầng Lưu trữ & Phần cứng Keystore trên Thiết bị Android vật lý thật**
+    - *Trạng thái*: **CHƯA THỰC HIỆN (Đầu việc 5)**.
+    - *Nhiệm vụ*: Cài đặt `app-release.apk` v1.0.6 lên điện thoại Android vật lý thật để kiểm tra `KeyInfo` xác định cơ chế bảo vệ phần cứng (TEE/StrongBox) và kiểm chứng SQLCipher/AUTH-08 sau vòng đời app. Không đánh đồng kết quả máy ảo hay Jest với thiết bị thật.
   - *Đối chiếu chính sách AUTH-08 & Điểm cần quyết định*:
     - *Đặc tả*: Khi tài khoản bị khóa, xóa dữ liệu đã đồng bộ (`synced`), giữ nháp chưa đồng bộ (`pending`).
     - *Tình huống biên (Bệnh nhân đã sync nhưng có ca nháp chưa sync)*:
       - Giữ lại bệnh nhân gốc để bảo toàn khóa ngoại và liên kết hồ sơ của ca nháp, không để ca nháp mồ côi.
       - Ghi nhận đây là phương án kỹ thuật an toàn đề xuất, chờ chỉ đạo chính thức từ GVHD/Hội đồng.
-- [ ] **6.4 Chính sách Đồng bộ dữ liệu Hai chiều (Offline-First Sync Engine)**
-  - *Trạng thái*: **Chưa làm (Phụ thuộc Backend/Cloud)**.
-  - *Phần còn thiếu*: Hàng đợi đồng bộ Outbox (`SyncOperation`), cơ chế giải quyết xung đột khi sửa cùng ca bệnh trên nhiều thiết bị và đẩy ảnh lên cloud khi có mạng trở lại.
+- [x] **6.4 Chính sách Đồng bộ dữ liệu Hai chiều Offline-First (Sync Engine & SyncCenterModal)**
+  - *Trạng thái*: **ĐÃ TRIỂN KHAI CODE & KIỂM THỬ JEST (`syncEngine.test.ts` PASS)**.
+  - *Căn cứ*: Hàng đợi Outbox (`SyncOperation`) trong `localStorageService.ts`, `mobile/src/services/sync/` (`syncEngine.ts`, `syncService.ts`), phát hiện xung đột bản ghi, tự động đồng bộ nền khi có mạng qua `expo-network`, cùng `SyncCenterModal` gắn trên 6 màn hình Bác sĩ. Chờ kiểm thử đồng bộ hai chiều thực tế trên điện thoại (Đầu việc 5).
 
 ---
 
-### GIAI ĐOẠN 7: BACKEND FASTAPI & ĐIỀU PHỐI ĐÁM MÂY (CLOUD SERVICES)
+### GIAI ĐOẠN 7: DỊCH VỤ ĐÁM MÂY FIREBASE (KHÔNG DÙNG BACKEND SUY LUẬN AI)
 
-- [ ] **7.1 Khởi tạo dịch vụ Backend FastAPI**
-  - *Trạng thái*: Chưa làm (Thư mục `backend/` hiện chỉ có `.gitkeep`).
-  - *Phần còn thiếu*: Cài đặt môi trường Python FastAPI, Uvicorn, SQLAlchemy / Pydantic.
-- [ ] **7.2 API Quản lý Bệnh nhân, Ca bệnh và Lưu trữ Ảnh DICOM/JPEG**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Viết CRUD endpoints `/api/v1/patients`, `/api/v1/cases`, `/api/v1/upload-slice`.
-- [ ] **7.3 API Dự phòng Phân tích AI trên Máy chủ (Server-side Inference & Full Grad-CAM)**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Tích hợp mô hình Primary Adaptive AACNN-ViT trên server với đầy đủ PyTorch GPU inference và Grad-CAM chính xác cao khi người dùng chọn chế độ điện toán đám mây.
-- [ ] **7.4 Tích hợp Lưu trữ Ảnh Đám mây (Firebase Storage / S3-compatible / Tự lưu trữ)**
-  - *Trạng thái*: **Chưa chốt phương án**. Tùy thuộc vào hạ tầng cloud được cấp phép cho đồ án.
+- [x] **7.1 Loại bỏ nhánh FastAPI & Giữ vững kiến trúc On-Device Edge AI thuần túy (`AGENTS.md`)**
+  - *Căn cứ*: Không triển khai backend FastAPI suy luận hay fallback server-side Grad-CAM/inference; AI chạy 100% trực tiếp trên Android.
+- [x] **7.2 Tích hợp Cloud Firestore & Thống kê Quản trị (Admin) theo thời gian thực**
+  - *Căn cứ*: `mobile/src/services/firebase/`, `infra/firebase/firestore.rules`, màn hình `AdminAccountsScreen.tsx` & `AdminStatsScreen.tsx` (`adminScreens.test.tsx` PASS).
+- [ ] **7.3 Tích hợp Sao lưu Ảnh Đám mây (Firebase Cloud Storage)**
+  - *Trạng thái*: **Chưa triển khai đầy đủ upload ảnh CT/PDF lên Cloud Storage**. Chỉ phục vụ sao lưu hồ sơ khi trực tuyến; **tuyệt đối không dùng Cloud Storage để gửi ảnh đi suy luận AI**.
 
 ---
 
 ### GIAI ĐOẠN 8: XUẤT BÁO CÁO Y TẾ (PDF), THỐNG KÊ & THÔNG BÁO
 
 - [x] **8.1 Màn hình Xem trước & Cấu hình Báo cáo Y tế PDF (SCR-R03)**
-  - *Căn cứ*: `mobile/src/features/doctor/screens/ExportPdfScreen.tsx`. Vượt qua test `doctorDetailScreens.test.tsx`.
-  - *Môi trường*: React Native UI (Mock preview).
-- [ ] **8.2 Thư viện Tạo Tệp PDF Chuẩn Y Tế Cục Bộ (`react-native-html-to-pdf` / `expo-print`)**
-  - *Trạng thái*: Chưa làm.
-  - *Phần còn thiếu*: Kết xuất tệp PDF chứa đầy đủ thông tin bệnh nhân, ảnh CT gốc, bản đồ nhiệt Grad-CAM, biểu đồ tỷ lệ ác tính/lành tính và chữ ký điện tử của bác sĩ.
+  - *Căn cứ*: `mobile/src/features/doctor/screens/ExportPdfScreen.tsx` (`doctorDetailScreens.test.tsx` PASS).
+- [x] **8.2 Tích hợp Thư viện Tạo Tệp PDF Vật lý (`expo-print` & `expo-sharing`)**
+  - *Trạng thái*: **ĐÃ TÍCH HỢP CODE & UNIT TEST (`pdfReportService.test.ts` PASS)**.
+  - *Căn cứ*: `mobile/src/services/pdf/pdfReportService.ts` kết xuất HTML sang tệp `.pdf` thật qua `expo-print ~58.0.9` và chia sẻ qua `expo-sharing ~58.0.23`, gồm thông tin bệnh nhân, ca bệnh, ảnh CT, kết quả 3 lớp và khuyến cáo y khoa; **bỏ qua lớp phủ Grad-CAM giả nếu `gradcamAvailable: false`**. Chờ kiểm thử xuất/mở file PDF thật trên điện thoại (Đầu việc 5).
 - [x] **8.3 Màn hình Thống kê Ca bệnh & Bảng biểu Quản trị**
-  - *Căn cứ*: `mobile/src/features/doctor/screens/DoctorStatsScreen.tsx`, `AdminStatsScreen.tsx`.
-  - *Môi trường*: React Native UI.
-- [ ] **8.4 Tích hợp Dịch vụ Thông báo Cục bộ & Đẩy (Local & Push Notifications)**
-  - *Trạng thái*: Chưa làm. Khảo sát giải pháp thông báo phù hợp khi có kết quả phân tích hoặc lịch hẹn tái khám.
+  - *Căn cứ*: `DoctorStatsScreen.tsx`, `AdminStatsScreen.tsx` (kết nối dữ liệu thật + bộ đếm Firestore).
+- [ ] **8.4 Tích hợp Dịch vụ Thông báo Đẩy (Firebase Cloud Messaging)**
+  - *Trạng thái*: Chưa triển khai FCM push notification cho tài khoản được duyệt / trạng thái đồng bộ.
 
 ---
 
 ### GIAI ĐOẠN 9: ĐÓNG GÓI, NGHIỆM THU & CẬP NHẬT BÁO CÁO KHÓA LUẬN
 
-- [ ] **9.1 Đóng gói bộ cài đặt Android Release (APK & AAB)**
-  - *Trạng thái*: Đã sinh thử nghiệm `app-release.apk` và APK v1.0.5 độc lập. Cần tối ưu loại bỏ file thừa, kiểm tra lại cờ ProGuard/R8.
-- [ ] **9.2 Cập nhật Báo cáo Khóa luận Phân hệ Android (`reports/android/`) — ĐANG SOẠN THẢO**
-  - *Căn cứ*: Bản thảo khóa luận tại [`reports/android/khoa-luan-android.md`](../../reports/android/khoa-luan-android.md) và Bảng đối chiếu đề cương tại [`docs/learning/bang-doi-chieu-de-cuong-kltn.md`](bang-doi-chieu-de-cuong-kltn.md).
-  - *Trạng thái*: **Đang phát triển theo cấu trúc 5 chương chuẩn của Đề cương chi tiết đã duyệt** (Mở đầu, Chương 1 Tổng quan tình hình nghiên cứu, Chương 2 Cơ sở lý thuyết và nền tảng công nghệ, Chương 3 Phân tích và thiết kế hệ thống, Chương 4 Cài đặt thực nghiệm và đánh giá, Chương 5 Kết luận và hướng phát triển). Đã tích hợp kiến trúc On-Device Edge AI thuần túy (AI chẩn đoán On-Device, lưu trữ cục bộ SQLite mã hóa) và trực tuyến (xác thực, đồng bộ đám mây qua Firebase).
-  - *Phần còn thiếu*: Tiếp tục cập nhật số liệu đo kiểm thực tế trên thiết bị vật lý Redmi Note 12 Turbo và xin ý kiến GVHD (ThS. Trịnh Huy Hoàng) về các điểm điều chỉnh đề xuất.
-- [ ] **9.3 Nghiệm thu tổng thể & Bàn giao sản phẩm độc lập cho Hội đồng**
-  - *Trạng thái*: Chưa làm.
+- [x] **9.1 Đóng gói & Xác thực Bộ cài đặt Android Release (`app-release.apk` v1.0.6)**
+  - *Căn cứ*: Build thành công từ môi trường sạch Windows sau khi xử lý lỗi `CMake MAX_PATH` qua `mobile/android/build.gradle` (đã lưu vào `mobile/native-templates/android/root-build.gradle`).
+  - *Thông số xác thực APK (`12/11/2026`)*: `package='com.anonymous.mobile'`, `versionCode='7'`, `versionName='1.0.6'`, `minSdkVersion='24'`, `targetSdkVersion='36'`, dung lượng **570,466,330 bytes (544.04 MB)**, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`, ký V2 (`debug.keystore`), chứa đủ 3 file model `STORED`, bundle Hermes `index.android.bundle`, 4 ABIs native, quyền `CAMERA` và `FileProvider`.
+- [ ] **9.2 Cập nhật Báo cáo Khóa luận Phân hệ Android (`reports/android/`) — ĐANG ĐỒNG BỘ**
+  - *Căn cứ*: Bản thảo khóa luận duy nhất tại [`reports/android/khoa-luan-android.md`](../../reports/android/khoa-luan-android.md) và [`docs/learning/bang-doi-chieu-de-cuong-kltn.md`](bang-doi-chieu-de-cuong-kltn.md).
+  - *Trạng thái*: Đã cập nhật số liệu đến Đầu việc 4 (`v1.0.6`, 19/19 suites 168/168 tests Jest, Firebase Auth/Firestore/SyncEngine, Export PDF thật); còn chờ bổ sung số liệu đo kiểm thực tế trên điện thoại Android vật lý (Đầu việc 5) và phần Grad-CAM On-Device nếu tiếp tục triển khai.
+- [ ] **9.3 Nghiệm thu tổng thể trên điện thoại thật (Đầu việc 5) & Bàn giao sản phẩm cho Hội đồng**
+  - *Trạng thái*: Đang chờ người dùng kết nối điện thoại Android vật lý để thực hiện Đầu việc 5.
 
 ---
 
