@@ -7,6 +7,7 @@ import { AppText, Dialog, IconButton, Segmented, StatCard, TopBar } from '../../
 import { MOCK_STATS, type MockStatsData } from '../../../mocks';
 import { localStorageService } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
+import { SyncCenterModal } from '../components/SyncCenterModal';
 
 export interface DoctorStatsScreenProps {
   initialRange?: '7d' | '30d' | 'all';
@@ -16,11 +17,12 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing } = theme;
-  const { user } = useAuth();
+  const { user, isOnline } = useAuth();
   const ownerId = user?.id || '';
 
   const [selectedRange, setSelectedRange] = useState<'7d' | '30d' | 'all'>(initialRange);
   const [realStats, setRealStats] = useState<MockStatsData | null>(null);
+  const [showSyncModal, setShowSyncModal] = useState(false);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -116,12 +118,7 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
             <IconButton
               name="sync"
               accessibilityLabel="Đồng bộ dữ liệu (SCR-Y01)"
-              onPress={() =>
-                showFeatureNotice(
-                  'Trung tâm đồng bộ (SCR-Y01)',
-                  'Số liệu thống kê sẽ được đồng bộ và đối chiếu với máy chủ trung tâm khi có mạng.',
-                )
-              }
+              onPress={() => setShowSyncModal(true)}
             />
             <IconButton
               name="notifications"
@@ -328,6 +325,13 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
         confirmLabel={t('common.understood', 'Đã hiểu')}
         onConfirm={closeNotice}
         onCancel={closeNotice}
+      />
+
+      <SyncCenterModal
+        visible={showSyncModal}
+        ownerId={ownerId}
+        isOnline={isOnline}
+        onClose={() => setShowSyncModal(false)}
       />
     </View>
   );

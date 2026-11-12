@@ -743,7 +743,26 @@
     "trash_subtitle": "Khôi phục hoặc dọn dẹp ca và bệnh nhân đã xóa"
   },
   "sync": {
-    "pending_count_sub": "thay đổi chờ gửi (Mô phỏng)"
+    "pending_count_sub": "thay đổi chờ gửi",
+    "pending_count_real": "{{count}} thay đổi chờ gửi",
+    "all_synced_sub": "Tất cả hồ sơ đã được đồng bộ",
+    "status_synced_badge": "Đã đồng bộ",
+    "status_online": "Trực tuyến",
+    "status_offline": "Ngoại tuyến",
+    "online_desc": "Sẵn sàng đồng bộ hai chiều dữ liệu hồ sơ bệnh án với máy chủ đám mây Cloud Firestore.",
+    "offline_desc": "Thiết bị đang ngoại tuyến. Mọi thay đổi mới được lưu an toàn vào bộ nhớ mã hóa trên máy (Local-First).",
+    "outbox_title": "Hàng đợi chờ gửi (Outbox)",
+    "pending_patients": "Hồ sơ bệnh nhân chờ gửi",
+    "pending_cases": "Hồ sơ ca bệnh chờ gửi",
+    "total_pending": "Tổng mục chưa đồng bộ",
+    "last_result_title": "Phiên đồng bộ gần nhất",
+    "last_result_pushed": "Đã đẩy lên: {{patients}} bệnh nhân, {{cases}} ca bệnh",
+    "last_result_pulled": "Đã tải về: {{patients}} bệnh nhân, {{cases}} ca bệnh",
+    "last_result_conflicts": "Cảnh báo xung đột giữ bản cục bộ: {{count}} mục",
+    "close_modal": "Đóng Trung tâm đồng bộ",
+    "close_btn": "Đóng",
+    "sync_now_btn": "Đồng bộ ngay",
+    "syncing_btn": "Đang đồng bộ..."
   },
   "doctor_stats": {
     "title": "Thống kê",

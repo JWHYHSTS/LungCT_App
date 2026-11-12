@@ -743,7 +743,26 @@
     "trash_subtitle": "Restore or clean up deleted cases and patients"
   },
   "sync": {
-    "pending_count_sub": "pending changes to sync (Simulated)"
+    "pending_count_sub": "pending changes to sync",
+    "pending_count_real": "{{count}} pending changes to sync",
+    "all_synced_sub": "All records are synchronized",
+    "status_synced_badge": "Synced",
+    "status_online": "Online",
+    "status_offline": "Offline",
+    "online_desc": "Ready for two-way synchronization of medical records with Cloud Firestore.",
+    "offline_desc": "Device is offline. New changes are safely saved in local encrypted storage (Local-First).",
+    "outbox_title": "Pending Queue (Outbox)",
+    "pending_patients": "Pending patient records",
+    "pending_cases": "Pending case records",
+    "total_pending": "Total unsynced items",
+    "last_result_title": "Last synchronization session",
+    "last_result_pushed": "Pushed: {{patients}} patients, {{cases}} cases",
+    "last_result_pulled": "Pulled: {{patients}} patients, {{cases}} cases",
+    "last_result_conflicts": "Local preservation conflicts: {{count}} items",
+    "close_modal": "Close Sync Center",
+    "close_btn": "Close",
+    "sync_now_btn": "Sync Now",
+    "syncing_btn": "Syncing..."
   },
   "doctor_stats": {
     "title": "Statistics",

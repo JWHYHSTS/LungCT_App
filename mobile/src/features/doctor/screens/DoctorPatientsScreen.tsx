@@ -17,6 +17,7 @@ import { getMockPatients, subscribeDoctorStore, type MockPatient } from '../../.
 import { PatientRepository, subscribePatientRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 import { PATIENT_FILTER_DECISION } from '../../../config/ui-decisions';
+import { SyncCenterModal } from '../components/SyncCenterModal';
 
 export interface DoctorPatientsScreenProps {
   onNavigateToDetail?: (patientId: string) => void;
@@ -30,12 +31,13 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing } = theme;
-  const { user } = useAuth();
+  const { user, isOnline } = useAuth();
   const ownerId = user?.id || '';
 
   const [patients, setPatients] = useState<MockPatient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(PATIENT_FILTER_DECISION.defaultChip);
+  const [showSyncModal, setShowSyncModal] = useState(false);
 
   // Nạp dữ liệu bệnh nhân từ Local Storage mã hóa theo ownerId (Firebase UID)
   useEffect(() => {
@@ -129,12 +131,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             <IconButton
               name="sync"
               accessibilityLabel="Đồng bộ dữ liệu (SCR-Y01)"
-              onPress={() =>
-                showFeatureNotice(
-                  'Trung tâm đồng bộ (SCR-Y01)',
-                  'Chức năng đồng bộ bệnh nhân với máy chủ trung tâm sẽ được triển khai ở gói SYNC-01.',
-                )
-              }
+              onPress={() => setShowSyncModal(true)}
             />
             <IconButton
               name="notifications"
@@ -319,6 +316,13 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
           }
         }}
         onCancel={closeNotice}
+      />
+
+      <SyncCenterModal
+        visible={showSyncModal}
+        ownerId={ownerId}
+        isOnline={isOnline}
+        onClose={() => setShowSyncModal(false)}
       />
     </View>
   );

@@ -32,6 +32,7 @@ import {
 } from '../../../services/storage';
 import { SCORE_FORMAT_DECISION } from '../../../config/ui-decisions';
 import { useAuth } from '../../auth/context/AuthContext';
+import { SyncCenterModal } from '../components/SyncCenterModal';
 
 export interface DoctorHomeScreenProps {
   onNavigateToCases?: () => void;
@@ -63,6 +64,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
   const [isLoading] = useState(isLoadingInitial);
   const [isEmpty] = useState(isEmptyInitial);
   const [isModelError] = useState(isModelErrorInitial);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const [isSelectPatientSheetVisible, setIsSelectPatientSheetVisible] = useState(false);
 
   const [casesList, setCasesList] = useState<MockCase[]>([]);
@@ -147,12 +149,7 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
             <IconButton
               name="sync"
               accessibilityLabel="Đồng bộ dữ liệu (SCR-Y01)"
-              onPress={() =>
-                showFeatureNotice(
-                  'Trung tâm đồng bộ (SCR-Y01)',
-                  'Chức năng đồng bộ dữ liệu ngoại tuyến với máy chủ trung tâm sẽ được triển khai ở gói SYNC-01.',
-                )
-              }
+              onPress={() => setShowSyncModal(true)}
             />
             <IconButton
               name="notifications"
@@ -455,6 +452,13 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
         confirmLabel={t('common.understood', 'Đã hiểu')}
         onConfirm={closeNotice}
         onCancel={closeNotice}
+      />
+
+      <SyncCenterModal
+        visible={showSyncModal}
+        ownerId={ownerId}
+        isOnline={isOnline}
+        onClose={() => setShowSyncModal(false)}
       />
     </View>
   );

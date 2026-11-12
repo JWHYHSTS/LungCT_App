@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
@@ -6,6 +6,12 @@ import { AppText, Button, Dialog, ListRow, StatusBadge, TopBar } from '../../../
 import { Icon } from '../../../ui/icons';
 import { MOCK_DOCTOR_PROFILE } from '../../../mocks';
 import { useAuth } from '../../auth/context/AuthContext';
+import { SyncEngine } from '../../../services/sync';
+import {
+  subscribeCaseRepository,
+  subscribePatientRepository,
+} from '../../../services/storage';
+import { SyncCenterModal } from '../components/SyncCenterModal';
 
 export interface DoctorProfileScreenProps {
   onLogoutSuccess?: () => void;
@@ -15,7 +21,8 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
   const { t, i18n } = useTranslation();
   const { theme, preference, setPreference } = useTheme();
   const { colors, spacing } = theme;
-  const { logout, user } = useAuth();
+  const { logout, user, isOnline, resetPassword } = useAuth();
+  const ownerId = user?.id || '';
 
   const doctorName = user?.fullName || MOCK_DOCTOR_PROFILE.fullName;
   const doctorEmail = user?.email || MOCK_DOCTOR_PROFILE.email;
@@ -26,6 +33,29 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const refreshPendingCount = async () => {
+      if (!ownerId) return;
+      const stats = await SyncEngine.getPendingStats(ownerId);
+      if (isMounted) {
+        setPendingCount(stats.totalPending);
+      }
+    };
+    refreshPendingCount();
+    const unsubSync = SyncEngine.subscribeSyncStatus(() => refreshPendingCount());
+    const unsubPat = subscribePatientRepository(refreshPendingCount);
+    const unsubCase = subscribeCaseRepository(refreshPendingCount);
+    return () => {
+      isMounted = false;
+      unsubSync();
+      unsubPat();
+      unsubCase();
+    };
+  }, [ownerId]);
 
   const [dialogNotice, setDialogNotice] = useState<{
     visible: boolean;
@@ -122,12 +152,25 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
             subtitle={t('admin.action_change_password_sub', 'Bảo mật tài khoản')}
             type="setting"
             leadingIcon="lock"
-            onPress={() =>
+            onPress={async () => {
+              if (!isOnline || !user?.email) {
+                showFeatureNotice(
+                  t('admin.action_change_password', 'Đổi mật khẩu'),
+                  t(
+                    'sync.offline_desc',
+                    'Thiết bị đang ngoại tuyến. Vui lòng kết nối Internet để gửi email đổi mật khẩu.',
+                  ),
+                );
+                return;
+              }
+              const ok = await resetPassword(user.email);
               showFeatureNotice(
-                'Đổi mật khẩu (SCR-A06)',
-                'Giao diện thay đổi mật khẩu và quản lý thông tin bảo mật sẽ được bổ sung ở đợt cập nhật tiếp theo.',
-              )
-            }
+                t('admin.action_change_password', 'Đổi mật khẩu'),
+                ok
+                  ? `Liên kết đặt lại mật khẩu đã được gửi tới email ${user.email}. Vui lòng kiểm tra hòm thư (kể cả Spam) để đổi mật khẩu.`
+                  : 'Không thể gửi email đổi mật khẩu. Vui lòng kiểm tra kết nối mạng.',
+              );
+            }}
             style={{ marginBottom: spacing.xs }}
           />
 
@@ -160,22 +203,28 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
 
           <ListRow
             title={t('navigation.sync_center', 'Trung tâm đồng bộ')}
-            subtitle={`${MOCK_DOCTOR_PROFILE.pendingSyncCount} ${t('sync.pending_count_sub', 'thay đổi chờ gửi (Mô phỏng)')}`}
+            subtitle={
+              pendingCount > 0
+                ? t('sync.pending_count_real', {
+                    count: pendingCount,
+                    defaultValue: `${pendingCount} thay đổi chờ gửi`,
+                  })
+                : t('sync.all_synced_sub', 'Tất cả hồ sơ đã được đồng bộ')
+            }
             type="setting"
             leadingIcon="sync"
             badges={
               <StatusBadge
-                label={`${MOCK_DOCTOR_PROFILE.pendingSyncCount} ${t('common.item_unit', 'mục')}`}
-                tone="warning"
-                icon="sync"
+                label={
+                  pendingCount > 0
+                    ? `${pendingCount} ${t('common.item_unit', 'mục')}`
+                    : t('sync.status_synced_badge', 'Đã đồng bộ')
+                }
+                tone={pendingCount > 0 ? 'warning' : 'success'}
+                icon={pendingCount > 0 ? 'sync' : 'success'}
               />
             }
-            onPress={() =>
-              showFeatureNotice(
-                'Trung tâm đồng bộ (SCR-Y01)',
-                'Chi tiết hàng đợi đồng bộ và quản lý xung đột dữ liệu sẽ được triển khai ở gói SYNC-01.',
-              )
-            }
+            onPress={() => setShowSyncModal(true)}
             style={{ marginBottom: spacing.xs }}
           />
         </View>
@@ -219,10 +268,17 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
         visible={showLogoutDialog}
         type="destructive"
         title={t('auth.logout_dialog_title', 'Đăng xuất khỏi ứng dụng?')}
-        body={t(
-          'auth.logout_dialog_body',
-          'Hiện còn 3 thay đổi chưa được gửi lên máy chủ trung tâm. Dữ liệu này vẫn được lưu an toàn trên máy của bạn và sẽ được đồng bộ khi bạn đăng nhập lại (MSG-14).',
-        )}
+        body={
+          pendingCount > 0
+            ? t('auth.logout_dialog_pending_body', {
+                count: pendingCount,
+                defaultValue: `Hiện còn ${pendingCount} thay đổi chưa được gửi lên máy chủ đám mây. Dữ liệu này vẫn được lưu an toàn trên máy của bạn và sẽ tự động đồng bộ khi bạn đăng nhập lại (MSG-14).`,
+              })
+            : t(
+                'auth.logout_dialog_clean_body',
+                'Tất cả dữ liệu ca bệnh của bạn đã được đồng bộ. Bạn có chắc chắn muốn đăng xuất khỏi thiết bị này không?',
+              )
+        }
         confirmLabel={t('admin.action_logout', 'Đăng xuất')}
         cancelLabel={t('admin.logout_cancel_btn', 'Ở lại')}
         onConfirm={handleConfirmLogout}
@@ -237,6 +293,13 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({ onLogo
         confirmLabel={t('common.understood', 'Đã hiểu')}
         onConfirm={closeNotice}
         onCancel={closeNotice}
+      />
+
+      <SyncCenterModal
+        visible={showSyncModal}
+        ownerId={ownerId}
+        isOnline={isOnline}
+        onClose={() => setShowSyncModal(false)}
       />
     </View>
   );

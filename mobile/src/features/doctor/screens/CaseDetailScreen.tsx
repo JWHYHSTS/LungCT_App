@@ -19,6 +19,7 @@ import { findCaseById, subscribeDoctorStore, addImageToCase, type MockCase } fro
 import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 import { pickImageFromDevice, takePhotoWithCamera } from '../../../services/ai/onDevicePipeline';
+import { SyncCenterModal } from '../components/SyncCenterModal';
 
 export interface CaseDetailScreenProps {
   caseId: string;
@@ -47,10 +48,11 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
-  const { user } = useAuth();
+  const { user, isOnline } = useAuth();
   const ownerId = user?.id || '';
 
   const [currentCase, setCurrentCase] = useState<MockCase | undefined>(() => findCaseById(caseId));
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const [notesText, setNotesText] = useState(currentCase?.notes ?? '');
   const [notesSaveStatus, setNotesSaveStatus] = useState<string>(
     currentCase?.notesSavedAt
@@ -305,13 +307,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
             <IconButton
               name="sync"
               accessibilityLabel="Đồng bộ ca"
-              onPress={() =>
-                setNoticeDialog({
-                  visible: true,
-                  title: 'Đồng bộ ca bệnh',
-                  body: 'Chức năng đồng bộ ca bệnh sẽ được triển khai ở gói SYNC-01.',
-                })
-              }
+              onPress={() => setShowSyncModal(true)}
             />
             <IconButton
               name="more"
@@ -580,6 +576,13 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
             setNoticeDialog({ visible: false, title: '', body: '' });
           }
         }}
+      />
+
+      <SyncCenterModal
+        visible={showSyncModal}
+        ownerId={ownerId}
+        isOnline={isOnline}
+        onClose={() => setShowSyncModal(false)}
       />
     </KeyboardAvoidingView>
   );
