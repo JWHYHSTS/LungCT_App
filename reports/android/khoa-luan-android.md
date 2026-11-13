@@ -315,14 +315,15 @@ Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế F
 4. **Cài đặt Xuất phiếu kết quả PDF vật lý (`pdfReportService.ts`)**:
    - Tích hợp `expo-print` (`~58.0.9`) và `expo-sharing` (`~58.0.23`) kết xuất mẫu HTML chuẩn lâm sàng sang tệp `.pdf` vật lý, bao gồm thông tin hành chính ca bệnh, ảnh lát cắt CT, điểm tin cậy 3 lớp và khuyến cáo y khoa; **bảo đảm không đưa lớp phủ Grad-CAM giả vào báo cáo khi `gradcamAvailable: false`**.
 
-### 4.4 Cấu hình, đóng gói và phát hành phân hệ Android (`v1.0.6`)
-- Thiết lập cấu hình `mobile/android/app/build.gradle` với `applicationId = "com.anonymous.mobile"`, `versionCode = 7`, `versionName = "1.0.6"`, `minSdkVersion = 24`, `targetSdkVersion = 36`, `compileSdkVersion = 37`, bật `noCompress 'tflite', 'onnx', 'data'` và `useLegacyPackaging = true`.
+### 4.4 Cấu hình, đóng gói và phát hành phân hệ Android (`v1.0.7`)
+- Thiết lập cấu hình `mobile/android/app/build.gradle` với `applicationId = "com.anonymous.mobile"`, `versionCode = 8`, `versionName = "1.0.7"`, `minSdkVersion = 24`, `targetSdkVersion = 36`, `compileSdkVersion = 37`, bật `noCompress 'tflite', 'onnx', 'data'` và `useLegacyPackaging = true`.
 - Bổ sung thư viện `net.zetetic:sqlcipher-android:4.6.1@aar`, `androidx.sqlite:sqlite:2.4.0` và nạp `System.loadLibrary("sqlcipher")` trong `MainApplication.kt`.
+- Đồng bộ chính xác runtime `com.microsoft.onnxruntime:onnxruntime-android:1.31.1` nhằm giải quyết dứt điểm lỗi liên kết động `UnsatisfiedLinkError: OrtGetApiBase@VERS_1.31.0` do khác biệt phiên bản với `libonnxruntime.so` (1.31.1) nhúng kèm.
 - Khắc phục triệt để lỗi giới hạn độ dài đường dẫn 260 ký tự (`MAX_PATH`) của CMake/Ninja trên Windows bằng cách cấu hình `buildStagingDirectory` ngắn (`%TEMP%\lct_cxx\<subproject>`) trong `mobile/android/build.gradle` trước plugin root, đồng thời đồng bộ bản mẫu này sang `mobile/native-templates/android/root-build.gradle`.
 - Đồng bộ đầy đủ `AndroidManifest.xml` (quyền `android.permission.CAMERA`, truy vấn `IMAGE_CAPTURE`, cấu hình `androidx.core.content.FileProvider` `${applicationId}.fileprovider`) và `res/xml/file_paths.xml` giữa `mobile/native-templates/android/` và `mobile/android/`.
 - Đóng gói thành công bản phát hành độc lập **`mobile/android/app/build/outputs/apk/release/app-release.apk`** qua `./gradlew assembleRelease` (`BUILD SUCCESSFUL`, 635 tasks) và kiểm tra thực tế cấu trúc APK bằng `apksigner`, `aapt2` và Python `zipfile`:
-  - **Dung lượng tệp**: `570,466,330` bytes (**544.04 MB**).
-  - **Mã băm SHA-256**: `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`.
+  - **Dung lượng tệp**: `570,466,370` bytes (**544.04 MB**).
+  - **Mã băm SHA-256**: `C6A6498F4F24CE6C769399D57C5A76EC309E0D4629DC4E6D29D4537158866B99`.
   - **Chữ ký số**: Xác thực thành công APK Signature Scheme v2 (`CN=Android Debug`, SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`), bảo toàn khóa ký để cài đè cập nhật mượt mà trên thiết bị đã cài bản trước.
   - **Thành phần bên trong APK**: Chứa đủ 3 tệp trọng số AI lưu dưới dạng không nén (`STORED`) trong `assets/models/` (`vit_cls.onnx` `1,135,005` bytes, `vit_cls.onnx.data` `343,194,624` bytes, `fusion_model.tflite` `110,029,372` bytes), bundle Hermes bytecode `assets/index.android.bundle` (`3,799,148` bytes), `classes.dex` (`6,067,044` bytes) và thư viện native cho cả 4 kiến trúc (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) gồm `libonnxruntime.so`, `libNitroTflite.so`, `libsqlcipher.so`, `libhermesvm.so`.
 
@@ -385,9 +386,19 @@ Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trư
      | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher 4.6.1) | Đạt | Đạt (`sqlcipherVault.test.ts`, 145/145 tests) | Đạt (Tệp 53.248 bytes, `strings` ra 0 byte plaintext) |
      | Sao lưu an toàn kho cũ (`.plaintext.bak`) | Đạt | Đạt | Đạt (Tệp backup 61.440 bytes bảo toàn) |
 
-#### D. Trạng thái thực nghiệm trên Thiết bị vật lý thật
-- **Trạng thái**: Đã sẵn sàng tệp cài đặt **`app-release.apk` v1.0.6 (`versionCode 7`, 544.04 MB, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`)**; đang chờ người dùng kết nối điện thoại Android thật (dự kiến **Xiaomi Redmi Note 12 Turbo**) để thực hiện Đầu việc 5.
-- **Cam kết khoa học**: Khóa luận tuyệt đối không lấy kết quả trên máy ảo làm kết quả trên điện thoại thật. Số liệu thực tế về RAM, nhiệt độ, mức tiêu hao pin, thời gian suy luận On-Device, thao tác Camera/Picker, xuất PDF, đồng bộ Firebase trực tuyến/ngoại tuyến và `KeyInfo` phần cứng sẽ được cập nhật trung thực sau khi đo đạc trực tiếp trên thiết bị thật.
+#### D. Trạng thái thực nghiệm trên Thiết bị vật lý thật (Xiaomi Redmi Note 12 Turbo)
+- **Thiết bị đo kiểm**: Xiaomi Redmi Note 12 Turbo (`3f385c90`, model `23049RAD8C`, Android 13 API 33, kiến trúc `arm64-v8a`, chip Qualcomm Snapdragon 7+ Gen 2).
+- **Trạng thái thực tế**:
+  1. Đã cài đặt thành công bản phát hành độc lập **`app-release.apk` v1.0.7 (`versionCode 8`, 544.04 MB)** qua cổng USB bằng lệnh `adb install -r -d`.
+  2. Đo đạc tài nguyên ban đầu khi khởi động ứng dụng:
+     - **Bộ nhớ PSS**: `145,552 KB` (~**142.1 MB**).
+     - **Bộ nhớ RSS**: `263,428 KB` (~**257.2 MB**).
+     - **Native Heap**: `21,711 KB` (~`21.2 MB`).
+     - **Dalvik Heap**: `13,939 KB` (~`13.6 MB`).
+     - **Pin & Nhiệt độ**: 96%, điện áp 4.42 V, nhiệt độ thiết bị **30.5°C**.
+  3. Giao diện thực tế: Đã xác thực màn hình Đăng nhập hiển thị đúng thiết kế Figma, hỗ trợ chuyển ngữ song ngữ VI/EN, tài khoản Bác sĩ "Dương Hải Đăng" đã đăng nhập thành công và khởi tạo ca bệnh đầu tiên `CA-2026-000001 • Nguyễn Văn A`.
+  4. Khắc phục lỗi runtime trên máy thật: Phát hiện lỗi `UnsatisfiedLinkError: OrtGetApiBase` khi bấm chạy suy luận AI do lệch version giữa `onnxruntime-android:1.31.0` và `libonnxruntime.so` (1.31.1). Đã vá hoàn chỉnh bằng `onnxruntime-android:1.31.1` và bọc `catch (e: Throwable)` an toàn trong `LungCtPipelineModule.kt`.
+- **Cam kết khoa học**: Khóa luận tuyệt đối không lấy kết quả trên máy ảo làm kết quả trên điện thoại thật. Số liệu thực tế chi tiết về RAM đỉnh, thời gian suy luận On-Device qua các lát cắt CT, thao tác Camera/Picker, xuất PDF, đồng bộ Firebase trực tuyến/ngoại tuyến và `KeyInfo` phần cứng đang được tiếp tục đo đạc trực tiếp trên thiết bị này.
 
 ### 4.6 Đánh giá kiến trúc triển khai Android và đối sánh phạm vi đề tài
 Phân tích giải pháp kỹ thuật đã triển khai chính thức trên Android (**Dương Hải Đăng**) và đối chiếu với định hướng lưu trữ lịch sử của đề tài:

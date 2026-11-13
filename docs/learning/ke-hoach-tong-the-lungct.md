@@ -2,7 +2,7 @@
 ### Ứng Dụng Chẩn Đoán Ung Thư Phổi Trên Thiết Bị Di Động Android Bằng Trí Tuệ Nhân Tạo Cạnh (On-Device Edge AI) & Firebase
 
 > **Trạng thái tài liệu**: Tài liệu theo dõi xuyên suốt (Living Document).  
-> **Cập nhật lần cuối**: 12/11/2026 (Hoàn tất Đầu việc 1–4: Export PDF vật lý, Quên mật khẩu Firebase, Sync Engine Offline-First + Firestore + Auto-Sync, và Đóng gói kiểm chứng APK Release v1.0.6 `versionCode 7`).  
+> **Cập nhật lần cuối**: 13/11/2026 (Đã kết nối điện thoại Xiaomi Redmi Note 12 Turbo, cài đặt APK v1.0.6, khắc phục lỗi UnsatisfiedLinkError OrtGetApiBase bằng onnxruntime-android 1.31.1, đóng gói & cài đặt thành công APK v1.0.7 versionCode 8, đo thông số RAM ban đầu 142.1 MB PSS và đăng nhập Bác sĩ thực tế).  
 > **Sinh viên thực hiện**: **Dương Hải Đăng** — MSSV: **49.01.103.020** (Giảng viên hướng dẫn: **ThS. Trịnh Huy Hoàng**).  
 > **Căn cứ quy chuẩn**: Tuân thủ tuyệt đối [`AGENTS.md`](../../AGENTS.md) — phạm vi **duy nhất Android + On-Device Edge AI thuần túy + Firebase phục vụ quản lý nghiệp vụ & đồng bộ**; dừng toàn bộ nhánh iOS và máy chủ suy luận FastAPI.
 
@@ -22,20 +22,25 @@
 graph TD
     A[Giai đoạn 1–2: UI & Chuyển đổi AACNN-ViT FP32] --> B[Giai đoạn 3 & 6: On-Device AI + SQLCipher/Keystore]
     B --> C[Đầu việc 1–3: PDF thật, Firebase Auth/Firestore, SyncEngine]
-    C --> D[Đầu việc 4: Đóng gói & Kiểm chứng APK Release v1.0.6]
-    D -->|Ưu tiên 1 - Kế tiếp| E[Đầu việc 5: Kết nối điện thoại Android thật & Nghiệm thu E2E]
-    D -.->|Sau Đầu việc 5| F[Giai đoạn 5: Nghiên cứu Grad-CAM On-Device MSG-11]
-    D -.->|Mở rộng Cloud| G[Giai đoạn 7: Cloud Storage sao lưu & FCM thông báo đẩy]
+    C --> D[Đầu việc 4: Đóng gói APK Release v1.0.6]
+    D --> E[Đầu việc 5: Kết nối điện thoại thật & Vá lỗi APK v1.0.7]
+    E -->|Ngày tiếp theo| F[Đo đạc suy luận AI On-Device, PDF, Sync & AUTH-08]
+    F -.->|Sau nghiệm thu E2E| G[Nghiên cứu Grad-CAM On-Device MSG-11]
+    F -.->|Mở rộng Cloud| H[Cloud Storage sao lưu & FCM thông báo đẩy]
 ```
 
-- **Vị trí hiện tại (Sau Đầu việc 4 — 12/11/2026)**:
-  - Đã hoàn tất toàn bộ tính năng nghiệp vụ cốt lõi trên mã nguồn: **Firebase Auth (đăng nhập/đăng ký chờ duyệt/quên mật khẩu)**, **Cloud Firestore & Rules**, **Repository SQLCipher + Keystore**, **Sync Engine Offline-First (Outbox, phát hiện xung đột, tự động đồng bộ nền qua `expo-network`, `SyncCenterModal` trên 6 màn hình Bác sĩ)**, **Thống kê Admin Firestore**, và **Xuất báo cáo PDF thật (`expo-print` + `expo-sharing`)**.
-  - Kiểm thử tự động Jest đạt **19/19 suites, 168/168 tests PASS** và `tsc --noEmit` **0 lỗi**. (`npm run lint` còn 4 lỗi `react-hooks/set-state-in-effect` và 19 cảnh báo ở code cũ cần rà soát riêng nếu dọn lint).
-  - Đã đóng gói & xác thực thành công **`app-release.apk` v1.0.6 (`versionCode 7`)** dung lượng **570,466,330 bytes (544.04 MB)**, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`, đầy đủ 3 tệp mô hình `STORED`, bundle Hermes, 4 ABIs native, quyền `CAMERA` và `FileProvider` đã đồng bộ vào `mobile/native-templates/android/`.
-- **Ưu tiên kỹ thuật tiếp theo**:
-  1. **Đầu việc 5 (Ưu tiên cao nhất)**: Kết nối điện thoại Android vật lý (dự kiến **Xiaomi Redmi Note 12 Turbo**, bật USB Debugging), cài đặt `app-release.apk` v1.0.6, kiểm thử E2E tất cả các luồng (Auth, Camera/Photo Picker, On-Device AI, PDF, Sync Offline/Online, AUTH-08) và đo RAM/latency/`KeyInfo`.
-  2. **Mở rộng Cloud**: Sao lưu tệp ảnh CT/PDF lên Firebase Cloud Storage (chỉ lưu trữ, không suy luận) và thông báo đẩy FCM.
-  3. **Grad-CAM On-Device (`MSG-11`)**: Tạm hoãn theo chỉ đạo sau Đầu việc 4; tiếp tục nghiên cứu tính gradient/activation maps hợp lệ khoa học trên thiết bị Android không phụ thuộc server.
+- **Vị trí hiện tại (13/11/2026 - Đang thực hiện Đầu việc 5 trên máy thật)**:
+  - **Kết nối điện thoại thật**: Đã nhận diện thiết bị **Xiaomi Redmi Note 12 Turbo** (`3f385c90`, model `23049RAD8C`, Android 13 API 33, `arm64-v8a`).
+  - **Cài đặt & nghiệm thu giao diện**: Cài đặt thành công bản phát hành và đo đạc thông số khởi động ban đầu (**142.1 MB PSS**, **257.2 MB RSS**, Pin 96%, Nhiệt độ 30.5°C). Người dùng đã đăng nhập thành công tài khoản Bác sĩ "Dương Hải Đăng" và tạo ca bệnh `CA-2026-000001 • Nguyễn Văn A`.
+  - **Phát hiện & khắc phục lỗi Native C++ (Crash)**: Khi bấm "Chạy phân tích AI Lát cắt này", ứng dụng bị crash do `UnsatisfiedLinkError: OrtGetApiBase@VERS_1.31.0` không tìm thấy trong `libonnxruntime.so` (bản 1.31.1). Đã nâng cấp đồng bộ `com.microsoft.onnxruntime:onnxruntime-android:1.31.1`, đổi toàn bộ `catch (e: Exception)` sang `catch (e: Throwable)` trong `LungCtPipelineModule.kt`, đóng gói thành công **APK Release v1.0.7 (`versionCode 8`)** và nạp trực tiếp vào điện thoại thành công (`Success`).
+- **Danh sách công việc tiếp theo (Tiếp tục Đầu việc 5 & Hoàn thiện ứng dụng)**:
+  1. **Nghiệm thu chạy suy luận On-Device AI**: Bác sĩ bấm "Chạy Phân tích AI Lát Cắt Này (FP32)" trên `CA-2026-000001` trên điện thoại thật; đọc logcat đo latency chi tiết (Decode, ViT ONNX, Fusion LiteRT, Tổng ms) và RAM tiêu thụ đỉnh.
+  2. **Nghiệm thu lưu trữ an toàn SQLCipher**: Kiểm tra ca bệnh và kết quả phân loại 3 lớp được lưu bền vững vào CSDL mã hóa; tắt hẳn app (`force-stop`) và mở lại để xác nhận tính toàn vẹn.
+  3. **Nghiệm thu xuất phiếu kết quả PDF**: Bấm "Xuất phiếu kết quả PDF", kiểm tra tạo file `.pdf` thật qua `expo-print`, mở tệp trên điện thoại và kiểm tra tính chính xác của thông tin ca bệnh/khuyến cáo y khoa (bảo đảm không có Grad-CAM giả).
+  4. **Nghiệm thu đồng bộ Firebase (Sync Engine)**: Mở modal `SyncCenterModal` đồng bộ hồ sơ lên Cloud Firestore; ngắt mạng kiểm tra chế độ Offline-First và kết nối lại mạng để kiểm tra tự động đồng bộ nền.
+  5. **Nghiệm thu phân quyền & Duyệt tài khoản Admin**: Đăng xuất tài khoản Bác sĩ, đăng nhập tài khoản Quản trị viên (`admin.dang@lungct.vn`), kiểm tra tab Duyệt tài khoản và xem thống kê Firestore theo thời gian thực.
+  6. **Kiểm tra cơ chế AUTH-08**: Thử nghiệm kịch bản khóa tài khoản bác sĩ từ Admin để xác minh dữ liệu nháp được bảo toàn, dữ liệu đã sync được xóa an toàn khỏi máy.
+  7. **Dọn sạch ESLint & Cập nhật số liệu vào Báo cáo khóa luận**: Xử lý 4 lỗi `react-hooks/set-state-in-effect` ở màn hình cũ và đưa toàn bộ số liệu đo kiểm thực tế trên chip Snapdragon 7+ Gen 2 vào Chương 4 bản thảo khóa luận của Dương Hải Đăng.
 
 ---
 
