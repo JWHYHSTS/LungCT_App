@@ -12,7 +12,7 @@ Do thư mục `mobile/android/` bị Git bỏ qua (`.gitignore`) để tránh l�
 - `MainApplication.kt`: Mẫu đăng ký gói native vào danh sách package của ứng dụng Expo/React Native.
 - `root-build.gradle`: Cấu hình Gradle gốc (`mobile/android/build.gradle`), bao gồm cấu hình khắc phục giới hạn đường dẫn 260 ký tự (`MAX_PATH`) của CMake/Ninja trên Windows bằng `buildStagingDirectory` ngắn (`%TEMP%\lct_cxx\<subproject>`).
 - `build.gradle`: Cấu hình build cấp ứng dụng (`mobile/android/app/build.gradle`), bao gồm:
-  - ONNX Runtime Android: `com.microsoft.onnxruntime:onnxruntime-android:1.31.0`
+  - ONNX Runtime Android: `com.microsoft.onnxruntime:onnxruntime-android:1.31.1`
   - TensorFlow Lite (LiteRT): `com.google.ai.edge.litert:litert-api:1.4.0` và `litert:1.4.0`
   - SQLCipher Android: `net.zetetic:sqlcipher-android:4.6.1@aar` và `androidx.sqlite:sqlite:2.4.0`
   - Cờ liên kết JNI: `useLegacyPackaging = true`

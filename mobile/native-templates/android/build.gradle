@@ -92,8 +92,8 @@ android {
         applicationId 'com.anonymous.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 7
-        versionName "1.0.6"
+        versionCode 8
+        versionName "1.0.7"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -186,7 +186,7 @@ dependencies {
     }
 
     // ONNX Runtime Android & TensorFlow Lite (LiteRT) APIs cho Native Pipeline Module
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.31.0")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.31.1")
     implementation("com.google.ai.edge.litert:litert-api:1.4.0")
     implementation("com.google.ai.edge.litert:litert:1.4.0")
 

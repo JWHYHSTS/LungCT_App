@@ -579,7 +579,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       }
 
       promise.resolve(resultMap)
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
+      android.util.Log.e("LungCtPipeline", "Lỗi thực thi suy luận pipeline", e)
       promise.reject("ERR_INFERENCE", "Lỗi thực thi suy luận pipeline: ${e.message}", e)
     }
   }
@@ -587,49 +588,59 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
   @ReactMethod
   fun runInferenceFromBase64(base64Image: String, promise: Promise) {
     Thread {
-      val totalStart = System.currentTimeMillis()
-      val imageBytes = try {
-        Base64.decode(base64Image, Base64.DEFAULT)
-      } catch (e: Exception) {
-        promise.reject("ERR_DECODE", "Tệp ảnh CT không hợp lệ hoặc chuỗi Base64 bị hỏng: ${e.message}")
-        return@Thread
-      }
+      try {
+        val totalStart = System.currentTimeMillis()
+        val imageBytes = try {
+          Base64.decode(base64Image, Base64.DEFAULT)
+        } catch (e: Exception) {
+          promise.reject("ERR_DECODE", "Tệp ảnh CT không hợp lệ hoặc chuỗi Base64 bị hỏng: ${e.message}")
+          return@Thread
+        }
 
-      val decodeStart = System.currentTimeMillis()
-      val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-      if (bitmap == null) {
-        promise.reject("ERR_DECODE", "Không thể giải mã định dạng ảnh (BitmapFactory trả về null) (MSG-10)")
-        return@Thread
-      }
-      val decodeDuration = System.currentTimeMillis() - decodeStart
+        val decodeStart = System.currentTimeMillis()
+        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        if (bitmap == null) {
+          promise.reject("ERR_DECODE", "Không thể giải mã định dạng ảnh (BitmapFactory trả về null) (MSG-10)")
+          return@Thread
+        }
+        val decodeDuration = System.currentTimeMillis() - decodeStart
 
-      executePipelineOnBitmap(bitmap, decodeDuration, totalStart, "base64", promise)
+        executePipelineOnBitmap(bitmap, decodeDuration, totalStart, "base64", promise)
+      } catch (e: Throwable) {
+        android.util.Log.e("LungCtPipeline", "Lỗi thực thi pipeline base64", e)
+        promise.reject("ERR_INFERENCE", "Lỗi thực thi pipeline base64: ${e.message}", e)
+      }
     }.start()
   }
 
   @ReactMethod
   fun runInferenceFromFilePath(filePath: String, promise: Promise) {
     Thread {
-      val totalStart = System.currentTimeMillis()
-      
-      // Xử lý URI content:// hoặc file:// hoặc path thông thường
-      if (filePath.startsWith("content://") || filePath.startsWith("file://")) {
-        runWithUri(Uri.parse(filePath), totalStart, promise)
-        return@Thread
-      }
-
-      val file = File(filePath)
-      if (!file.exists() || !file.isFile) {
-        // Thử tìm trong thư mục test_images cục bộ của app nếu là tên tệp tương đối
-        val fallbackFile = File(File(reactContext.filesDir, "test_images"), file.name)
-        if (fallbackFile.exists()) {
-          runWithFile(fallbackFile, totalStart, promise)
+      try {
+        val totalStart = System.currentTimeMillis()
+        
+        // Xử lý URI content:// hoặc file:// hoặc path thông thường
+        if (filePath.startsWith("content://") || filePath.startsWith("file://")) {
+          runWithUri(Uri.parse(filePath), totalStart, promise)
           return@Thread
         }
-        promise.reject("ERR_FILE_NOT_FOUND", "Không tìm thấy tệp ảnh CT tại đường dẫn: $filePath (MSG-10)")
-        return@Thread
+
+        val file = File(filePath)
+        if (!file.exists() || !file.isFile) {
+          // Thử tìm trong thư mục test_images cục bộ của app nếu là tên tệp tương đối
+          val fallbackFile = File(File(reactContext.filesDir, "test_images"), file.name)
+          if (fallbackFile.exists()) {
+            runWithFile(fallbackFile, totalStart, promise)
+            return@Thread
+          }
+          promise.reject("ERR_FILE_NOT_FOUND", "Không tìm thấy tệp ảnh CT tại đường dẫn: $filePath (MSG-10)")
+          return@Thread
+        }
+        runWithFile(file, totalStart, promise)
+      } catch (e: Throwable) {
+        android.util.Log.e("LungCtPipeline", "Lỗi thực thi pipeline từ file path", e)
+        promise.reject("ERR_INFERENCE", "Lỗi thực thi pipeline từ file path: ${e.message}", e)
       }
-      runWithFile(file, totalStart, promise)
     }.start()
   }
 
@@ -643,7 +654,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       }
       val decodeDuration = System.currentTimeMillis() - decodeStart
       executePipelineOnBitmap(bitmap, decodeDuration, totalStart, file.name, promise)
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
+      android.util.Log.e("LungCtPipeline", "Lỗi đọc tệp ảnh ${file.name}", e)
       promise.reject("ERR_READ_FILE", "Lỗi đọc tệp ảnh ${file.name}: ${e.message}", e)
     }
   }
@@ -664,7 +676,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       }
       val decodeDuration = System.currentTimeMillis() - decodeStart
       executePipelineOnBitmap(bitmap, decodeDuration, totalStart, uri.lastPathSegment ?: "uri_image", promise)
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
+      android.util.Log.e("LungCtPipeline", "Lỗi đọc tệp từ URI $uri", e)
       promise.reject("ERR_READ_URI", "Lỗi đọc tệp từ URI $uri: ${e.message}", e)
     }
   }
