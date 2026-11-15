@@ -85,9 +85,11 @@ export interface ILocalStorageAdapter {
   ): Promise<CaseEntity>;
   completeCase(ownerId: string, caseId: string): Promise<CaseEntity>;
   trashCase(ownerId: string, caseId: string): Promise<boolean>;
+  restoreCase(ownerId: string, caseId: string): Promise<boolean>;
 
   // === ẢNH CT & KẾT QUẢ AI ===
   getImagesByCaseId(ownerId: string, caseId: string): Promise<CTImageEntity[]>;
+  removeCTImage(ownerId: string, imageId: string): Promise<boolean>;
   saveCTImage(
     ownerId: string,
     image: Omit<CTImageEntity, 'imageId' | 'createdAt'>,

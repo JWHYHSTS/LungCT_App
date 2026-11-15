@@ -12,7 +12,7 @@ import {
   StatusBadge,
   TopBar,
 } from '../../../ui/components';
-import { getMockCases, subscribeDoctorStore, type MockCase } from '../../../mocks';
+import { type MockCase } from '../../../mocks';
 import { CASE_FILTER_DECISION, SCORE_FORMAT_DECISION } from '../../../config/ui-decisions';
 import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
@@ -37,12 +37,12 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(CASE_FILTER_DECISION.defaultChip);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<MockCase | null>(null);
 
   React.useEffect(() => {
     let isMounted = true;
 
     if (!ownerId) {
-      setCases([]);
       return;
     }
 
@@ -247,6 +247,10 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
                   ) : undefined
                 }
                 onPress={() => {
+                  if (caseItem.isTrashed) {
+                    setRestoreTarget(caseItem);
+                    return;
+                  }
                   if (onNavigateToCaseDetail) {
                     onNavigateToCaseDetail(caseItem.id);
                   } else {
@@ -262,6 +266,29 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
           })
         )}
       </ScrollView>
+
+      {/* Dialog xác nhận khôi phục ca bệnh từ thùng rác (Chính sách 4A) */}
+      <Dialog
+        visible={Boolean(restoreTarget)}
+        type="default"
+        title={t('trash.restore_case_title', 'Khôi phục ca bệnh')}
+        body={t('trash.restore_case_confirm_body', {
+          code: restoreTarget?.caseCode || '',
+          defaultValue: `Khôi phục ca bệnh ${restoreTarget?.caseCode} về danh sách hoạt động?`,
+        })}
+        confirmLabel={t('trash.restore_btn', 'Khôi phục')}
+        cancelLabel={t('common.cancel', 'Hủy')}
+        onConfirm={async () => {
+          if (!restoreTarget) return;
+          try {
+            await CaseRepository.restoreCase(ownerId, restoreTarget.id);
+            setRestoreTarget(null);
+          } catch (err) {
+            console.warn('[DoctorCasesScreen] Lỗi khôi phục ca:', err);
+          }
+        }}
+        onCancel={() => setRestoreTarget(null)}
+      />
 
       <Dialog
         visible={dialogNotice.visible}

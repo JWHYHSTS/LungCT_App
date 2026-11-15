@@ -218,6 +218,15 @@ graph TD
     - *Tình huống biên (Bệnh nhân đã sync nhưng có ca nháp chưa sync)*:
       - Giữ lại bệnh nhân gốc để bảo toàn khóa ngoại và liên kết hồ sơ của ca nháp, không để ca nháp mồ côi.
       - Ghi nhận đây là phương án kỹ thuật an toàn đề xuất, chờ chỉ đạo chính thức từ GVHD/Hội đồng.
+  - [x] **6.3e Hoàn thiện Bộ Chính sách Vòng đời Dữ liệu & Xóa An toàn (Chính sách 1A, 2A, 3A, 4A, 5A, 6A)**
+    - *Căn cứ*: Đã thống nhất với người dùng và triển khai hoàn chỉnh trên cả 3 tầng (Native Android Module, Local Storage Adapter, Giao diện Người dùng):
+      - **Chính sách 1A**: Khóa quyền xóa ảnh CT khi ca ở trạng thái `COMPLETED` hoặc trong `Thùng rác`; chỉ cho phép xóa trên `CaseDetailScreen` và `AIImageResultScreen` khi ca ở trạng thái `DRAFT`.
+      - **Chính sách 2A**: Khi xóa ảnh CT, chuyển trạng thái ảnh sang `REMOVED`, xóa tệp ảnh vật lý qua `deleteLocalFile`, chuyển kết quả AI sang `SUPERSEDED` và tự động tính lại tóm tắt nhãn/điểm của ca bệnh.
+      - **Chính sách 3A**: Bổ sung thao tác xóa cho từng tệp PDF đã xuất trên `ExportPdfScreen` kèm dialog xác nhận bảo mật, xóa tệp vật lý trong cache `cacheDir/Print`, loại bỏ tệp placeholder mẫu `20/10/2026`.
+      - **Chính sách 4A**: Hỗ trợ khôi phục ca bệnh từ thùng rác (`restoreCase`) trên `DoctorCasesScreen`; kích hoạt Banner cảnh báo và chế độ Read-only bảo vệ dữ liệu khi xem ca trong thùng rác trên `CaseDetailScreen`.
+      - **Chính sách 5A**: Áp dụng Cascade Soft-Delete khi xóa mềm bệnh nhân (`trashPatient`) tự động xóa mềm các ca con; Cascade Restore khi khôi phục bệnh nhân (`restorePatient`) tự động khôi phục các ca con về đúng trạng thái ban đầu.
+      - **Chính sách 6A**: Bổ sung nút "Mở khóa tài khoản" (`btn_unlock`) trên `AdminAccountDetailScreen`, cập nhật trạng thái `active` lên Cloud Firestore và ghi nhận audit log.
+    - *Kiểm thử tự động*: Bổ sung bộ test suite trong `localStorageService.test.ts`, toàn bộ `19/19 suites, 171/171 tests` PASS 100%.
 - [x] **6.4 Chính sách Đồng bộ dữ liệu Hai chiều Offline-First (Sync Engine & SyncCenterModal)**
   - *Trạng thái*: **ĐÃ TRIỂN KHAI CODE & KIỂM THỬ JEST (`syncEngine.test.ts` PASS)**.
   - *Căn cứ*: Hàng đợi Outbox (`SyncOperation`) trong `localStorageService.ts`, `mobile/src/services/sync/` (`syncEngine.ts`, `syncService.ts`), phát hiện xung đột bản ghi, tự động đồng bộ nền khi có mạng qua `expo-network`, cùng `SyncCenterModal` gắn trên 6 màn hình Bác sĩ. Chờ kiểm thử đồng bộ hai chiều thực tế trên điện thoại (Đầu việc 5).

@@ -18,6 +18,7 @@ import {
   findAdminDoctorById,
   getAuditLogsForDoctor,
   lockDoctorAccount,
+  unlockDoctorAccount,
   subscribeAdminStore,
   type AdminAuditLog,
   type AdminDoctorAccount,
@@ -26,6 +27,7 @@ import {
   approveDoctorInFirestore,
   getDoctorAccountById,
   lockDoctorInFirestore,
+  unlockDoctorInFirestore,
 } from '../../../services/firebase/adminService';
 import { useAuth } from '../../auth/context/AuthContext';
 
@@ -62,6 +64,7 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showLockDialog, setShowLockDialog] = useState(false);
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [lockReason, setLockReason] = useState('');
   const [lockError, setLockError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,6 +119,21 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
       approveDoctorAccount(account.id);
     } catch (err) {
       console.error('[AdminAccountDetail] approve error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmUnlock = async () => {
+    if (!isOnline || isSubmitting) return;
+    setIsSubmitting(true);
+    setShowUnlockDialog(false);
+    try {
+      await unlockDoctorInFirestore(account.id);
+      setAccount((prev) => (prev ? { ...prev, status: 'active', lockReason: undefined } : prev));
+      unlockDoctorAccount(account.id);
+    } catch (err) {
+      console.error('[AdminAccountDetail] unlock error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -365,6 +383,16 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
               onPress={handleOpenLockDialog}
             />
           )}
+
+          {account.status === 'locked' && (
+            <Button
+              label={t('admin.btn_unlock', 'Mở khóa tài khoản')}
+              variant="primary"
+              leadingIcon="unlock"
+              disabled={!isOnline}
+              onPress={() => setShowUnlockDialog(true)}
+            />
+          )}
         </View>
       </ScrollView>
 
@@ -381,6 +409,21 @@ export const AdminAccountDetailScreen: React.FC<AdminAccountDetailScreenProps> =
         cancelLabel={t('common.cancel', 'Hủy')}
         onConfirm={handleConfirmApprove}
         onCancel={() => setShowApproveDialog(false)}
+      />
+
+      {/* Dialog xác nhận mở khóa tài khoản (Chính sách 6A) */}
+      <Dialog
+        visible={showUnlockDialog}
+        type="default"
+        title={t('admin.unlock_confirm_title', 'Mở khóa tài khoản bác sĩ?')}
+        body={t('admin.unlock_confirm_body', {
+          name: account.fullName,
+          defaultValue: `Bác sĩ ${account.fullName} sẽ được khôi phục quyền truy cập hệ thống và thực hiện chẩn đoán hình ảnh.`,
+        })}
+        confirmLabel={t('admin.unlock_confirm_btn', 'Xác nhận mở khóa')}
+        cancelLabel={t('common.cancel', 'Hủy')}
+        onConfirm={handleConfirmUnlock}
+        onCancel={() => setShowUnlockDialog(false)}
       />
 
       {/* Modal Khóa tài khoản - Bắt buộc nhập lý do */}

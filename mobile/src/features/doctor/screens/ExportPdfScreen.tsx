@@ -9,11 +9,13 @@ import {
   Dialog,
   Divider,
   EmptyState,
+  IconButton,
   Segmented,
   TopBar,
 } from '../../../ui/components';
 import { findCaseById, type MockCase } from '../../../mocks';
 import { CaseRepository } from '../../../services/storage';
+import { deletePhysicalFile } from '../../../services/storage/fileUtil';
 import { useAuth } from '../../../features/auth';
 import { PdfReportService, type ClinicalReportData, type ExportedPdfResult } from '../../../services/pdf';
 
@@ -69,27 +71,46 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
   const [pdfVersion] = useState<string>('V1.0 - Tiêu chuẩn lâm sàng');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
-  // Danh sách PDF đã xuất trong phiên làm việc
-  const [exportedList, setExportedList] = useState<ExportedPdfItem[]>([
-    {
-      id: 'pdf-init',
-      fileName: `BaoCao_CT_${currentCase?.caseCode || 'CA'}_vi.pdf`,
-      fileUri: '',
-      createdAt: `${currentCase?.captureDate || '20/10/2026'} 11:30`,
-      fileSize: '1.2 MB',
-      language: 'vi',
-      hasGradCam: true,
-    },
-  ]);
+  // Danh sách PDF đã xuất trong phiên làm việc (Chính sách 3A: loại bỏ placeholder mẫu cũ)
+  const [exportedList, setExportedList] = useState<ExportedPdfItem[]>([]);
 
   const [showShareConfirmDialog, setShowShareConfirmDialog] = useState(false);
   const [selectedPdfToShare, setSelectedPdfToShare] = useState<ExportedPdfItem | null>(null);
+
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
+  const [selectedPdfToDelete, setSelectedPdfToDelete] = useState<ExportedPdfItem | null>(null);
 
   const [noticeDialog, setNoticeDialog] = useState<{
     visible: boolean;
     title: string;
     body: string;
   }>({ visible: false, title: '', body: '' });
+
+  const handleRequestDelete = (item: ExportedPdfItem) => {
+    setSelectedPdfToDelete(item);
+    setShowDeleteConfirmDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowDeleteConfirmDialog(false);
+    if (!selectedPdfToDelete) return;
+
+    if (selectedPdfToDelete.fileUri) {
+      await deletePhysicalFile(selectedPdfToDelete.fileUri);
+    }
+
+    setExportedList((prev) => prev.filter((p) => p.id !== selectedPdfToDelete.id));
+
+    setNoticeDialog({
+      visible: true,
+      title: t('doctor_detail.pdf_deleted_title', 'Đã xóa báo cáo'),
+      body: t('doctor_detail.pdf_deleted_body', {
+        fileName: selectedPdfToDelete.fileName,
+        defaultValue: `Đã xóa tệp "${selectedPdfToDelete.fileName}" khỏi danh sách và giải phóng bộ nhớ tạm. Các bản sao đã chia sẻ ra ngoài (Zalo/Drive) sẽ không bị ảnh hưởng.`,
+      }),
+    });
+    setSelectedPdfToDelete(null);
+  };
 
   if (!currentCase) {
     return (
@@ -367,49 +388,80 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
           </AppText>
         </View>
 
-        {exportedList.map((item) => (
+        {exportedList.length === 0 ? (
           <View
-            key={item.id}
             style={[
               styles.pdfItemCard,
               {
                 backgroundColor: colors.bg.surface,
                 borderColor: colors.border.default,
                 borderRadius: radius.md,
-                padding: spacing.md,
+                padding: spacing.lg,
+                alignItems: 'center',
+                justifyContent: 'center',
                 marginBottom: spacing.xs,
               },
             ]}
           >
-            <View style={{ flex: 1, marginRight: spacing.sm }}>
-              <AppText variant="labelL" style={{ color: colors.text.primary }}>
-                {item.fileName}
-              </AppText>
-              <AppText variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
-                {item.createdAt} · {item.fileSize} ·{' '}
-                {item.language === 'vi'
-                  ? t('doctor_detail.pdf_lang_vi', 'Tiếng Việt')
-                  : t('doctor_detail.pdf_lang_en', 'English')}
-              </AppText>
-            </View>
-            <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-              <Button
-                label={t('doctor_detail.pdf_print_btn', 'In')}
-                variant="tertiary"
-                size="M"
-                leadingIcon="download"
-                onPress={() => handleDirectPrint(item)}
-              />
-              <Button
-                label={t('doctor_detail.pdf_share_btn', 'Chia sẻ')}
-                variant="secondary"
-                size="M"
-                leadingIcon="share"
-                onPress={() => handleTriggerShare(item)}
-              />
-            </View>
+            <AppText variant="caption" color={colors.text.secondary}>
+              {t(
+                'doctor_detail.pdf_empty_history',
+                'Chưa có bản báo cáo nào được tạo trong phiên này. Hãy bấm "Tạo báo cáo PDF mới" ở trên.',
+              )}
+            </AppText>
           </View>
-        ))}
+        ) : (
+          exportedList.map((item) => (
+            <View
+              key={item.id}
+              style={[
+                styles.pdfItemCard,
+                {
+                  backgroundColor: colors.bg.surface,
+                  borderColor: colors.border.default,
+                  borderRadius: radius.md,
+                  padding: spacing.md,
+                  marginBottom: spacing.xs,
+                },
+              ]}
+            >
+              <View style={{ flex: 1, marginRight: spacing.sm }}>
+                <AppText variant="labelL" style={{ color: colors.text.primary }}>
+                  {item.fileName}
+                </AppText>
+                <AppText variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
+                  {item.createdAt} · {item.fileSize} ·{' '}
+                  {item.language === 'vi'
+                    ? t('doctor_detail.pdf_lang_vi', 'Tiếng Việt')
+                    : t('doctor_detail.pdf_lang_en', 'English')}
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
+                <Button
+                  label={t('doctor_detail.pdf_print_btn', 'In')}
+                  variant="tertiary"
+                  size="M"
+                  leadingIcon="download"
+                  onPress={() => handleDirectPrint(item)}
+                />
+                <Button
+                  label={t('doctor_detail.pdf_share_btn', 'Chia sẻ')}
+                  variant="secondary"
+                  size="M"
+                  leadingIcon="share"
+                  onPress={() => handleTriggerShare(item)}
+                />
+                <IconButton
+                  name="trash"
+                  accessibilityLabel={t('common.delete', 'Xóa')}
+                  variant="tonal"
+                  iconSize={20}
+                  onPress={() => handleRequestDelete(item)}
+                />
+              </View>
+            </View>
+          ))
+        )}
 
         {/* Khung lưu ý dữ liệu nhạy cảm */}
         <View
@@ -450,6 +502,24 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
         cancelLabel={t('doctor_detail.pdf_share_confirm_cancel', 'Hủy')}
         onConfirm={handleConfirmShare}
         onCancel={() => setShowShareConfirmDialog(false)}
+      />
+
+      {/* Dialog xác nhận xóa tệp PDF đã xuất */}
+      <Dialog
+        visible={showDeleteConfirmDialog}
+        type="destructive"
+        title={t('doctor_detail.pdf_delete_confirm_title', 'Xóa tệp PDF báo cáo?')}
+        body={t('doctor_detail.pdf_delete_confirm_body', {
+          fileName: selectedPdfToDelete?.fileName || '',
+          defaultValue: `Bạn có chắc chắn muốn xóa tệp "${selectedPdfToDelete?.fileName}"? Thao tác này sẽ xóa tệp nhị phân trong bộ nhớ ứng dụng và lịch sử xuất PDF của ca bệnh.`,
+        })}
+        confirmLabel={t('doctor_detail.pdf_delete_confirm_proceed', 'Xóa tệp')}
+        cancelLabel={t('doctor_detail.pdf_delete_confirm_cancel', 'Hủy')}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowDeleteConfirmDialog(false);
+          setSelectedPdfToDelete(null);
+        }}
       />
 
       {/* Dialog thông báo kết quả */}

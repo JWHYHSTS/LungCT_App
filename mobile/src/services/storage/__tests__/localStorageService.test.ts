@@ -550,4 +550,154 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       expect(conflictedP?.phone).toBe('0909123456'); // Giữ nguyên dữ liệu cục bộ, không ghi đè
     });
   });
+
+  describe('8. Chính sách vòng đời dữ liệu, Cascade Soft-Delete & Gỡ bỏ ảnh CT (Chính sách 1A, 2A, 4A, 5A)', () => {
+    it('Cascade Soft-Delete & Restore: Xóa mềm bệnh nhân sẽ tự động xóa mềm các ca con, khôi phục bệnh nhân sẽ khôi phục ca con (5A)', async () => {
+      const p = await storage.createPatient(DOC_A, {
+        patientCode: 'BN-CASCADE-01',
+        fullName: 'Lê Hoàng Long',
+        dateOfBirth: '01/01/1975',
+        sex: 'MALE',
+      });
+      const c1 = await storage.createCase(DOC_A, {
+        patientId: p.patientId,
+        scanDate: '2026-11-14',
+      });
+      const c2 = await storage.createCase(DOC_A, {
+        patientId: p.patientId,
+        scanDate: '2026-11-15',
+      });
+      // Hoàn tất ca c2
+      await storage.completeCase(DOC_A, c2.caseId);
+
+      // Xóa mềm bệnh nhân
+      await storage.trashPatient(DOC_A, p.patientId);
+
+      // Kiểm tra: Bệnh nhân và cả 2 ca con đều TRASHED
+      const trashedP = await storage.getPatientById(DOC_A, p.patientId, true);
+      expect(trashedP?.status).toBe('TRASHED');
+      const activeCases = await storage.getCases(DOC_A, p.patientId, false);
+      expect(activeCases).toHaveLength(0); // Không xuất hiện trong danh sách active
+      const allCases = await storage.getCases(DOC_A, p.patientId, true);
+      expect(allCases).toHaveLength(2);
+      expect(allCases.every((c) => c.status === 'TRASHED')).toBe(true);
+
+      // Khôi phục bệnh nhân
+      await storage.restorePatient(DOC_A, p.patientId);
+
+      // Kiểm tra: Bệnh nhân ACTIVE, c1 về DRAFT, c2 về COMPLETED
+      const restoredP = await storage.getPatientById(DOC_A, p.patientId, false);
+      expect(restoredP?.status).toBe('ACTIVE');
+      const restoredCases = await storage.getCases(DOC_A, p.patientId, false);
+      expect(restoredCases).toHaveLength(2);
+      const reC1 = restoredCases.find((c) => c.caseId === c1.caseId);
+      const reC2 = restoredCases.find((c) => c.caseId === c2.caseId);
+      expect(reC1?.status).toBe('DRAFT');
+      expect(reC2?.status).toBe('COMPLETED');
+    });
+
+    it('Khôi phục ca bệnh đơn lẻ từ thùng rác (4A)', async () => {
+      const p = await storage.createPatient(DOC_A, {
+        patientCode: 'BN-CASE-RESTORE',
+        fullName: 'Trần Văn Cường',
+        dateOfBirth: '15/05/1980',
+        sex: 'MALE',
+      });
+      const c = await storage.createCase(DOC_A, {
+        patientId: p.patientId,
+        scanDate: '2026-11-15',
+      });
+
+      // Xóa ca
+      await storage.trashCase(DOC_A, c.caseId);
+      const casesActiveAfterTrash = await storage.getCases(DOC_A, p.patientId, false);
+      expect(casesActiveAfterTrash).toHaveLength(0);
+
+      // Khôi phục ca
+      const restored = await storage.restoreCase(DOC_A, c.caseId);
+      expect(restored).toBe(true);
+
+      const casesActiveAfterRestore = await storage.getCases(DOC_A, p.patientId, false);
+      expect(casesActiveAfterRestore).toHaveLength(1);
+      expect(casesActiveAfterRestore[0].status).toBe('DRAFT');
+      expect(casesActiveAfterRestore[0].trashedAt).toBeUndefined();
+    });
+
+    it('Xóa lát cắt CT, đánh dấu REMOVED, hủy kết quả AI sang SUPERSEDED và cập nhật ca (1A, 2A)', async () => {
+      const p = await storage.createPatient(DOC_A, {
+        patientCode: 'BN-IMG-DEL',
+        fullName: 'Ngô Thu Thảo',
+        dateOfBirth: '20/03/1990',
+        sex: 'FEMALE',
+      });
+      const c = await storage.createCase(DOC_A, {
+        patientId: p.patientId,
+        scanDate: '2026-11-15',
+      });
+
+      // Thêm 2 ảnh CT
+      const img1 = await storage.saveCTImage(DOC_A, {
+        caseId: c.caseId,
+        ownerId: DOC_A,
+        localFileRef: 'file:///sandbox/img1.png',
+        fileSizeBytes: 1024,
+        state: 'ACTIVE',
+      });
+      const img2 = await storage.saveCTImage(DOC_A, {
+        caseId: c.caseId,
+        ownerId: DOC_A,
+        localFileRef: 'file:///sandbox/img2.png',
+        fileSizeBytes: 2048,
+        state: 'ACTIVE',
+      });
+
+      // Lưu kết quả AI cho cả 2 ảnh
+      await storage.savePredictionResult(DOC_A, {
+        caseId: c.caseId,
+        imageId: img1.imageId,
+        ownerId: DOC_A,
+        predictedClass: 'Malignant',
+        probabilities: { benign: 0.05, malignant: 0.9, normal: 0.05 },
+        state: 'CURRENT',
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        durationMs: 1200,
+        modelVersion: '1.0.0',
+      });
+      await storage.savePredictionResult(DOC_A, {
+        caseId: c.caseId,
+        imageId: img2.imageId,
+        ownerId: DOC_A,
+        predictedClass: 'Benign',
+        probabilities: { benign: 0.85, malignant: 0.1, normal: 0.05 },
+        state: 'CURRENT',
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        durationMs: 1100,
+        modelVersion: '1.0.0',
+      });
+
+      // Xóa lát cắt img1 (ảnh Malignant)
+      const removed = await storage.removeCTImage(DOC_A, img1.imageId);
+      expect(removed).toBe(true);
+
+      // 1. Chỉ còn img2 đang ACTIVE trong getImagesByCaseId
+      const activeImages = await storage.getImagesByCaseId(DOC_A, c.caseId);
+      expect(activeImages).toHaveLength(1);
+      expect(activeImages[0].imageId).toBe(img2.imageId);
+
+      // 2. Kết quả AI của img1 đã bị chuyển sang SUPERSEDED
+      const latestPred1 = await storage.getLatestPrediction(DOC_A, img1.imageId);
+      expect(latestPred1).toBeNull(); // Không còn kết quả CURRENT
+
+      const latestPred2 = await storage.getLatestPrediction(DOC_A, img2.imageId);
+      expect(latestPred2?.predictedClass).toBe('Benign');
+      expect(latestPred2?.state).toBe('CURRENT');
+
+      // 3. Ca bệnh được tăng revision để đồng bộ
+      const reloadedCase = await storage.getCaseById(DOC_A, c.caseId);
+      expect(reloadedCase?.syncState).toBe('pending');
+      expect(reloadedCase?.revision).toBe(2);
+    });
+  });
 });

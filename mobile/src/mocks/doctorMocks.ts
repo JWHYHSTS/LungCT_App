@@ -628,6 +628,56 @@ export const trashCase = (caseId: string): boolean => {
   return found;
 };
 
+export const restoreCase = (caseId: string): boolean => {
+  let found = false;
+  let targetPatientId = '';
+  casesStore = casesStore.map((c) => {
+    if (c.id === caseId) {
+      found = true;
+      targetPatientId = c.patientId;
+      return { ...c, isTrashed: false };
+    }
+    return c;
+  });
+
+  if (found && targetPatientId) {
+    const activeCases = casesStore.filter((c) => c.patientId === targetPatientId && !c.isTrashed);
+    const hasDraft = activeCases.some((c) => c.status === 'DRAFT');
+    patientsStore = patientsStore.map((p) => {
+      if (p.id === targetPatientId) {
+        return {
+          ...p,
+          caseCount: activeCases.length,
+          hasDraftCase: hasDraft,
+        };
+      }
+      return p;
+    });
+    notify();
+  }
+  return found;
+};
+
+export const removeMockCaseImage = (caseId: string, imageId: string): boolean => {
+  let found = false;
+  casesStore = casesStore.map((c) => {
+    if (c.id === caseId) {
+      const filtered = c.images.filter((img) => img.id !== imageId);
+      if (filtered.length !== c.images.length) {
+        found = true;
+        return {
+          ...c,
+          images: filtered,
+          imageCount: filtered.length,
+        };
+      }
+    }
+    return c;
+  });
+  if (found) notify();
+  return found;
+};
+
 export const resetDoctorStore = (): void => {
   patientsStore = [...INITIAL_PATIENTS];
   casesStore = [...INITIAL_CASES];

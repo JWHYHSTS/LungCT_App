@@ -17,9 +17,6 @@ import {
 } from '../../../ui/components';
 import { Icon } from '../../../ui/icons';
 import {
-  getMockCases,
-  getMockPatients,
-  subscribeDoctorStore,
   createMockCaseForPatient,
   type MockCase,
   type MockPatient,
@@ -75,8 +72,6 @@ export const DoctorHomeScreen: React.FC<DoctorHomeScreenProps> = ({
     let isMounted = true;
 
     if (!ownerId) {
-      setCasesList([]);
-      setPatientsList([]);
       return;
     }
 

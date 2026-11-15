@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import {
-  AILabel,
   AppText,
   Banner,
   BottomSheet,
@@ -28,7 +27,7 @@ import {
   type AvailableTestImage,
 } from '../../../services/ai/onDevicePipeline';
 import { PipelinePredictionResult } from '../../../services/ai/types';
-import { CaseRepository, localStorageService, subscribeCaseRepository } from '../../../services/storage';
+import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 
 export interface AIImageResultScreenProps {
@@ -101,7 +100,10 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     visible: boolean;
     title: string;
     body: string;
+    onClose?: () => void;
   }>({ visible: false, title: '', body: '' });
+
+  const [showDeleteSliceDialog, setShowDeleteSliceDialog] = useState(false);
 
   const [onDeviceResult, setOnDeviceResult] = useState<PipelinePredictionResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -359,6 +361,31 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     }
   };
 
+  const handleConfirmDeleteSlice = async () => {
+    setShowDeleteSliceDialog(false);
+    if (!currentCase || !activeImage) return;
+
+    const res = await CaseRepository.removeCTImage(ownerId, currentCase.id, activeImage.id);
+    if (!res.success) {
+      setNoticeDialog({
+        visible: true,
+        title: t('doctor_detail.case_image_delete_error', 'Không thể xóa ảnh'),
+        body: res.reason || 'Có lỗi xảy ra khi xóa lát cắt.',
+      });
+      return;
+    }
+
+    setNoticeDialog({
+      visible: true,
+      title: t('doctor_detail.case_image_deleted_title', 'Đã xóa lát cắt'),
+      body: t('doctor_detail.case_image_deleted_body', {
+        index: currentIndex,
+        defaultValue: `Đã xóa lát cắt #${currentIndex} khỏi ca bệnh và giải phóng dung lượng bộ nhớ.`,
+      }),
+      onClose: onBack,
+    });
+  };
+
   // Xử lý khi không tìm thấy ca bệnh hoặc ca không có ảnh
   if (!currentCase || images.length === 0) {
     return (
@@ -614,6 +641,16 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
             disabled={isAnalyzing}
             onPress={handleOpenFilePicker}
           />
+          {/* Nút Xóa lát cắt CT này (Chính sách 1A & 2A) */}
+          {currentCase?.status !== 'COMPLETED' && !currentCase?.isTrashed && (
+            <Button
+              label={t('doctor_detail.ai_btn_delete_slice', 'Xóa lát cắt này khỏi ca')}
+              variant="danger"
+              leadingIcon="trash"
+              disabled={isAnalyzing}
+              onPress={() => setShowDeleteSliceDialog(true)}
+            />
+          )}
         </View>
 
         {/* Bảng điểm phân loại 3 lớp AI */}
@@ -815,6 +852,21 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         </View>
       </BottomSheet>
 
+      {/* Dialog xác nhận xóa lát cắt (Chính sách 1A & 2A) */}
+      <Dialog
+        visible={showDeleteSliceDialog}
+        type="destructive"
+        title={t('doctor_detail.case_image_delete_title', 'Xóa lát cắt CT này?')}
+        body={t('doctor_detail.case_image_delete_body', {
+          index: currentIndex,
+          defaultValue: `Bạn có chắc chắn muốn xóa lát cắt #${currentIndex}? Kết quả AI tương ứng sẽ bị hủy và tệp ảnh sẽ được giải phóng khỏi bộ nhớ máy.`,
+        })}
+        confirmLabel={t('common.delete', 'Xóa')}
+        cancelLabel={t('doctor_detail.common_dialog_cancel', 'Hủy')}
+        onConfirm={handleConfirmDeleteSlice}
+        onCancel={() => setShowDeleteSliceDialog(false)}
+      />
+
       {/* Dialog thông báo */}
       <Dialog
         visible={noticeDialog.visible}
@@ -823,8 +875,20 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         body={noticeDialog.body}
         confirmLabel={t('doctor_detail.common_dialog_close', 'Đã hiểu')}
         cancelLabel={null}
-        onConfirm={() => setNoticeDialog({ visible: false, title: '', body: '' })}
-        onCancel={() => setNoticeDialog({ visible: false, title: '', body: '' })}
+        onConfirm={() => {
+          if (noticeDialog.onClose) {
+            noticeDialog.onClose();
+          } else {
+            setNoticeDialog({ visible: false, title: '', body: '' });
+          }
+        }}
+        onCancel={() => {
+          if (noticeDialog.onClose) {
+            noticeDialog.onClose();
+          } else {
+            setNoticeDialog({ visible: false, title: '', body: '' });
+          }
+        }}
       />
     </View>
   );

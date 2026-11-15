@@ -272,6 +272,27 @@ Hệ thống được thiết kế theo mô hình Clean Architecture đa tầng:
     - Xóa toàn bộ dữ liệu đã đồng bộ (`synced`).
     - **Bảo lưu tuyệt đối dữ liệu nháp chưa gửi (`pending` / `conflict`)**.
     - Áp dụng ngoại lệ toàn vẹn khóa ngoại: Giữ lại bản ghi bệnh nhân gốc (dù đã sync) nếu bệnh nhân đó đang có ca nháp chưa đồng bộ gắn liền, ngăn ngừa lỗi đứt gãy quan hệ dữ liệu.
+- **Quy tắc quản lý vòng đời đối tượng và chính sách xóa an toàn (Safe Deletion & Data Lifecycle Policies)**:
+  - Để đảm bảo tính pháp lý y khoa (Medico-legal compliance) và tính toàn vẹn dữ liệu lâm sàng, hệ thống thiết lập bộ 6 chính sách vòng đời dữ liệu nhất quán trên cả tầng lưu trữ và giao diện người dùng:
+    1. *Chính sách 1A — Giới hạn quyền xóa ảnh CT theo trạng thái ca*: Thao tác xóa lát cắt ảnh CT chỉ được phép thực hiện khi ca bệnh ở trạng thái `DRAFT` (Nháp) trên màn hình Chi tiết ca (`CaseDetailScreen`) và Màn hình chi tiết kết quả AI (`AIImageResultScreen`). Đối với ca đã `COMPLETED` (Hoàn tất) hoặc ca đang trong `Thùng rác`, nút xóa bị ẩn/vô hiệu hóa hoàn toàn nhằm bảo vệ tính nguyên vẹn của hồ sơ bệnh án đã kết luận.
+    2. *Chính sách 2A — Xử lý lan truyền khi xóa lát cắt CT*: Khi bác sĩ xác nhận xóa một lát cắt ảnh CT trong ca nháp:
+       - Bản ghi ảnh được chuyển trạng thái sang `REMOVED` và tệp ảnh nhị phân vật lý trong sandbox ứng dụng được thu hồi qua `LungCtPipelineModule.deleteLocalFile`.
+       - Toàn bộ kết quả phân loại AI gắn liền với lát cắt bị hủy hiệu lực, chuyển sang trạng thái `SUPERSEDED`.
+       - Hệ thống tự động tính toán lại điểm số tổng hợp và nhãn của ca (`aiLabelSummary`, `aiScore`, `analyzedCount`, `labelCounts`).
+    3. *Chính sách 3A — Quản lý vòng đời và xóa báo cáo PDF (`ExportPdfScreen`)*: Bổ sung thao tác xóa cho từng tệp PDF đã xuất kèm hộp thoại cảnh báo an toàn thông tin nhạy cảm (PHI). Khi xóa:
+       - Xóa tệp nhị phân PDF vật lý trong bộ nhớ đệm cache (`cacheDir/Print`) nhằm giải phóng dung lượng thiết bị.
+       - Xóa bản ghi lịch sử xuất PDF của ca bệnh.
+       - Loại bỏ hoàn toàn bản ghi demo placeholder mẫu (`20/10/2026`).
+       - Thông báo minh bạch cho bác sĩ: Các bản sao PDF đã được chia sẻ ra ngoài qua ứng dụng thứ ba (Zalo, Google Drive, Email) độc lập với bộ nhớ ứng dụng và không bị ảnh hưởng.
+    4. *Chính sách 4A — Khôi phục ca bệnh và Chế độ chỉ đọc (Read-only Guard)*:
+       - Hỗ trợ thao tác khôi phục ca bệnh (`restoreCase`) trực tiếp từ Thùng rác trên màn hình danh sách ca bệnh (`DoctorCasesScreen`).
+       - Khi người dùng truy cập ca bệnh đang trong thùng rác, màn hình `CaseDetailScreen` tự động bật chế độ Read-only: hiển thị Banner cảnh báo và vô hiệu hóa các thao tác thay đổi dữ liệu (thêm/xóa ảnh, phân tích AI, hoàn tất ca).
+    5. *Chính sách 5A — Lan truyền xóa mềm và khôi phục bệnh nhân (Cascade Soft-Delete / Cascade Restore)*:
+       - Khi đưa bệnh nhân vào thùng rác (`trashPatient`): Tầng lưu trữ tự động áp dụng xóa mềm lan truyền (Cascade Soft-Delete) sang toàn bộ các ca bệnh con thuộc bệnh nhân đó.
+       - Khi khôi phục bệnh nhân (`restorePatient`): Hệ thống tự động khôi phục lại các ca bệnh con (Cascade Restore) về đúng trạng thái ban đầu (`DRAFT` hoặc `COMPLETED`) mà không làm xáo trộn tiến trình điều trị.
+    6. *Chính sách 6A — Mở khóa tài khoản bác sĩ cho Quản trị viên (`AdminAccountDetailScreen`)*:
+       - Bổ sung nút "Mở khóa tài khoản" (`btn_unlock`) kèm icon `unlock` khi tài khoản ở trạng thái `locked`.
+       - Mở dialog xác nhận, thực thi cập nhật trạng thái `status: 'active'` và xóa bỏ `lockReason` đồng bộ trực tiếp lên Cloud Firestore và ghi nhận nhật ký kiểm toán (Audit Log).
 
 ### 3.5 Thiết kế giao diện người dùng
 Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế Figma:
@@ -330,12 +351,12 @@ Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế F
 ### 4.5 Thực nghiệm và đo lường kết quả
 
 #### A. Kết quả kiểm thử tĩnh và kiểm thử tự động (TypeScript, Lint, Jest)
-- **Kiểm tra kiểu TypeScript (`npm run typecheck`)**: Đạt **0 lỗi** trên toàn bộ dự án sau khi cập nhật phiên bản `1.0.6`.
-- **Kiểm tra bộ unit/integration test (`npm test -- --watchAll=false`)**: Toàn bộ hệ thống vượt qua **19/19 test suites** với **168/168 test cases thành công (100%)** trong môi trường Jest sandbox, bao gồm:
+- **Kiểm tra kiểu TypeScript (`npm run typecheck`)**: Đạt **0 lỗi** trên toàn bộ dự án.
+- **Kiểm tra bộ unit/integration test (`npm test -- --watchAll=false`)**: Toàn bộ hệ thống vượt qua **19/19 test suites** với **171/171 test cases thành công (100%)** trong môi trường Jest sandbox, bao gồm các ca kiểm thử về Cascade Soft-Delete, Restore Case và hủy kết quả AI khi gỡ bỏ ảnh CT.
   - Tích hợp dịch vụ mới: `authService.test.ts` (xác thực Firebase & khôi phục mật khẩu), `syncEngine.test.ts` (đồng bộ Outbox & xử lý xung đột), `pdfReportService.test.ts` (kết xuất HTML/PDF & ẩn Grad-CAM giả).
   - Giao diện, điều hướng, i18n, Theme, Dev Audit: `authNavigation.test.tsx`, `doctorTabs.test.tsx`, `doctorDetailScreens.test.tsx`, `adminScreens.test.tsx`, `components.test.tsx`, `theme.test.ts`, `icons.test.ts`, `i18n.test.ts`, `settingsStorage.test.ts`, `sourceAudit.test.ts`.
   - AI & Lưu trữ mã hóa: `onDevicePipeline.test.ts`, `localStorageService.test.ts`, `patientRepository.test.ts`, `caseRepository.test.ts`, `sqliteMigration.test.ts`, `sqlcipherVault.test.ts`.
-- **Kiểm tra quy chuẩn mã nguồn (`npm run lint`)**: Ghi nhận trung thực còn **23 vấn đề (4 errors `react-hooks/set-state-in-effect` tại `DoctorCasesScreen.tsx`, `DoctorPatientsScreen.tsx`, `DoctorStatsScreen.tsx` và 19 warnings về biến/import chưa sử dụng)** từ mã giao diện hiện có cần được dọn sạch trong bước rà soát UI tiếp theo.
+- **Kiểm tra quy chuẩn mã nguồn (`npm run lint`)**: Đạt **0 errors** (loại bỏ triệt để 4 lỗi `react-hooks/set-state-in-effect`), còn 8 warnings không chặn biên dịch.
 - *Đính chính khoa học về phạm vi kiểm thử*: Kết quả kiểm thử trên Jest được thực thi trong môi trường mô phỏng (Node.js runtime với mock cho Firebase SDK và Native Modules); trên **máy ảo Android qua APK Release**, ta đã kiểm chứng quá trình suy luận On-Device và lưu trữ SQLCipher trên tệp đĩa vật lý. Tuyệt đối không đánh đồng kết quả Jest hay máy ảo với việc đo kiểm trên điện thoại Android vật lý thật.
 - *Chính sách bảo vệ*: Đã loại bỏ cơ chế mã hóa dự phòng bằng hash/xor thô sơ; nếu native module chưa sẵn sàng thì hệ thống từ chối lưu và báo lỗi rõ ràng. Lọc `ownerId` bảo đảm cô lập dữ liệu cục bộ kết hợp phân quyền trên `firestore.rules`. Không tự khẳng định phần cứng TEE/StrongBox nếu chưa đo kiểm qua `KeyInfo` trên thiết bị thật.
 

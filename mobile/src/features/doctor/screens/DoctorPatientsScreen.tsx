@@ -13,7 +13,7 @@ import {
   StatusBadge,
   TopBar,
 } from '../../../ui/components';
-import { getMockPatients, subscribeDoctorStore, type MockPatient } from '../../../mocks';
+import { type MockPatient } from '../../../mocks';
 import { PatientRepository, subscribePatientRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 import { PATIENT_FILTER_DECISION } from '../../../config/ui-decisions';
@@ -44,7 +44,6 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
     let isMounted = true;
 
     if (!ownerId) {
-      setPatients([]);
       return;
     }
 

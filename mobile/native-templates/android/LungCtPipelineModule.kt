@@ -681,4 +681,25 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       promise.reject("ERR_READ_URI", "Lỗi đọc tệp từ URI $uri: ${e.message}", e)
     }
   }
+
+  /**
+   * Xóa an toàn tệp vật lý trong bộ nhớ thiết bị (cache PDF, ảnh CT bị xóa).
+   * Không bao giờ ném Exception làm sập app.
+   */
+  @ReactMethod
+  fun deleteLocalFile(filePath: String, promise: Promise) {
+    try {
+      val cleanPath = filePath.removePrefix("file://")
+      val file = File(cleanPath)
+      if (file.exists()) {
+        val deleted = file.delete()
+        promise.resolve(deleted)
+      } else {
+        promise.resolve(true)
+      }
+    } catch (e: Throwable) {
+      android.util.Log.w("LungCtPipeline", "Lỗi khi xóa tệp $filePath: ${e.message}")
+      promise.resolve(false)
+    }
+  }
 }

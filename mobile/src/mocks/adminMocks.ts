@@ -177,6 +177,29 @@ export const lockDoctorAccount = (
   return true;
 };
 
+export const unlockDoctorAccount = (
+  id: string,
+  performedBy = 'admin@example.com',
+): boolean => {
+  const target = doctorsStore.find((d) => d.id === id);
+  if (!target) return false;
+
+  target.status = 'active';
+  delete target.lockReason;
+
+  auditLogsStore.unshift({
+    id: `log-${Date.now()}`,
+    accountId: id,
+    action: 'unlock' as any,
+    performedAt: 'Vừa xong',
+    performedBy,
+    reason: 'Mở khóa tài khoản bác sĩ',
+  });
+
+  notify();
+  return true;
+};
+
 export const getAuditLogsForDoctor = (accountId: string): AdminAuditLog[] => {
   return auditLogsStore.filter((l) => l.accountId === accountId);
 };

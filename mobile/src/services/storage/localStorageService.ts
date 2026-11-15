@@ -33,6 +33,7 @@ import {
   DoctorStatsProjection,
 } from './types';
 import { CryptoVault } from './cryptoVault';
+import { deletePhysicalFile } from './fileUtil';
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
@@ -467,13 +468,32 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
     const p = patients.find((item) => item.patientId === patientId);
     if (!p) return false;
 
+    const nowIso = new Date().toISOString();
     p.status = 'TRASHED';
-    p.trashedAt = new Date().toISOString();
-    p.updatedAt = p.trashedAt;
+    p.trashedAt = nowIso;
+    p.updatedAt = nowIso;
     p.syncState = 'pending';
     p.revision += 1;
 
     await this.writeEncryptedTable(ownerId, keys.patients, patients);
+
+    // CHÍNH SÁCH 5A: Cascade Soft-Delete - Tự động xóa mềm toàn bộ ca bệnh con của bệnh nhân này
+    const cases = await this.getCases(ownerId, undefined, true);
+    let casesChanged = false;
+    cases.forEach((c) => {
+      if (c.patientId === patientId && c.status !== 'TRASHED') {
+        c.status = 'TRASHED';
+        c.trashedAt = nowIso;
+        c.updatedAt = nowIso;
+        c.syncState = 'pending';
+        c.revision += 1;
+        casesChanged = true;
+      }
+    });
+    if (casesChanged) {
+      await this.writeEncryptedTable(ownerId, keys.cases, cases);
+    }
+
     return true;
   }
 
@@ -490,6 +510,24 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
     p.revision += 1;
 
     await this.writeEncryptedTable(ownerId, keys.patients, patients);
+
+    // CHÍNH SÁCH 5A: Cascade Restore - Tự động khôi phục lại các ca bệnh con theo đúng trạng thái trước khi xóa
+    const cases = await this.getCases(ownerId, undefined, true);
+    let casesChanged = false;
+    cases.forEach((c) => {
+      if (c.patientId === patientId && c.status === 'TRASHED') {
+        c.status = c.completedAt ? 'COMPLETED' : 'DRAFT';
+        delete c.trashedAt;
+        c.updatedAt = p.updatedAt;
+        c.syncState = 'pending';
+        c.revision += 1;
+        casesChanged = true;
+      }
+    });
+    if (casesChanged) {
+      await this.writeEncryptedTable(ownerId, keys.cases, cases);
+    }
+
     return true;
   }
 
@@ -604,6 +642,25 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
     return true;
   }
 
+  /**
+   * CHÍNH SÁCH 4A: Khôi phục ca bệnh từ Thùng rác về trạng thái hoạt động ban đầu
+   */
+  public async restoreCase(ownerId: string, caseId: string): Promise<boolean> {
+    const keys = this.getKeys(ownerId);
+    const cases = await this.getCases(ownerId, undefined, true);
+    const c = cases.find((item) => item.caseId === caseId);
+    if (!c) return false;
+
+    c.status = c.completedAt ? 'COMPLETED' : 'DRAFT';
+    delete c.trashedAt;
+    c.updatedAt = new Date().toISOString();
+    c.syncState = 'pending';
+    c.revision += 1;
+
+    await this.writeEncryptedTable(ownerId, keys.cases, cases);
+    return true;
+  }
+
   // ==========================================
   // ẢNH CT & KẾT QUẢ AI
   // ==========================================
@@ -612,6 +669,53 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
     const keys = this.getKeys(ownerId);
     const all = await this.readEncryptedTable<CTImageEntity>(ownerId, keys.images);
     return all.filter((img) => img.caseId === caseId && img.state !== 'REMOVED');
+  }
+
+  /**
+   * CHÍNH SÁCH 1A & 2A: Xóa lát cắt ảnh CT khỏi ca bệnh
+   * - Đánh dấu state = 'REMOVED'
+   * - Xóa file vật lý trong sandbox
+   * - Đánh dấu kết quả AI tương ứng sang SUPERSEDED
+   * - Cập nhật revision của ca bệnh
+   */
+  public async removeCTImage(ownerId: string, imageId: string): Promise<boolean> {
+    const keys = this.getKeys(ownerId);
+    const images = await this.readEncryptedTable<CTImageEntity>(ownerId, keys.images);
+    const img = images.find((i) => i.imageId === imageId);
+    if (!img) return false;
+
+    img.state = 'REMOVED';
+    await this.writeEncryptedTable(ownerId, keys.images, images);
+
+    // Xóa file vật lý trong bộ nhớ sandbox máy
+    if (img.localFileRef) {
+      await deletePhysicalFile(img.localFileRef);
+    }
+
+    // Đánh dấu kết quả AI của ảnh này sang SUPERSEDED
+    const preds = await this.readEncryptedTable<AIPredictionResultEntity>(ownerId, keys.predictions);
+    let predsChanged = false;
+    preds.forEach((p) => {
+      if (p.imageId === imageId && p.state === 'CURRENT') {
+        p.state = 'SUPERSEDED';
+        predsChanged = true;
+      }
+    });
+    if (predsChanged) {
+      await this.writeEncryptedTable(ownerId, keys.predictions, preds);
+    }
+
+    // Cập nhật lại ca bệnh liên kết
+    const cases = await this.getCases(ownerId, undefined, true);
+    const targetCase = cases.find((c) => c.caseId === img.caseId);
+    if (targetCase) {
+      targetCase.revision += 1;
+      targetCase.syncState = 'pending';
+      targetCase.updatedAt = new Date().toISOString();
+      await this.writeEncryptedTable(ownerId, keys.cases, cases);
+    }
+
+    return true;
   }
 
   public async saveCTImage(

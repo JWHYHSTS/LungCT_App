@@ -4,7 +4,7 @@ import Svg, { Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import { AppText, Dialog, IconButton, Segmented, StatCard, TopBar } from '../../../ui/components';
-import { MOCK_STATS, type MockStatsData } from '../../../mocks';
+import { type MockStatsData } from '../../../mocks';
 import { localStorageService } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 import { SyncCenterModal } from '../components/SyncCenterModal';
@@ -27,7 +27,6 @@ export const DoctorStatsScreen: React.FC<DoctorStatsScreenProps> = ({ initialRan
   React.useEffect(() => {
     let isMounted = true;
     if (!ownerId) {
-      setRealStats(null);
       return;
     }
 

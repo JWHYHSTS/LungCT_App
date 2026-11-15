@@ -22,6 +22,8 @@ import {
   updateCaseNotes as updateMockCaseNotes,
   completeCase as completeMockCase,
   trashCase as trashMockCase,
+  restoreCase as restoreMockCase,
+  removeMockCaseImage,
   createMockCaseForPatient,
   MockPatient,
 } from '../../mocks/doctorMocks';
@@ -425,5 +427,52 @@ export class CaseRepository {
     const mockSuccess = trashMockCase(caseId);
     notifyCaseListeners();
     return mockSuccess;
+  }
+
+  /**
+   * CHÍNH SÁCH 4A: Khôi phục ca bệnh từ thùng rác
+   */
+  public static async restoreCase(ownerId: string, caseId: string): Promise<boolean> {
+    await this.ensureReady(ownerId);
+
+    try {
+      await localStorageService.restoreCase(ownerId, caseId);
+    } catch (err) {
+      console.warn('[CaseRepository] Lỗi khôi phục ca trong storage:', err);
+    }
+
+    const mockSuccess = restoreMockCase(caseId);
+    notifyCaseListeners();
+    return mockSuccess;
+  }
+
+  /**
+   * CHÍNH SÁCH 1A & 2A: Xóa lát cắt ảnh CT khỏi ca bệnh
+   * Chặn không cho xóa nếu ca bệnh đã Hoàn tất (COMPLETED).
+   */
+  public static async removeCTImage(
+    ownerId: string,
+    caseId: string,
+    imageId: string,
+  ): Promise<{ success: boolean; reason?: string }> {
+    await this.ensureReady(ownerId);
+
+    const caseEntity = await localStorageService.getCaseById(ownerId, caseId);
+    if (caseEntity && caseEntity.status === 'COMPLETED') {
+      return {
+        success: false,
+        reason: 'Không thể xóa ảnh của ca bệnh đã hoàn tất (Chính sách 1A).',
+      };
+    }
+
+    try {
+      await localStorageService.removeCTImage(ownerId, imageId);
+    } catch (err: any) {
+      console.warn('[CaseRepository] Lỗi xóa ảnh trong storage:', err);
+    }
+
+    removeMockCaseImage(caseId, imageId);
+    notifyCaseListeners();
+    return { success: true };
   }
 }

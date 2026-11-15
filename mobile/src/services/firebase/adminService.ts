@@ -102,6 +102,18 @@ export async function lockDoctorInFirestore(doctorId: string, reason: string): P
 }
 
 /**
+ * Admin mở khóa tài khoản bác sĩ: Chuyển trạng thái sang 'active' và xóa lockReason.
+ */
+export async function unlockDoctorInFirestore(doctorId: string): Promise<void> {
+  const userRef = doc(firestore, 'users', doctorId);
+  await updateDoc(userRef, {
+    status: 'active',
+    lockReason: null,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/**
  * Thống kê tổng hợp hệ thống cho Quản trị viên trực tiếp từ Cloud Firestore.
  * TUÂN THỦ BR-OWN-03: Chỉ tổng hợp số đếm ẩn danh (trạng thái tài khoản bác sĩ,
  * số ca hoàn tất và số lượng phân bố nhãn AI), tuyệt đối không trích xuất PII/PHI hay ảnh CT.

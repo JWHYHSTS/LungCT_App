@@ -2,7 +2,7 @@
   "expo": {
     "name": "LungCT",
     "slug": "lungct",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,6 +15,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.mobile",
+      "versionCode": 9,
       "googleServicesFile": "./google-services.json"
     },
     "web": {

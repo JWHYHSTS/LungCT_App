@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import {
   AppText,
+  Banner,
   BottomSheet,
   Button,
   Dialog,
@@ -15,6 +16,7 @@ import {
   TextField,
   TopBar,
 } from '../../../ui/components';
+import { Icon } from '../../../ui/icons';
 import { findCaseById, subscribeDoctorStore, addImageToCase, type MockCase } from '../../../mocks';
 import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
@@ -117,6 +119,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
   const [showCompleteConfirmModal, setShowCompleteConfirmModal] = useState(false);
   const [showMenuOptionsDialog, setShowMenuOptionsDialog] = useState(false);
   const [showTrashConfirmDialog, setShowTrashConfirmDialog] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState<{ id: string; index: number } | null>(null);
 
   const [noticeDialog, setNoticeDialog] = useState<{
     visible: boolean;
@@ -152,18 +155,48 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
     );
   }
 
+  const isCompleted = currentCase.status === 'COMPLETED';
+  const isTrashed = Boolean(currentCase.isTrashed);
+
   // Điều kiện hoàn tất ca (BR-CASE-01)
   const isImageEmpty = currentCase.images.length === 0;
   const isRunning = currentCase.images.some((img) => img.status === 'running');
-  const canComplete = !isImageEmpty && !isRunning && currentCase.status === 'DRAFT';
+  const canComplete = !isImageEmpty && !isRunning && currentCase.status === 'DRAFT' && !isTrashed;
 
   const completeDisabledReason = isImageEmpty
     ? t('doctor_detail.case_complete_disabled_reason')
     : isRunning
       ? 'Đang phân tích — chờ xong hoặc hủy trước khi hoàn tất.'
-      : currentCase.status !== 'DRAFT'
-        ? 'Ca bệnh đã được hoàn tất trước đó.'
-        : undefined;
+      : isTrashed
+        ? 'Ca bệnh đang trong thùng rác (Chỉ đọc).'
+        : currentCase.status !== 'DRAFT'
+          ? 'Ca bệnh đã được hoàn tất trước đó.'
+          : undefined;
+
+  const handleConfirmDeleteImage = async () => {
+    if (!imageToDelete || !currentCase) return;
+    const { id, index } = imageToDelete;
+    setImageToDelete(null);
+
+    const res = await CaseRepository.removeCTImage(ownerId, currentCase.id, id);
+    if (!res.success) {
+      setNoticeDialog({
+        visible: true,
+        title: t('doctor_detail.case_image_delete_error', 'Không thể xóa ảnh'),
+        body: res.reason || 'Có lỗi xảy ra khi xóa lát cắt.',
+      });
+      return;
+    }
+
+    setNoticeDialog({
+      visible: true,
+      title: t('doctor_detail.case_image_deleted_title', 'Đã xóa lát cắt'),
+      body: t('doctor_detail.case_image_deleted_body', {
+        index,
+        defaultValue: `Đã xóa lát cắt #${index} khỏi ca bệnh và giải phóng dung lượng bộ nhớ.`,
+      }),
+    });
+  };
 
   // Xử lý lưu nhận xét và mã hóa xuống kho lưu trữ
   const handleSaveNotes = async () => {
@@ -322,6 +355,22 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
         contentContainerStyle={[styles.content, { padding: spacing.md }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Banner cảnh báo ca bệnh trong thùng rác (Chính sách 4A) */}
+        {isTrashed && (
+          <Banner
+            type="warning"
+            title={t(
+              'doctor_detail.case_trashed_read_only_banner_title',
+              'Ca bệnh trong thùng rác',
+            )}
+            body={t(
+              'doctor_detail.case_trashed_read_only_banner',
+              'Ca bệnh này đang ở trong Thùng rác (Chế độ chỉ đọc). Vui lòng khôi phục từ danh sách ca bệnh để tiếp tục chỉnh sửa.',
+            )}
+            style={{ marginBottom: spacing.md }}
+          />
+        )}
+
         {/* Thẻ thông tin đầu ca */}
         <View
           style={[
@@ -380,6 +429,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
             label={t('doctor_detail.case_add_image_btn')}
             variant="secondary"
             size="M"
+            disabled={isCompleted || isTrashed}
             onPress={() => setShowAddImageSheet(true)}
             style={{ flex: 1, marginRight: spacing.xs }}
           />
@@ -437,6 +487,16 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
                   thumbnail={img.uri ? { uri: img.uri } : undefined}
                   onPress={() => onNavigateToImageResult(currentCase.id, idx + 1)}
                 />
+                {!isCompleted && !isTrashed && (
+                  <TouchableOpacity
+                    style={styles.deleteBadge}
+                    onPress={() => setImageToDelete({ id: img.id, index: idx + 1 })}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel={`Xóa lát cắt #${idx + 1}`}
+                  >
+                    <Icon name="trash" size={13} color={colors.text.inverse} />
+                  </TouchableOpacity>
+                )}
               </View>
             ))}
           </View>
@@ -457,6 +517,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
           placeholder={t('doctor_detail.case_notes_placeholder')}
           multiline
           numberOfLines={4}
+          editable={!isTrashed}
           helper={t('doctor_detail.case_notes_helper')}
           style={{ marginBottom: spacing.sm }}
         />
@@ -465,6 +526,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
           label={t('doctor_detail.case_save_notes_btn')}
           variant="tertiary"
           size="M"
+          disabled={isTrashed}
           onPress={handleSaveNotes}
           style={{ alignSelf: 'flex-start', marginBottom: spacing.lg }}
         />
@@ -554,6 +616,21 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
         onCancel={() => setShowTrashConfirmDialog(false)}
       />
 
+      {/* Dialog xác nhận xóa ảnh lát cắt (Chính sách 1A & 2A) */}
+      <Dialog
+        visible={Boolean(imageToDelete)}
+        type="destructive"
+        title={t('doctor_detail.case_image_delete_title', 'Xóa lát cắt CT này?')}
+        body={t('doctor_detail.case_image_delete_body', {
+          index: imageToDelete?.index,
+          defaultValue: `Bạn có chắc chắn muốn xóa lát cắt #${imageToDelete?.index}? Kết quả AI tương ứng sẽ bị hủy và tệp ảnh sẽ được giải phóng khỏi bộ nhớ máy.`,
+        })}
+        confirmLabel={t('common.delete', 'Xóa')}
+        cancelLabel={t('doctor_detail.common_dialog_cancel', 'Hủy')}
+        onConfirm={handleConfirmDeleteImage}
+        onCancel={() => setImageToDelete(null)}
+      />
+
       {/* Thông báo kết quả */}
       <Dialog
         visible={noticeDialog.visible}
@@ -632,6 +709,20 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: '48%',
+    position: 'relative',
+  },
+  deleteBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(211, 47, 47, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    elevation: 3,
   },
   emptyImagesBox: {
     borderWidth: 1,
