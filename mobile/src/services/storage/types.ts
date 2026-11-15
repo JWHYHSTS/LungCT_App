@@ -135,3 +135,18 @@ export interface DoctorStatsProjection {
   };
   calculatedAt: string;
 }
+
+export interface ExportedPdfEntity {
+  id: string;
+  caseId: string;
+  ownerId: string;
+  fileName: string;
+  fileUri: string;
+  createdAt: string;
+  fileSize: string;
+  language: 'vi' | 'en';
+  hasGradCam: boolean;
+  version?: string;
+  isTrashed?: boolean;
+}
+

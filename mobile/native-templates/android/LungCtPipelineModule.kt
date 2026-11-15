@@ -21,6 +21,7 @@ import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
@@ -700,6 +701,57 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     } catch (e: Throwable) {
       android.util.Log.w("LungCtPipeline", "Lỗi khi xóa tệp $filePath: ${e.message}")
       promise.resolve(false)
+    }
+  }
+
+  /**
+   * Đọc tệp cục bộ và chuyển đổi sang chuỗi Base64.
+   * Phục vụ nhúng ảnh CT / Grad-CAM trực tiếp vào HTML báo cáo PDF để WebView không bị chặn bởi chính sách file://.
+   */
+  @ReactMethod
+  fun readFileAsBase64(filePath: String, promise: Promise) {
+    try {
+      val bytes = if (filePath.startsWith("content://")) {
+        val uri = Uri.parse(filePath)
+        reactContext.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+          ?: throw FileNotFoundException("Không thể mở Content URI: $filePath")
+      } else {
+        val cleanPath = filePath.removePrefix("file://")
+        val file = File(cleanPath)
+        if (!file.exists()) {
+          promise.reject("ERR_NOT_FOUND", "Tệp không tồn tại: $cleanPath")
+          return
+        }
+        file.readBytes()
+      }
+      val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+      promise.resolve(base64)
+    } catch (e: Throwable) {
+      android.util.Log.e("LungCtPipeline", "Lỗi đọc tệp sang Base64 từ $filePath", e)
+      promise.reject("ERR_READ_BASE64", "Lỗi đọc tệp sang Base64: ${e.message}", e)
+    }
+  }
+
+  /**
+   * Lưu trữ bền vững tệp PDF báo cáo từ cache sang thư mục lưu trữ vĩnh viễn (dicom_reports).
+   * Giúp tệp PDF không bị hệ điều hành xóa khi dọn dẹp cache.
+   */
+  @ReactMethod
+  fun persistPdfFile(cacheUri: String, targetFileName: String, promise: Promise) {
+    try {
+      val cleanCachePath = cacheUri.removePrefix("file://")
+      val sourceFile = File(cleanCachePath)
+      if (!sourceFile.exists()) {
+        promise.resolve(cacheUri)
+        return
+      }
+      val reportsDir = File(reactContext.filesDir, "dicom_reports").apply { if (!exists()) mkdirs() }
+      val destFile = File(reportsDir, targetFileName)
+      sourceFile.copyTo(destFile, overwrite = true)
+      promise.resolve(Uri.fromFile(destFile).toString())
+    } catch (e: Throwable) {
+      android.util.Log.w("LungCtPipeline", "Không thể lưu tệp PDF vào dicom_reports: ${e.message}")
+      promise.resolve(cacheUri)
     }
   }
 }

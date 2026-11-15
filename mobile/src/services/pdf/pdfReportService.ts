@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { ClinicalReportData, ExportedPdfResult } from './types';
+import { readFileAsBase64, persistPdfFile } from '../storage/fileUtil';
 
 /**
  * Dịch vụ biên dịch và xuất báo cáo y tế chẩn đoán hình ảnh PDF cục bộ (On-Device Local-First).
@@ -420,10 +421,80 @@ export class PdfReportService {
   }
 
   /**
+   * Chuyển đổi an toàn các đường dẫn tệp ảnh CT và Grad-CAM cục bộ thành chuỗi Base64 Data URI.
+   * Giúp WebView của expo-print nhúng trực tiếp dữ liệu ảnh vào tài liệu PDF,
+   * tránh hoàn toàn lỗi bị chặn truy cập file:// trên Android 11+ (hiển thị ảnh bị hỏng).
+   */
+  public static async resolveReportSlicesBase64(
+    data: ClinicalReportData,
+  ): Promise<ClinicalReportData> {
+    if (!data.slices || data.slices.length === 0) {
+      return data;
+    }
+
+    const resolvedSlices = await Promise.all(
+      data.slices.map(async (slice) => {
+        let resolvedImageUri = slice.imageUri;
+        let resolvedGradCamUri = slice.gradCamUri;
+
+        if (
+          resolvedImageUri &&
+          !resolvedImageUri.startsWith('data:') &&
+          !resolvedImageUri.startsWith('http://') &&
+          !resolvedImageUri.startsWith('https://')
+        ) {
+          try {
+            const base64 = await readFileAsBase64(resolvedImageUri);
+            if (base64) {
+              const mime = resolvedImageUri.toLowerCase().endsWith('.png')
+                ? 'image/png'
+                : 'image/jpeg';
+              resolvedImageUri = `data:${mime};base64,${base64}`;
+            }
+          } catch (err) {
+            console.warn('[PdfReportService] Không thể nạp Base64 ảnh CT:', err);
+          }
+        }
+
+        if (
+          resolvedGradCamUri &&
+          !resolvedGradCamUri.startsWith('data:') &&
+          !resolvedGradCamUri.startsWith('http://') &&
+          !resolvedGradCamUri.startsWith('https://')
+        ) {
+          try {
+            const base64 = await readFileAsBase64(resolvedGradCamUri);
+            if (base64) {
+              const mime = resolvedGradCamUri.toLowerCase().endsWith('.png')
+                ? 'image/png'
+                : 'image/jpeg';
+              resolvedGradCamUri = `data:${mime};base64,${base64}`;
+            }
+          } catch (err) {
+            console.warn('[PdfReportService] Không thể nạp Base64 ảnh Grad-CAM:', err);
+          }
+        }
+
+        return {
+          ...slice,
+          imageUri: resolvedImageUri,
+          gradCamUri: resolvedGradCamUri,
+        };
+      }),
+    );
+
+    return {
+      ...data,
+      slices: resolvedSlices,
+    };
+  }
+
+  /**
    * Biên dịch trực tiếp file PDF vật lý từ dữ liệu báo cáo trên thiết bị Android.
    */
   public static async exportCasePdf(data: ClinicalReportData): Promise<ExportedPdfResult> {
-    const html = this.generateHtmlReport(data);
+    const resolvedData = await this.resolveReportSlicesBase64(data);
+    const html = this.generateHtmlReport(resolvedData);
 
     // Tạo file PDF vật lý bằng expo-print
     const { uri } = await Print.printToFileAsync({
@@ -436,10 +507,18 @@ export class PdfReportService {
     const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
     const fileName = `BaoCao_CT_${data.caseCode}_${data.language}.pdf`;
 
+    // Lưu bền vững sang thư mục dicom_reports để tránh bị hệ thống Android dọn dẹp cache
+    let finalUri = uri;
+    try {
+      finalUri = await persistPdfFile(uri, fileName);
+    } catch (e) {
+      console.warn('[PdfReportService] Không thể sao chép tệp PDF sang dicom_reports:', e);
+    }
+
     return {
       id: `pdf-${Date.now()}`,
       fileName,
-      fileUri: uri,
+      fileUri: finalUri,
       createdAt: dateStr,
       fileSize: '1.2 MB',
       language: data.language,
@@ -472,7 +551,8 @@ export class PdfReportService {
    * Mở trình quản lý in ấn hệ thống (Android Print Spooler) để in trực tiếp ra máy in kết nối.
    */
   public static async printDirectly(data: ClinicalReportData): Promise<void> {
-    const html = this.generateHtmlReport(data);
+    const resolvedData = await this.resolveReportSlicesBase64(data);
+    const html = this.generateHtmlReport(resolvedData);
     await Print.printAsync({ html });
   }
 }

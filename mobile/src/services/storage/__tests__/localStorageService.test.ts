@@ -721,5 +721,58 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       expect(reloadedCase?.syncState).toBe('pending');
       expect(reloadedCase?.revision).toBe(2);
     });
+
+    test('Lưu trữ và xóa báo cáo PDF bền vững theo từng ca (Chính sách 3A)', async () => {
+      const p = await storage.createPatient(DOC_A, {
+        patientCode: 'BN-PDF-01',
+        fullName: 'Bệnh Nhân PDF',
+        dateOfBirth: '01/01/1980',
+        sex: 'MALE',
+      });
+      const c = await storage.createCase(DOC_A, {
+        patientId: p.patientId,
+        scanDate: '2026-11-15',
+      });
+
+      // Lưu 2 bản báo cáo PDF
+      const pdf1 = await storage.saveExportedPdf(DOC_A, {
+        id: 'pdf-01',
+        caseId: c.caseId,
+        ownerId: DOC_A,
+        fileName: `BaoCao_CT_${c.caseCode}_vi.pdf`,
+        fileUri: 'file:///data/user/0/com.anonymous.mobile/files/dicom_reports/pdf-01.pdf',
+        createdAt: '15/11/2026 12:30',
+        fileSize: '1.2 MB',
+        language: 'vi',
+        hasGradCam: true,
+      });
+
+      const pdf2 = await storage.saveExportedPdf(DOC_A, {
+        id: 'pdf-02',
+        caseId: c.caseId,
+        ownerId: DOC_A,
+        fileName: `BaoCao_CT_${c.caseCode}_en.pdf`,
+        fileUri: 'file:///data/user/0/com.anonymous.mobile/files/dicom_reports/pdf-02.pdf',
+        createdAt: '15/11/2026 12:35',
+        fileSize: '1.2 MB',
+        language: 'en',
+        hasGradCam: false,
+      });
+
+      expect(pdf1.id).toBe('pdf-01');
+      expect(pdf2.id).toBe('pdf-02');
+
+      // Đọc lại danh sách PDF của ca c
+      const list = await storage.getExportedPdfsByCaseId(DOC_A, c.caseId);
+      expect(list).toHaveLength(2);
+      expect(list.map((item) => item.id)).toContain('pdf-01');
+      expect(list.map((item) => item.id)).toContain('pdf-02');
+
+      // Xóa 1 bản báo cáo
+      await storage.deleteExportedPdf(DOC_A, 'pdf-01');
+      const listAfterDelete = await storage.getExportedPdfsByCaseId(DOC_A, c.caseId);
+      expect(listAfterDelete).toHaveLength(1);
+      expect(listAfterDelete[0].id).toBe('pdf-02');
+    });
   });
 });

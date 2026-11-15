@@ -13,6 +13,7 @@ import {
   CTImageEntity,
   AIPredictionResultEntity,
   DoctorStatsProjection,
+  ExportedPdfEntity,
 } from './types';
 
 export interface CreatePatientInput {
@@ -99,6 +100,11 @@ export interface ILocalStorageAdapter {
     result: Omit<AIPredictionResultEntity, 'resultId'>,
   ): Promise<AIPredictionResultEntity>;
   getLatestPrediction(ownerId: string, imageId: string): Promise<AIPredictionResultEntity | null>;
+
+  // === BÁO CÁO PDF (EXPORTED PDF REPORTS - CHÍNH SÁCH 3A) ===
+  saveExportedPdf(ownerId: string, report: ExportedPdfEntity): Promise<ExportedPdfEntity>;
+  getExportedPdfsByCaseId(ownerId: string, caseId: string): Promise<ExportedPdfEntity[]>;
+  deleteExportedPdf(ownerId: string, pdfId: string): Promise<void>;
 
   // === THỐNG KÊ (PROJECTION) ===
   getDoctorStats(ownerId: string, period?: '7d' | '30d' | 'all'): Promise<DoctorStatsProjection>;

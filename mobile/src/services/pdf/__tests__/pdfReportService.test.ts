@@ -133,5 +133,22 @@ describe('PDF-01: PdfReportService Unit Tests', () => {
     const callArg = (Print.printAsync as jest.Mock).mock.calls[0][0];
     expect(callArg.html).toContain('CA-2026-9901');
   });
+
+  test('7. resolveReportSlicesBase64 xử lý an toàn dữ liệu ảnh không làm sập ứng dụng', async () => {
+    const dataWithDataUri: ClinicalReportData = {
+      ...sampleData,
+      slices: [
+        {
+          id: 'slice-inline',
+          label: 'Lát cắt Inline',
+          imageUri: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
+          hasGradCam: false,
+        },
+      ],
+    };
+
+    const resolved = await PdfReportService.resolveReportSlicesBase64(dataWithDataUri);
+    expect(resolved.slices?.[0].imageUri).toBe('data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+  });
 });
 

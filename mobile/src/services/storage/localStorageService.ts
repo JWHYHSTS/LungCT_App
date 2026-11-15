@@ -31,6 +31,7 @@ import {
   CTImageEntity,
   AIPredictionResultEntity,
   DoctorStatsProjection,
+  ExportedPdfEntity,
 } from './types';
 import { CryptoVault } from './cryptoVault';
 import { deletePhysicalFile } from './fileUtil';
@@ -48,6 +49,7 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
       cases: `${prefix}/cases`,
       images: `${prefix}/images`,
       predictions: `${prefix}/predictions`,
+      reports: `${prefix}/reports`,
     };
   }
 
@@ -769,6 +771,45 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
     const keys = this.getKeys(ownerId);
     const all = await this.readEncryptedTable<AIPredictionResultEntity>(ownerId, keys.predictions);
     return all.find((r) => r.imageId === imageId && r.state === 'CURRENT') || null;
+  }
+
+  // ==========================================
+  // BÁO CÁO PDF (CHÍNH SÁCH 3A)
+  // ==========================================
+
+  public async saveExportedPdf(
+    ownerId: string,
+    report: ExportedPdfEntity,
+  ): Promise<ExportedPdfEntity> {
+    const keys = this.getKeys(ownerId);
+    const all = await this.readEncryptedTable<ExportedPdfEntity>(ownerId, keys.reports);
+    const existingIndex = all.findIndex((r) => r.id === report.id);
+    if (existingIndex >= 0) {
+      all[existingIndex] = report;
+    } else {
+      all.unshift(report);
+    }
+    await this.writeEncryptedTable(ownerId, keys.reports, all);
+    return report;
+  }
+
+  public async getExportedPdfsByCaseId(
+    ownerId: string,
+    caseId: string,
+  ): Promise<ExportedPdfEntity[]> {
+    const keys = this.getKeys(ownerId);
+    const all = await this.readEncryptedTable<ExportedPdfEntity>(ownerId, keys.reports);
+    return all.filter((r) => r.caseId === caseId && !r.isTrashed);
+  }
+
+  public async deleteExportedPdf(
+    ownerId: string,
+    pdfId: string,
+  ): Promise<void> {
+    const keys = this.getKeys(ownerId);
+    const all = await this.readEncryptedTable<ExportedPdfEntity>(ownerId, keys.reports);
+    const filtered = all.filter((r) => r.id !== pdfId);
+    await this.writeEncryptedTable(ownerId, keys.reports, filtered);
   }
 
   // ==========================================

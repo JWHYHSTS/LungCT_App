@@ -14,7 +14,7 @@
  */
 
 import { localStorageService } from './index';
-import { CaseEntity, PatientEntity, CTImageEntity, AIPredictionResultEntity } from './types';
+import { CaseEntity, PatientEntity, CTImageEntity, AIPredictionResultEntity, ExportedPdfEntity } from './types';
 import {
   MockCase,
   getMockCases,
@@ -474,5 +474,54 @@ export class CaseRepository {
     removeMockCaseImage(caseId, imageId);
     notifyCaseListeners();
     return { success: true };
+  }
+
+  /**
+   * CHÍNH SÁCH 3A: Quản lý và lưu trữ báo cáo PDF bền vững theo từng ca
+   */
+  public static async saveExportedPdf(
+    ownerId: string,
+    caseId: string,
+    pdf: {
+      id: string;
+      fileName: string;
+      fileUri: string;
+      createdAt: string;
+      fileSize: string;
+      language: 'vi' | 'en';
+      hasGradCam: boolean;
+    },
+    version?: string,
+  ): Promise<ExportedPdfEntity> {
+    await this.ensureReady(ownerId);
+    const entity: ExportedPdfEntity = {
+      id: pdf.id,
+      caseId,
+      ownerId,
+      fileName: pdf.fileName,
+      fileUri: pdf.fileUri,
+      createdAt: pdf.createdAt,
+      fileSize: pdf.fileSize,
+      language: pdf.language,
+      hasGradCam: pdf.hasGradCam,
+      version,
+    };
+    return await localStorageService.saveExportedPdf(ownerId, entity);
+  }
+
+  public static async getExportedPdfsByCaseId(
+    ownerId: string,
+    caseId: string,
+  ): Promise<ExportedPdfEntity[]> {
+    await this.ensureReady(ownerId);
+    return await localStorageService.getExportedPdfsByCaseId(ownerId, caseId);
+  }
+
+  public static async deleteExportedPdf(
+    ownerId: string,
+    pdfId: string,
+  ): Promise<void> {
+    await this.ensureReady(ownerId);
+    await localStorageService.deleteExportedPdf(ownerId, pdfId);
   }
 }

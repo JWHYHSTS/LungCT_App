@@ -47,31 +47,13 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
 
   const [currentCase, setCurrentCase] = useState<MockCase | undefined>(() => findCaseById(caseId));
 
-  React.useEffect(() => {
-    let isMounted = true;
-    const loadRealCase = async () => {
-      try {
-        const storedCase = await CaseRepository.getCaseById(ownerId, caseId);
-        if (isMounted && storedCase) {
-          setCurrentCase(storedCase);
-        }
-      } catch (err) {
-        console.warn('[ExportPdfScreen] Lỗi nạp thông tin ca từ kho mã hóa:', err);
-      }
-    };
-    loadRealCase();
-    return () => {
-      isMounted = false;
-    };
-  }, [ownerId, caseId]);
-
   // Ngôn ngữ của tài liệu PDF tạo ra (riêng biệt khỏi giao diện hệ thống)
   const [pdfLanguage, setPdfLanguage] = useState<'vi' | 'en'>('vi');
   const [includeGradCam, setIncludeGradCam] = useState<boolean>(true);
   const [pdfVersion] = useState<string>('V1.0 - Tiêu chuẩn lâm sàng');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
-  // Danh sách PDF đã xuất trong phiên làm việc (Chính sách 3A: loại bỏ placeholder mẫu cũ)
+  // Danh sách PDF đã xuất lưu bền vững (Chính sách 3A: loại bỏ placeholder mẫu cũ)
   const [exportedList, setExportedList] = useState<ExportedPdfItem[]>([]);
 
   const [showShareConfirmDialog, setShowShareConfirmDialog] = useState(false);
@@ -86,6 +68,28 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
     body: string;
   }>({ visible: false, title: '', body: '' });
 
+  React.useEffect(() => {
+    let isMounted = true;
+    const loadRealCaseAndPdfs = async () => {
+      try {
+        const storedCase = await CaseRepository.getCaseById(ownerId, caseId);
+        if (isMounted && storedCase) {
+          setCurrentCase(storedCase);
+        }
+        const storedPdfs = await CaseRepository.getExportedPdfsByCaseId(ownerId, caseId);
+        if (isMounted && storedPdfs) {
+          setExportedList(storedPdfs);
+        }
+      } catch (err) {
+        console.warn('[ExportPdfScreen] Lỗi nạp thông tin ca hoặc báo cáo PDF:', err);
+      }
+    };
+    loadRealCaseAndPdfs();
+    return () => {
+      isMounted = false;
+    };
+  }, [ownerId, caseId]);
+
   const handleRequestDelete = (item: ExportedPdfItem) => {
     setSelectedPdfToDelete(item);
     setShowDeleteConfirmDialog(true);
@@ -97,6 +101,12 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
 
     if (selectedPdfToDelete.fileUri) {
       await deletePhysicalFile(selectedPdfToDelete.fileUri);
+    }
+
+    try {
+      await CaseRepository.deleteExportedPdf(ownerId, selectedPdfToDelete.id);
+    } catch (delErr) {
+      console.warn('[ExportPdfScreen] Lỗi xóa bản ghi PDF trong repository:', delErr);
     }
 
     setExportedList((prev) => prev.filter((p) => p.id !== selectedPdfToDelete.id));
@@ -201,6 +211,13 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
     try {
       const reportData = buildReportData(pdfLanguage, includeGradCam);
       const generated = await PdfReportService.exportCasePdf(reportData);
+
+      // Lưu trữ bền vững vào kho lưu trữ mã hóa cục bộ (Chính sách 3A)
+      try {
+        await CaseRepository.saveExportedPdf(ownerId, currentCase.id, generated, pdfVersion);
+      } catch (saveErr) {
+        console.warn('[ExportPdfScreen] Lỗi lưu báo cáo PDF vào repository:', saveErr);
+      }
 
       setExportedList((prev) => [generated, ...prev]);
 
@@ -384,7 +401,7 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
             })}
           </AppText>
           <AppText variant="caption" color={colors.text.secondary}>
-            {t('doctor_detail.pdf_session_tag', 'Lưu trong phiên làm việc')}
+            {t('doctor_detail.pdf_persisted_tag', 'Lưu trữ an toàn trên thiết bị')}
           </AppText>
         </View>
 
@@ -406,7 +423,7 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
             <AppText variant="caption" color={colors.text.secondary}>
               {t(
                 'doctor_detail.pdf_empty_history',
-                'Chưa có bản báo cáo nào được tạo trong phiên này. Hãy bấm "Tạo báo cáo PDF mới" ở trên.',
+                'Chưa có bản báo cáo nào được tạo cho ca này. Hãy bấm "Tạo báo cáo PDF mới" ở trên.',
               )}
             </AppText>
           </View>
