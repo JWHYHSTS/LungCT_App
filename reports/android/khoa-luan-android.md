@@ -337,16 +337,16 @@ Giao diện ứng dụng được thiết kế bám sát 59 khung thiết kế F
    - Tích hợp `expo-print` (`~58.0.9`) và `expo-sharing` (`~58.0.23`) kết xuất mẫu HTML chuẩn lâm sàng sang tệp `.pdf` vật lý, bao gồm thông tin hành chính ca bệnh, ảnh lát cắt CT, điểm tin cậy 3 lớp và khuyến cáo y khoa; **bảo đảm không đưa lớp phủ Grad-CAM giả vào báo cáo khi `gradcamAvailable: false`**.
 
 ### 4.4 Cấu hình, đóng gói và phát hành phân hệ Android (`v1.0.7`)
-- Thiết lập cấu hình `mobile/android/app/build.gradle` với `applicationId = "com.anonymous.mobile"`, `versionCode = 8`, `versionName = "1.0.7"`, `minSdkVersion = 24`, `targetSdkVersion = 36`, `compileSdkVersion = 37`, bật `noCompress 'tflite', 'onnx', 'data'` và `useLegacyPackaging = true`.
+- Thiết lập cấu hình `mobile/android/app/build.gradle` với `applicationId = "com.anonymous.mobile"`, `versionCode = 9`, `versionName = "1.0.8"`, `minSdkVersion = 24`, `targetSdkVersion = 36`, `compileSdkVersion = 37`, bật `noCompress 'tflite', 'onnx', 'data'` và `useLegacyPackaging = true`.
 - Bổ sung thư viện `net.zetetic:sqlcipher-android:4.6.1@aar`, `androidx.sqlite:sqlite:2.4.0` và nạp `System.loadLibrary("sqlcipher")` trong `MainApplication.kt`.
 - Đồng bộ chính xác runtime `com.microsoft.onnxruntime:onnxruntime-android:1.31.1` nhằm giải quyết dứt điểm lỗi liên kết động `UnsatisfiedLinkError: OrtGetApiBase@VERS_1.31.0` do khác biệt phiên bản với `libonnxruntime.so` (1.31.1) nhúng kèm.
 - Khắc phục triệt để lỗi giới hạn độ dài đường dẫn 260 ký tự (`MAX_PATH`) của CMake/Ninja trên Windows bằng cách cấu hình `buildStagingDirectory` ngắn (`%TEMP%\lct_cxx\<subproject>`) trong `mobile/android/build.gradle` trước plugin root, đồng thời đồng bộ bản mẫu này sang `mobile/native-templates/android/root-build.gradle`.
 - Đồng bộ đầy đủ `AndroidManifest.xml` (quyền `android.permission.CAMERA`, truy vấn `IMAGE_CAPTURE`, cấu hình `androidx.core.content.FileProvider` `${applicationId}.fileprovider`) và `res/xml/file_paths.xml` giữa `mobile/native-templates/android/` và `mobile/android/`.
-- Đóng gói thành công bản phát hành độc lập **`mobile/android/app/build/outputs/apk/release/app-release.apk`** qua `./gradlew assembleRelease` (`BUILD SUCCESSFUL`, 635 tasks) và kiểm tra thực tế cấu trúc APK bằng `apksigner`, `aapt2` và Python `zipfile`:
-  - **Dung lượng tệp**: `570,466,370` bytes (**544.04 MB**).
-  - **Mã băm SHA-256**: `C6A6498F4F24CE6C769399D57C5A76EC309E0D4629DC4E6D29D4537158866B99`.
+- Đóng gói thành công bản phát hành độc lập **`mobile/android/app/build/outputs/apk/release/app-release.apk`** v1.0.8 (`versionCode 9`) qua `./gradlew assembleRelease` (`BUILD SUCCESSFUL`, 635 tasks) và kiểm tra thực tế cấu trúc APK bằng `apksigner`, `aapt2` và Python `zipfile`:
+  - **Dung lượng tệp**: `570,485,314` bytes (**544.06 MB**).
+  - **Mã băm SHA-256**: `442E6EC8B04734FA77FF8E28F5E92AF3C92C39A704E231BEFE9233D881067F01`.
   - **Chữ ký số**: Xác thực thành công APK Signature Scheme v2 (`CN=Android Debug`, SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`), bảo toàn khóa ký để cài đè cập nhật mượt mà trên thiết bị đã cài bản trước.
-  - **Thành phần bên trong APK**: Chứa đủ 3 tệp trọng số AI lưu dưới dạng không nén (`STORED`) trong `assets/models/` (`vit_cls.onnx` `1,135,005` bytes, `vit_cls.onnx.data` `343,194,624` bytes, `fusion_model.tflite` `110,029,372` bytes), bundle Hermes bytecode `assets/index.android.bundle` (`3,799,148` bytes), `classes.dex` (`6,067,044` bytes) và thư viện native cho cả 4 kiến trúc (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) gồm `libonnxruntime.so`, `libNitroTflite.so`, `libsqlcipher.so`, `libhermesvm.so`.
+  - **Thành phần bên trong APK**: Chứa đủ 3 tệp trọng số AI lưu dưới dạng không nén (`STORED`) trong `assets/models/` (`vit_cls.onnx` `1,135,005` bytes, `vit_cls.onnx.data` `343,194,624` bytes, `fusion_model.tflite` `110,029,372` bytes), bundle Hermes bytecode `assets/index.android.bundle` (`3,800,120` bytes), `classes.dex` (`6,067,520` bytes) và thư viện native cho cả 4 kiến trúc (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) gồm `libonnxruntime.so`, `libNitroTflite.so`, `libsqlcipher.so`, `libhermesvm.so`.
 
 ### 4.5 Thực nghiệm và đo lường kết quả
 
