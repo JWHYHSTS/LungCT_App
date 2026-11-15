@@ -574,7 +574,7 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       await storage.trashPatient(DOC_A, p.patientId);
 
       // Kiểm tra: Bệnh nhân và cả 2 ca con đều TRASHED
-      const trashedP = await storage.getPatientById(DOC_A, p.patientId, true);
+      const trashedP = await storage.getPatientById(DOC_A, p.patientId);
       expect(trashedP?.status).toBe('TRASHED');
       const activeCases = await storage.getCases(DOC_A, p.patientId, false);
       expect(activeCases).toHaveLength(0); // Không xuất hiện trong danh sách active
@@ -586,7 +586,7 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       await storage.restorePatient(DOC_A, p.patientId);
 
       // Kiểm tra: Bệnh nhân ACTIVE, c1 về DRAFT, c2 về COMPLETED
-      const restoredP = await storage.getPatientById(DOC_A, p.patientId, false);
+      const restoredP = await storage.getPatientById(DOC_A, p.patientId);
       expect(restoredP?.status).toBe('ACTIVE');
       const restoredCases = await storage.getCases(DOC_A, p.patientId, false);
       expect(restoredCases).toHaveLength(2);
@@ -639,42 +639,64 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       const img1 = await storage.saveCTImage(DOC_A, {
         caseId: c.caseId,
         ownerId: DOC_A,
+        imageVersion: 1,
+        orderIndex: 0,
+        source: 'LIBRARY',
+        mimeType: 'image/png',
+        width: 512,
+        height: 512,
+        byteSize: 1024,
+        sha256: 'abc1',
         localFileRef: 'file:///sandbox/img1.png',
-        fileSizeBytes: 1024,
         state: 'ACTIVE',
       });
       const img2 = await storage.saveCTImage(DOC_A, {
         caseId: c.caseId,
         ownerId: DOC_A,
+        imageVersion: 1,
+        orderIndex: 1,
+        source: 'LIBRARY',
+        mimeType: 'image/png',
+        width: 512,
+        height: 512,
+        byteSize: 2048,
+        sha256: 'abc2',
         localFileRef: 'file:///sandbox/img2.png',
-        fileSizeBytes: 2048,
         state: 'ACTIVE',
       });
 
       // Lưu kết quả AI cho cả 2 ảnh
       await storage.savePredictionResult(DOC_A, {
-        caseId: c.caseId,
         imageId: img1.imageId,
-        ownerId: DOC_A,
-        predictedClass: 'Malignant',
-        probabilities: { benign: 0.05, malignant: 0.9, normal: 0.05 },
+        imageVersion: 1,
+        classificationStatus: 'PASS',
+        label: 'MALIGNANT',
+        scores: [0.05, 0.9, 0.05],
+        explanationStatus: 'UNAVAILABLE',
+        modelVersion: '1.0.0',
+        preprocessingVersion: '1.0.0',
+        executionSource: 'LOCAL',
+        mode: 'REAL',
         state: 'CURRENT',
         startedAt: new Date().toISOString(),
         finishedAt: new Date().toISOString(),
         durationMs: 1200,
-        modelVersion: '1.0.0',
       });
       await storage.savePredictionResult(DOC_A, {
-        caseId: c.caseId,
         imageId: img2.imageId,
-        ownerId: DOC_A,
-        predictedClass: 'Benign',
-        probabilities: { benign: 0.85, malignant: 0.1, normal: 0.05 },
+        imageVersion: 1,
+        classificationStatus: 'PASS',
+        label: 'BENIGN',
+        scores: [0.85, 0.1, 0.05],
+        explanationStatus: 'UNAVAILABLE',
+        modelVersion: '1.0.0',
+        preprocessingVersion: '1.0.0',
+        executionSource: 'LOCAL',
+        mode: 'REAL',
         state: 'CURRENT',
         startedAt: new Date().toISOString(),
         finishedAt: new Date().toISOString(),
         durationMs: 1100,
-        modelVersion: '1.0.0',
       });
 
       // Xóa lát cắt img1 (ảnh Malignant)
@@ -691,7 +713,7 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       expect(latestPred1).toBeNull(); // Không còn kết quả CURRENT
 
       const latestPred2 = await storage.getLatestPrediction(DOC_A, img2.imageId);
-      expect(latestPred2?.predictedClass).toBe('Benign');
+      expect(latestPred2?.label).toBe('BENIGN');
       expect(latestPred2?.state).toBe('CURRENT');
 
       // 3. Ca bệnh được tăng revision để đồng bộ

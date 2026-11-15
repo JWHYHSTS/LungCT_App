@@ -27,6 +27,8 @@ export interface DialogProps {
   onCancel: () => void;
   /** Callback khi nhấn nút phụ/trung gian */
   onNeutral?: () => void;
+  /** Buộc xếp nút theo chiều dọc (stack full-width) */
+  stackedActions?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -47,12 +49,16 @@ export const Dialog: React.FC<DialogProps> = ({
   onConfirm,
   onCancel,
   onNeutral,
+  stackedActions,
   style,
 }) => {
   const { theme } = useTheme();
   const { colors, spacing, radius } = theme;
 
   const isDestructive = type === 'destructive';
+  const shouldStack =
+    stackedActions ??
+    ((confirmLabel?.length ?? 0) > 16 || (cancelLabel ? cancelLabel.length > 14 : false));
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -85,24 +91,45 @@ export const Dialog: React.FC<DialogProps> = ({
 
           {neutralLabel && onNeutral ? (
             <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
-              <View style={[styles.actionsRow, { gap: spacing.sm }]}>
-                {cancelLabel ? (
+              {shouldStack ? (
+                <>
                   <Button
-                    label={cancelLabel}
-                    variant={isDestructive ? 'primary' : 'secondary'}
+                    label={confirmLabel}
+                    variant={isDestructive ? 'danger' : 'primary'}
                     size="M"
-                    onPress={onCancel}
+                    onPress={onConfirm}
+                    style={{ width: '100%' }}
+                  />
+                  {cancelLabel ? (
+                    <Button
+                      label={cancelLabel}
+                      variant={isDestructive ? 'primary' : 'secondary'}
+                      size="M"
+                      onPress={onCancel}
+                      style={{ width: '100%' }}
+                    />
+                  ) : null}
+                </>
+              ) : (
+                <View style={[styles.actionsRow, { gap: spacing.sm }]}>
+                  {cancelLabel ? (
+                    <Button
+                      label={cancelLabel}
+                      variant={isDestructive ? 'primary' : 'secondary'}
+                      size="M"
+                      onPress={onCancel}
+                      style={styles.actionBtn}
+                    />
+                  ) : null}
+                  <Button
+                    label={confirmLabel}
+                    variant={isDestructive ? 'danger' : 'primary'}
+                    size="M"
+                    onPress={onConfirm}
                     style={styles.actionBtn}
                   />
-                ) : null}
-                <Button
-                  label={confirmLabel}
-                  variant={isDestructive ? 'danger' : 'primary'}
-                  size="M"
-                  onPress={onConfirm}
-                  style={styles.actionBtn}
-                />
-              </View>
+                </View>
+              )}
               <Button
                 label={neutralLabel}
                 variant="tertiary"
@@ -112,24 +139,43 @@ export const Dialog: React.FC<DialogProps> = ({
               />
             </View>
           ) : cancelLabel ? (
-            <View style={[styles.actionsRow, { gap: spacing.sm }]}>
-              {/* Với destructive, nút Hủy là primary để tránh xóa nhầm */}
-              <Button
-                label={cancelLabel}
-                variant={isDestructive ? 'primary' : 'secondary'}
-                size="M"
-                onPress={onCancel}
-                style={styles.actionBtn}
-              />
+            shouldStack ? (
+              <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+                <Button
+                  label={confirmLabel}
+                  variant={isDestructive ? 'danger' : 'primary'}
+                  size="M"
+                  onPress={onConfirm}
+                  style={{ width: '100%' }}
+                />
+                <Button
+                  label={cancelLabel}
+                  variant={isDestructive ? 'primary' : 'secondary'}
+                  size="M"
+                  onPress={onCancel}
+                  style={{ width: '100%' }}
+                />
+              </View>
+            ) : (
+              <View style={[styles.actionsRow, { gap: spacing.sm }]}>
+                {/* Với destructive, nút Hủy là primary để tránh xóa nhầm */}
+                <Button
+                  label={cancelLabel}
+                  variant={isDestructive ? 'primary' : 'secondary'}
+                  size="M"
+                  onPress={onCancel}
+                  style={styles.actionBtn}
+                />
 
-              <Button
-                label={confirmLabel}
-                variant={isDestructive ? 'danger' : 'primary'}
-                size="M"
-                onPress={onConfirm}
-                style={styles.actionBtn}
-              />
-            </View>
+                <Button
+                  label={confirmLabel}
+                  variant={isDestructive ? 'danger' : 'primary'}
+                  size="M"
+                  onPress={onConfirm}
+                  style={styles.actionBtn}
+                />
+              </View>
+            )
           ) : (
             <Button
               label={confirmLabel}
@@ -155,7 +201,8 @@ const styles = StyleSheet.create({
   },
   dialogContainer: {
     width: '100%',
-    maxWidth: 340,
+    maxWidth: 360,
+    overflow: 'hidden',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -165,9 +212,11 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    flexWrap: 'wrap',
     marginTop: 8,
   },
   actionBtn: {
-    minWidth: 100,
+    minWidth: 90,
+    flexShrink: 1,
   },
 });

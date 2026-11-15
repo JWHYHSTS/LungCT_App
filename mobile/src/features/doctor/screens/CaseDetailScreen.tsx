@@ -486,6 +486,7 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
                   aiClass={img.aiClass}
                   thumbnail={img.uri ? { uri: img.uri } : undefined}
                   onPress={() => onNavigateToImageResult(currentCase.id, idx + 1)}
+                  style={styles.imageTile}
                 />
                 {!isCompleted && !isTrashed && (
                   <TouchableOpacity
@@ -592,11 +593,12 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
       {/* Menu tùy chọn ... */}
       <Dialog
         visible={showMenuOptionsDialog}
-        type="default"
+        type="destructive"
         title={t('doctor_detail.case_menu_title')}
         body={t('doctor_detail.case_menu_body')}
         confirmLabel={t('doctor_detail.case_menu_delete')}
         cancelLabel={t('doctor_detail.common_dialog_cancel')}
+        stackedActions
         onConfirm={() => {
           setShowMenuOptionsDialog(false);
           setShowTrashConfirmDialog(true);
@@ -708,8 +710,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   gridItem: {
-    width: '48%',
+    width: 120,
+    maxWidth: 120,
     position: 'relative',
+  },
+  imageTile: {
+    width: 120,
+    maxWidth: 120,
   },
   deleteBadge: {
     position: 'absolute',

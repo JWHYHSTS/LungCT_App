@@ -368,11 +368,12 @@ export const PatientDetailScreen: React.FC<PatientDetailScreenProps> = ({
       {/* Menu tùy chọn ... */}
       <Dialog
         visible={showMenuOptionsDialog}
-        type="default"
+        type="destructive"
         title={t('doctor_detail.patient_menu_title')}
         body={t('doctor_detail.patient_menu_body')}
         confirmLabel={t('doctor_detail.patient_menu_delete')}
         cancelLabel={t('doctor_detail.patient_menu_cancel')}
+        stackedActions
         onConfirm={() => {
           setShowMenuOptionsDialog(false);
           setShowTrashConfirmDialog(true);
