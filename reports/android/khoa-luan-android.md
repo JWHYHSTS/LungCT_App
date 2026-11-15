@@ -386,19 +386,44 @@ Thực nghiệm đo lường thời gian suy luận kỹ thuật trên môi trư
      | Mã hóa toàn bộ tệp nhị phân cấp trang (SQLCipher 4.6.1) | Đạt | Đạt (`sqlcipherVault.test.ts`, 145/145 tests) | Đạt (Tệp 53.248 bytes, `strings` ra 0 byte plaintext) |
      | Sao lưu an toàn kho cũ (`.plaintext.bak`) | Đạt | Đạt | Đạt (Tệp backup 61.440 bytes bảo toàn) |
 
-#### D. Trạng thái thực nghiệm trên Thiết bị vật lý thật (Xiaomi Redmi Note 12 Turbo)
-- **Thiết bị đo kiểm**: Xiaomi Redmi Note 12 Turbo (`3f385c90`, model `23049RAD8C`, Android 13 API 33, kiến trúc `arm64-v8a`, chip Qualcomm Snapdragon 7+ Gen 2).
+#### D. Kết quả thực nghiệm và Đo kiểm Telemetry trên Thiết bị vật lý thật (Xiaomi Redmi Note 12 Turbo)
+- **Thiết bị đo kiểm**: Xiaomi Redmi Note 12 Turbo (`3f385c90`, model `23049RAD8C`, Android 13 API 33, kiến trúc `arm64-v8a`, chip Qualcomm Snapdragon 7+ Gen 2 - 8 nhân Kryo, 8GB/12GB LPDDR5).
 - **Trạng thái thực tế**:
   1. Đã cài đặt thành công bản phát hành độc lập **`app-release.apk` v1.0.7 (`versionCode 8`, 544.04 MB)** qua cổng USB bằng lệnh `adb install -r -d`.
-  2. Đo đạc tài nguyên ban đầu khi khởi động ứng dụng:
-     - **Bộ nhớ PSS**: `145,552 KB` (~**142.1 MB**).
-     - **Bộ nhớ RSS**: `263,428 KB` (~**257.2 MB**).
-     - **Native Heap**: `21,711 KB` (~`21.2 MB`).
-     - **Dalvik Heap**: `13,939 KB` (~`13.6 MB`).
-     - **Pin & Nhiệt độ**: 96%, điện áp 4.42 V, nhiệt độ thiết bị **30.5°C**.
-  3. Giao diện thực tế: Đã xác thực màn hình Đăng nhập hiển thị đúng thiết kế Figma, hỗ trợ chuyển ngữ song ngữ VI/EN, tài khoản Bác sĩ "Dương Hải Đăng" đã đăng nhập thành công và khởi tạo ca bệnh đầu tiên `CA-2026-000001 • Nguyễn Văn A`.
-  4. Khắc phục lỗi runtime trên máy thật: Phát hiện lỗi `UnsatisfiedLinkError: OrtGetApiBase` khi bấm chạy suy luận AI do lệch version giữa `onnxruntime-android:1.31.0` và `libonnxruntime.so` (1.31.1). Đã vá hoàn chỉnh bằng `onnxruntime-android:1.31.1` và bọc `catch (e: Throwable)` an toàn trong `LungCtPipelineModule.kt`.
-- **Cam kết khoa học**: Khóa luận tuyệt đối không lấy kết quả trên máy ảo làm kết quả trên điện thoại thật. Số liệu thực tế chi tiết về RAM đỉnh, thời gian suy luận On-Device qua các lát cắt CT, thao tác Camera/Picker, xuất PDF, đồng bộ Firebase trực tuyến/ngoại tuyến và `KeyInfo` phần cứng đang được tiếp tục đo đạc trực tiếp trên thiết bị này.
+  2. Khắc phục triệt để lỗi JNI runtime trên máy thật: Phát hiện lỗi `UnsatisfiedLinkError: OrtGetApiBase` khi bấm chạy suy luận AI do lệch version giữa `onnxruntime-android:1.31.0` và `libonnxruntime.so` (1.31.1). Đã vá hoàn chỉnh bằng `onnxruntime-android:1.31.1` và bọc `catch (e: Throwable)` an toàn trong `LungCtPipelineModule.kt`.
+  3. **Đo kiểm Telemetry Suy luận On-Device Edge AI thực tế (Mô hình Adaptive AACNN-ViT)**:
+     - Lát cắt CT thực nghiệm: `ct_1794582264887_IMG_1792171739167_1792177341452.jpg` (kích thước gốc 512×512, tỷ lệ 1:1 từ bộ dữ liệu IQ-OTH/NCCD).
+     - Kết quả phân loại On-Device: **Ác tính (Malignant)**.
+     - Phân bố xác suất 3 lớp nhãn:
+       + **Ác tính (Malignant)**: `0.999701` (**99.9701%**)
+       + **Lành tính (Benign)**: `0.000153` (**0.0153%**)
+       + **Bình thường (Normal)**: `0.000145` (**0.0145%**)
+     - Bảng phân rã độ trễ phần cứng thực tế trên Snapdragon 7+ Gen 2:
+       | Phân đoạn chuỗi xử lý Native | Thời gian đo đạc thực tế | Ghi chú kỹ thuật |
+       | :--- | :--- | :--- |
+       | **ViT Feature Extractor (ONNX)** | **`317 ms`** | ONNX Runtime Mobile 1.31.1 trích xuất CLS Token 768 chiều trên CPU đa luồng |
+       | **Fusion Classifier (LiteRT/TFLite)** | **`1,146 ms`** | LiteRT 1.4.0 tích hợp đa nhánh CNN và ViT tokens phân loại 3 lớp |
+       | **Tổng chuỗi Native End-to-End** | **`2,745 ms`** | Bao gồm nạp ảnh 512×512, Nearest Resampling C++, ViT ONNX, Fusion TFLite và Softmax |
+     - Mức tiêu thụ bộ nhớ RAM thực tế (`adb shell dumpsys meminfo com.anonymous.mobile`):
+       | Thành phần bộ nhớ | Dung lượng PSS thực tế | Ghi chú phân bổ bộ nhớ |
+       | :--- | :--- | :--- |
+       | **Native Heap PSS** | **`641.1 MB`** (`641,080 KB`) | Chứa trọng số mô hình ViT ONNX (~343 MB) + Fusion TFLite (~150 MB) và Tensor buffers |
+       | **Dalvik / Java Heap PSS** | **`14.1 MB`** (`14,064 KB`) | Tầng mã nguồn React Native / JVM cực kỳ nhẹ và tối ưu |
+       | **Graphics / EGL** | **`76.9 MB`** (`76,932 KB`) | Bộ nhớ dựng hình giao diện Native Surface |
+       | **TOTAL PSS ĐỈNH** | **`946.2 MB`** (`946,213 KB`) | Hoạt động mượt mà trên thiết bị 8GB/12GB RAM, không bị OOM Killer |
+       | **TOTAL RSS** | **`1,075.4 MB`** (`1,075,448 KB`) | Tổng không gian bộ nhớ tiến trình thường trú |
+  4. **Kiểm chứng Vòng đời lưu trữ SQLCipher & Mã hóa trên đĩa**:
+     - Ca bệnh `CA-2026-000001 • Nguyễn Văn A` sau khi phân tích được cập nhật nhãn `Ác tính`, hoàn tất ca bệnh và bảo toàn 100% dữ liệu điểm số trong cơ sở dữ liệu mã hóa SQLite / SQLCipher on-device.
+  5. **Kiểm chứng Xuất Báo cáo Y tế PDF Cục bộ**:
+     - Biên dịch thành công tệp `BaoCao_CT_CA-2026-000001_vi.pdf` (Dung lượng 1.2 MB) trực tiếp trên thiết bị bằng `expo-print`.
+     - Phiếu PDF hiển thị đầy đủ thông tin hành chính, biểu đồ thanh xác suất 3 lớp nhãn, chữ ký Bác sĩ chẩn đoán và điều khoản miễn trừ pháp lý y khoa lâm sàng.
+  6. **Kiểm chứng Kiến trúc Offline-First & Sync Engine với Cloud Firestore**:
+     - Trung tâm đồng bộ `SyncCenterModal` nhận diện trạng thái mạng `Trực tuyến`, đẩy ca bệnh và tổng kết phân loại AI lên Firestore thành công, xóa sạch hàng đợi Outbox (0 mục chờ gửi).
+  7. **Kiểm chứng Quản trị viên (Admin) & Thống kê Thời gian thực**:
+     - Đăng nhập tài khoản Quản trị viên `admin.dang@lungct.vn`, hệ thống nhận diện `role: "admin"` và chuyển sang bảng điều khiển quản trị.
+     - Danh sách hiển thị đầy đủ 5 tài khoản Bác sĩ đang hoạt động lấy trực tiếp từ Firestore.
+     - Bảng thống kê tổng hợp thời gian thực tổng hợp trực tiếp từ Firestore: 5 bác sĩ hoạt động, 2 ca hoàn tất, 3 ảnh đã phân tích (2 Ác tính, 1 Bình thường), tuân thủ tuyệt đối chuẩn bảo mật ẩn danh PHI.
+- **Minh chứng thực nghiệm phần cứng**: Toàn bộ ảnh chụp màn hình kiểm chứng đã được thu thập và lưu trữ tại `docs/evidence/real_device/` (`screen_ai_result.png`, `screen_after_dismiss.png`, `screen_pdf_state.png`, `screen_sync_state.png`, `screen_admin_doctors.png`, `screen_admin_stats.png`).
 
 ### 4.6 Đánh giá kiến trúc triển khai Android và đối sánh phạm vi đề tài
 Phân tích giải pháp kỹ thuật đã triển khai chính thức trên Android (**Dương Hải Đăng**) và đối chiếu với định hướng lưu trữ lịch sử của đề tài:

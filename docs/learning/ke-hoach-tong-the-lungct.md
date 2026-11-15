@@ -29,18 +29,24 @@ graph TD
     F -.->|Mở rộng Cloud| H[Cloud Storage sao lưu & FCM thông báo đẩy]
 ```
 
-- **Vị trí hiện tại (13/11/2026 - Đang thực hiện Đầu việc 5 trên máy thật)**:
-  - **Kết nối điện thoại thật**: Đã nhận diện thiết bị **Xiaomi Redmi Note 12 Turbo** (`3f385c90`, model `23049RAD8C`, Android 13 API 33, `arm64-v8a`).
-  - **Cài đặt & nghiệm thu giao diện**: Cài đặt thành công bản phát hành và đo đạc thông số khởi động ban đầu (**142.1 MB PSS**, **257.2 MB RSS**, Pin 96%, Nhiệt độ 30.5°C). Người dùng đã đăng nhập thành công tài khoản Bác sĩ "Dương Hải Đăng" và tạo ca bệnh `CA-2026-000001 • Nguyễn Văn A`.
-  - **Phát hiện & khắc phục lỗi Native C++ (Crash)**: Khi bấm "Chạy phân tích AI Lát cắt này", ứng dụng bị crash do `UnsatisfiedLinkError: OrtGetApiBase@VERS_1.31.0` không tìm thấy trong `libonnxruntime.so` (bản 1.31.1). Đã nâng cấp đồng bộ `com.microsoft.onnxruntime:onnxruntime-android:1.31.1`, đổi toàn bộ `catch (e: Exception)` sang `catch (e: Throwable)` trong `LungCtPipelineModule.kt`, đóng gói thành công **APK Release v1.0.7 (`versionCode 8`)** và nạp trực tiếp vào điện thoại thành công (`Success`).
-- **Danh sách công việc tiếp theo (Tiếp tục Đầu việc 5 & Hoàn thiện ứng dụng)**:
-  1. **Nghiệm thu chạy suy luận On-Device AI**: Bác sĩ bấm "Chạy Phân tích AI Lát Cắt Này (FP32)" trên `CA-2026-000001` trên điện thoại thật; đọc logcat đo latency chi tiết (Decode, ViT ONNX, Fusion LiteRT, Tổng ms) và RAM tiêu thụ đỉnh.
-  2. **Nghiệm thu lưu trữ an toàn SQLCipher**: Kiểm tra ca bệnh và kết quả phân loại 3 lớp được lưu bền vững vào CSDL mã hóa; tắt hẳn app (`force-stop`) và mở lại để xác nhận tính toàn vẹn.
-  3. **Nghiệm thu xuất phiếu kết quả PDF**: Bấm "Xuất phiếu kết quả PDF", kiểm tra tạo file `.pdf` thật qua `expo-print`, mở tệp trên điện thoại và kiểm tra tính chính xác của thông tin ca bệnh/khuyến cáo y khoa (bảo đảm không có Grad-CAM giả).
-  4. **Nghiệm thu đồng bộ Firebase (Sync Engine)**: Mở modal `SyncCenterModal` đồng bộ hồ sơ lên Cloud Firestore; ngắt mạng kiểm tra chế độ Offline-First và kết nối lại mạng để kiểm tra tự động đồng bộ nền.
-  5. **Nghiệm thu phân quyền & Duyệt tài khoản Admin**: Đăng xuất tài khoản Bác sĩ, đăng nhập tài khoản Quản trị viên (`admin.dang@lungct.vn`), kiểm tra tab Duyệt tài khoản và xem thống kê Firestore theo thời gian thực.
-  6. **Kiểm tra cơ chế AUTH-08**: Thử nghiệm kịch bản khóa tài khoản bác sĩ từ Admin để xác minh dữ liệu nháp được bảo toàn, dữ liệu đã sync được xóa an toàn khỏi máy.
-  7. **Dọn sạch ESLint & Cập nhật số liệu vào Báo cáo khóa luận**: Xử lý 4 lỗi `react-hooks/set-state-in-effect` ở màn hình cũ và đưa toàn bộ số liệu đo kiểm thực tế trên chip Snapdragon 7+ Gen 2 vào Chương 4 bản thảo khóa luận của Dương Hải Đăng.
+- **Vị trí hiện tại (15/11/2026 - Đã nghiệm thu thành công Việc 1-5 của Đầu việc 5 trên máy thật)**:
+  - **Kết nối điện thoại thật**: Đã nhận diện thiết bị **Xiaomi Redmi Note 12 Turbo** (`3f385c90`, model `23049RAD8C`, Android 13 API 33, `arm64-v8a`, chip Snapdragon 7+ Gen 2).
+  - **Cài đặt & nghiệm thu giao diện**: Cài đặt thành công bản phát hành độc lập **`app-release.apk` v1.0.7 (`versionCode 8`, 544.04 MB)**. Đo đạc tài nguyên ban đầu khi khởi động (**142.1 MB PSS**, **257.2 MB RSS**, Pin 96%, Nhiệt độ 30.5°C). Người dùng đăng nhập thành công tài khoản Bác sĩ "Dương Hải Đăng" và tạo ca bệnh `CA-2026-000001 • Nguyễn Văn A`.
+  - **Khắc phục lỗi Native C++ (Crash)**: Vá triệt để lỗi `UnsatisfiedLinkError: OrtGetApiBase` bằng cách đồng bộ `onnxruntime-android:1.31.1` và bọc `catch (e: Throwable)` trong `LungCtPipelineModule.kt`.
+  - **Nghiệm thu thực tế trên máy thật (Đầu việc 5)**:
+    1. **Việc 1 (Suy luận AI On-Device)**: **ĐẠT**. Mô hình Adaptive AACNN-ViT FP32 chạy 100% on-device trên chip Snapdragon 7+ Gen 2. ViT Latency: **317 ms**, Fusion Latency: **1,146 ms**, Tổng thời gian Native: **2,745 ms**. Nhãn dự đoán: **Ác tính (Malignant)** với điểm số 99.9701%. Đỉnh RAM tiêu thụ: **946.2 MB PSS** (Native Heap: 641.1 MB, Dalvik Heap: 14.1 MB).
+    2. **Việc 2 (Lưu trữ SQLCipher & Vòng đời ca bệnh)**: **ĐẠT**. Ca bệnh cập nhật nhãn Ác tính, chuyển trạng thái "Hoàn tất" và lưu bền vững vào CSDL mã hóa.
+    3. **Việc 3 (Xuất báo cáo PDF y tế)**: **ĐẠT**. Biên dịch thành công tệp `BaoCao_CT_CA-2026-000001_vi.pdf` (1.2 MB) qua `expo-print` trực tiếp trên máy.
+    4. **Việc 4 (Kiến trúc Offline-First & Đồng bộ Cloud Firestore)**: **ĐẠT**. Trung tâm đồng bộ `SyncCenterModal` kết nối trực tuyến hai chiều, đẩy ca bệnh lên Firestore thành công, Outbox dọn sạch về 0.
+    5. **Việc 5 (Quản trị viên & Thống kê Thời gian thực)**: **ĐẠT**. Tài khoản Quản trị viên `admin.dang@lungct.vn` đăng nhập thành công, quản lý danh sách 5 bác sĩ hoạt động và bảng thống kê tổng hợp thời gian thực từ Firestore (5 bác sĩ, 2 ca hoàn tất, 3 ảnh phân tích).
+- **Kế hoạch tiếp theo (Đã chốt chính sách 1A, 2A, 3A, 4A, 5A, 6A)**:
+  1. Hoàn thiện tính năng Xóa ảnh CT cho ca `DRAFT` (trên `CaseDetailScreen` và `AIImageResultScreen`), khóa không cho xóa ảnh ca `COMPLETED`.
+  2. Xử lý dọn dẹp file vật lý trong sandbox + đánh dấu kết quả AI `SUPERSEDED` khi ảnh bị xóa.
+  3. Hoàn thiện tính năng Xóa báo cáo PDF trong `ExportPdfScreen` + xóa file cache + bỏ mock cũ.
+  4. Bổ sung chức năng Khôi phục ca bệnh (`restoreCase`) và khóa Read-only khi ca ở trong thùng rác.
+  5. Bổ sung Cascade Soft-Delete khi xóa Bệnh nhân (tự động xóa mềm ca con).
+  6. Bổ sung nút Mở khóa tài khoản (`btn_unlock`) cho Quản trị viên trên `AdminAccountDetailScreen`.
+  7. Dọn sạch 4 cảnh báo ESLint còn lại và kiểm tra toàn bộ test suites.
 
 ---
 
