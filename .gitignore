@@ -84,4 +84,5 @@ mobile/release/
 *.apk
 *.xml
 *.png
+!docs/evidence/**/*.png
 
