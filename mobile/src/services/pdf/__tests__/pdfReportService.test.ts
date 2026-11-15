@@ -150,5 +150,22 @@ describe('PDF-01: PdfReportService Unit Tests', () => {
     const resolved = await PdfReportService.resolveReportSlicesBase64(dataWithDataUri);
     expect(resolved.slices?.[0].imageUri).toBe('data:image/jpeg;base64,/9j/4AAQSkZJRg==');
   });
+
+  test('8. resolveReportSlicesBase64 áp dụng FALLBACK_CT_SVG khi tệp không tồn tại', async () => {
+    const dataWithMissingFile: ClinicalReportData = {
+      ...sampleData,
+      slices: [
+        {
+          id: 'slice-missing',
+          label: 'Lát cắt thiếu file',
+          imageUri: 'file:///non/existent/image.jpg',
+          hasGradCam: false,
+        },
+      ],
+    };
+
+    const resolved = await PdfReportService.resolveReportSlicesBase64(dataWithMissingFile);
+    expect(resolved.slices?.[0].imageUri).toContain('data:image/svg+xml');
+  });
 });
 

@@ -716,15 +716,31 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         reactContext.contentResolver.openInputStream(uri)?.use { it.readBytes() }
           ?: throw FileNotFoundException("Không thể mở Content URI: $filePath")
       } else {
-        val cleanPath = filePath.removePrefix("file://")
-        val file = File(cleanPath)
-        if (!file.exists()) {
-          promise.reject("ERR_NOT_FOUND", "Tệp không tồn tại: $cleanPath")
+        val rawPath = if (filePath.startsWith("file://")) {
+          try {
+            Uri.parse(filePath).path ?: filePath.removePrefix("file://")
+          } catch (_: Throwable) {
+            filePath.removePrefix("file://")
+          }
+        } else {
+          filePath
+        }
+        val decodedPath = try {
+          java.net.URLDecoder.decode(rawPath, "UTF-8")
+        } catch (_: Throwable) {
+          rawPath
+        }
+        val file = File(decodedPath)
+        val targetFile = if (file.exists()) file else File(rawPath)
+        if (!targetFile.exists()) {
+          android.util.Log.w("LungCtPipeline", "readFileAsBase64: Tệp không tồn tại: $decodedPath (raw: $rawPath)")
+          promise.reject("ERR_NOT_FOUND", "Tệp không tồn tại: $decodedPath")
           return
         }
-        file.readBytes()
+        targetFile.readBytes()
       }
       val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+      android.util.Log.i("LungCtPipeline", "readFileAsBase64 thành công cho $filePath (${bytes.size} bytes)")
       promise.resolve(base64)
     } catch (e: Throwable) {
       android.util.Log.e("LungCtPipeline", "Lỗi đọc tệp sang Base64 từ $filePath", e)

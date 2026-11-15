@@ -3,6 +3,17 @@ import * as Sharing from 'expo-sharing';
 import { ClinicalReportData, ExportedPdfResult } from './types';
 import { readFileAsBase64, persistPdfFile } from '../storage/fileUtil';
 
+export const FALLBACK_CT_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+    <rect width="240" height="240" fill="rgb(0,0,0)" rx="4"/>
+    <ellipse cx="120" cy="120" rx="96" ry="84" fill="rgb(28,28,30)" stroke="rgb(58,58,60)" stroke-width="2"/>
+    <ellipse cx="84" cy="115" rx="36" ry="54" fill="rgb(44,44,46)"/>
+    <ellipse cx="156" cy="115" rx="36" ry="54" fill="rgb(44,44,46)"/>
+    <ellipse cx="120" cy="186" rx="16" ry="12" fill="rgb(58,58,60)"/>
+    <text x="120" y="125" text-anchor="middle" fill="rgb(142,142,147)" font-size="12" font-family="sans-serif" font-weight="600">LÁT CẮT CT</text>
+  </svg>`,
+)}`;
+
 /**
  * Dịch vụ biên dịch và xuất báo cáo y tế chẩn đoán hình ảnh PDF cục bộ (On-Device Local-First).
  * - Sử dụng expo-print để render template HTML chuẩn y khoa sang tệp PDF vật lý.
@@ -450,10 +461,16 @@ export class PdfReportService {
                 ? 'image/png'
                 : 'image/jpeg';
               resolvedImageUri = `data:${mime};base64,${base64}`;
+            } else {
+              // Nếu không đọc được base64 từ đường dẫn cục bộ, dùng SVG dự phòng để không vỡ layout
+              resolvedImageUri = FALLBACK_CT_SVG;
             }
           } catch (err) {
             console.warn('[PdfReportService] Không thể nạp Base64 ảnh CT:', err);
+            resolvedImageUri = FALLBACK_CT_SVG;
           }
+        } else if (!resolvedImageUri) {
+          resolvedImageUri = FALLBACK_CT_SVG;
         }
 
         if (

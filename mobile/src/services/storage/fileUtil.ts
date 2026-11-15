@@ -1,15 +1,17 @@
 import { NativeModules } from 'react-native';
 
+const PipelineModule = NativeModules.LungCtPipelineModule || NativeModules.LungCtPipeline;
+
 /**
  * Tiện ích xóa tệp an toàn trong bộ nhớ thiết bị Android.
- * - Gọi Native Module LungCtPipeline.deleteLocalFile (C++/Java File.delete)
+ * - Gọi Native Module LungCtPipelineModule.deleteLocalFile (C++/Java File.delete)
  * - Tự động bỏ qua lỗi và không bao giờ ném Exception gây gián đoạn UI.
  */
 export async function deletePhysicalFile(filePath?: string | null): Promise<boolean> {
   if (!filePath) return false;
   try {
-    if (NativeModules.LungCtPipeline?.deleteLocalFile) {
-      return await NativeModules.LungCtPipeline.deleteLocalFile(filePath);
+    if (PipelineModule?.deleteLocalFile) {
+      return await PipelineModule.deleteLocalFile(filePath);
     }
   } catch (err) {
     console.warn('[deletePhysicalFile] Không thể xóa tệp vật lý:', err);
@@ -24,8 +26,8 @@ export async function deletePhysicalFile(filePath?: string | null): Promise<bool
 export async function readFileAsBase64(filePath?: string | null): Promise<string> {
   if (!filePath) return '';
   try {
-    if (NativeModules.LungCtPipeline?.readFileAsBase64) {
-      return await NativeModules.LungCtPipeline.readFileAsBase64(filePath);
+    if (PipelineModule?.readFileAsBase64) {
+      return await PipelineModule.readFileAsBase64(filePath);
     }
     // Fallback cho môi trường Node / Jest testing
     try {
@@ -53,8 +55,8 @@ export async function persistPdfFile(
 ): Promise<string> {
   if (!cacheUri) return '';
   try {
-    if (NativeModules.LungCtPipeline?.persistPdfFile) {
-      return await NativeModules.LungCtPipeline.persistPdfFile(cacheUri, targetFileName);
+    if (PipelineModule?.persistPdfFile) {
+      return await PipelineModule.persistPdfFile(cacheUri, targetFileName);
     }
   } catch (err) {
     console.warn('[persistPdfFile] Không thể lưu tệp PDF vào dicom_reports:', err);
