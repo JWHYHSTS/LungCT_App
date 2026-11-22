@@ -216,4 +216,46 @@ describe('CaseRepository & Encrypted Storage Integration Tests', () => {
       expect(stats.analyzedImageCount).toBeGreaterThanOrEqual(1);
     }
   });
+
+  it('8. Xóa vĩnh viễn ca bệnh (hardDeleteCase) và dọn sạch thùng rác (emptyTrash)', async () => {
+    await PatientRepository.ensureReady(DOC_1);
+    await CaseRepository.ensureReady(DOC_1);
+
+    const patient = await PatientRepository.addPatient(DOC_1, {
+      code: 'BN-TEST-TRASH',
+      fullName: 'Lê Văn Thùng Rác',
+      dob: '01/01/1975',
+      gender: 'Nam',
+    });
+
+    const case1 = await CaseRepository.createCase(DOC_1, patient);
+    const case2 = await CaseRepository.createCase(DOC_1, patient);
+
+    // Chuyển case1 và case2 vào thùng rác
+    await CaseRepository.trashCase(DOC_1, case1.id);
+    await CaseRepository.trashCase(DOC_1, case2.id);
+
+    const trashedBefore = (await CaseRepository.getCasesForUI(DOC_1, undefined, true)).filter(
+      (c) => c.isTrashed,
+    );
+    expect(trashedBefore.some((c) => c.id === case1.id)).toBe(true);
+    expect(trashedBefore.some((c) => c.id === case2.id)).toBe(true);
+
+    // Xóa vĩnh viễn case1
+    const del1 = await CaseRepository.hardDeleteCase(DOC_1, case1.id);
+    expect(del1).toBe(true);
+
+    const afterDel1 = await CaseRepository.getCasesForUI(DOC_1, undefined, true);
+    expect(afterDel1.some((c) => c.id === case1.id)).toBe(false);
+    expect(afterDel1.some((c) => c.id === case2.id)).toBe(true);
+
+    // Dọn sạch thùng rác (xóa nốt case2)
+    const emptyRes = await CaseRepository.emptyTrash(DOC_1);
+    expect(emptyRes.casesCount).toBeGreaterThanOrEqual(1);
+
+    const afterEmpty = (await CaseRepository.getCasesForUI(DOC_1, undefined, true)).filter(
+      (c) => c.isTrashed,
+    );
+    expect(afterEmpty.some((c) => c.id === case2.id)).toBe(false);
+  });
 });

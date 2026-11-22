@@ -21,11 +21,13 @@ import { SyncCenterModal } from '../components/SyncCenterModal';
 export interface DoctorCasesScreenProps {
   onNavigateToCaseDetail?: (caseId: string) => void;
   onNavigateToCreateCase?: () => void;
+  onNavigateToTrash?: () => void;
 }
 
 export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
   onNavigateToCaseDetail,
   onNavigateToCreateCase,
+  onNavigateToTrash,
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -38,6 +40,8 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
   const [selectedFilter, setSelectedFilter] = useState<string>(CASE_FILTER_DECISION.defaultChip);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<MockCase | null>(null);
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<MockCase | null>(null);
+  const [trashedActionTarget, setTrashedActionTarget] = useState<MockCase | null>(null);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -105,6 +109,15 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
 
       if (!matchQuery) return false;
 
+      if (selectedFilter === 'malignant') {
+        const hasMalignantSummary =
+          caseItem.aiLabelSummary?.toLowerCase().includes('ác tính') ||
+          caseItem.aiLabelSummary?.toLowerCase().includes('malignant');
+        const hasMalignantSlice = caseItem.images?.some(
+          (img) => img.aiClass === 'Malignant' || (img as any).aiClass === 'MALIGNANT',
+        );
+        return Boolean(hasMalignantSummary || hasMalignantSlice);
+      }
       if (selectedFilter === 'draft') {
         return caseItem.status === 'DRAFT';
       }
@@ -132,6 +145,17 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
               name="sync"
               accessibilityLabel="Đồng bộ dữ liệu (SCR-Y01)"
               onPress={() => setShowSyncModal(true)}
+            />
+            <IconButton
+              name="trash"
+              accessibilityLabel={t('trash.title', 'Thùng rác')}
+              onPress={() => {
+                if (onNavigateToTrash) {
+                  onNavigateToTrash();
+                } else {
+                  setSelectedFilter('trashed');
+                }
+              }}
             />
             <IconButton
               name="notifications"
@@ -165,6 +189,7 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
             const isSelected = selectedFilter === chip.key;
             let translatedLabel: string = chip.label;
             if (chip.key === 'all') translatedLabel = t('ui.tat_ca', 'Tất cả');
+            else if (chip.key === 'malignant') translatedLabel = t('trash.chip_malignant', 'Nguy cơ ác tính');
             else if (chip.key === 'draft') translatedLabel = t('label.nhap', 'Nháp');
             else if (chip.key === 'completed') translatedLabel = t('label.hoan_tat', 'Hoàn tất');
             else if (chip.key === 'partial') translatedLabel = t('label.ket_qua_mot_phan', 'Một phần');
@@ -248,7 +273,7 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
                 }
                 onPress={() => {
                   if (caseItem.isTrashed) {
-                    setRestoreTarget(caseItem);
+                    setTrashedActionTarget(caseItem);
                     return;
                   }
                   if (onNavigateToCaseDetail) {
@@ -266,6 +291,58 @@ export const DoctorCasesScreen: React.FC<DoctorCasesScreenProps> = ({
           })
         )}
       </ScrollView>
+
+      {/* Dialog tùy chọn ca bệnh trong thùng rác: Khôi phục hoặc Xóa vĩnh viễn */}
+      <Dialog
+        visible={Boolean(trashedActionTarget)}
+        type="default"
+        title={t('trash.case_options_title', 'Tùy chọn ca bệnh')}
+        body={t('trash.case_options_body', {
+          code: trashedActionTarget?.caseCode || '',
+          defaultValue: `Ca bệnh ${trashedActionTarget?.caseCode} (${trashedActionTarget?.patientName}) đang trong thùng rác. Bạn muốn khôi phục về danh sách hay xóa vĩnh viễn khỏi máy?`,
+        })}
+        confirmLabel={t('trash.restore_btn', 'Khôi phục')}
+        cancelLabel={t('trash.hard_delete_btn', 'Xóa vĩnh viễn')}
+        onConfirm={async () => {
+          if (!trashedActionTarget) return;
+          const target = trashedActionTarget;
+          setTrashedActionTarget(null);
+          try {
+            await CaseRepository.restoreCase(ownerId, target.id);
+          } catch (err) {
+            console.warn('[DoctorCasesScreen] Lỗi khôi phục ca:', err);
+          }
+        }}
+        onCancel={() => {
+          if (!trashedActionTarget) return;
+          const target = trashedActionTarget;
+          setTrashedActionTarget(null);
+          setHardDeleteTarget(target);
+        }}
+      />
+
+      {/* Dialog xác nhận xóa vĩnh viễn ca bệnh (Hard Delete) */}
+      <Dialog
+        visible={Boolean(hardDeleteTarget)}
+        type="destructive"
+        title={t('trash.hard_delete_case_title', 'Xóa vĩnh viễn ca bệnh?')}
+        body={t('trash.hard_delete_case_confirm_body', {
+          code: hardDeleteTarget?.caseCode || '',
+          defaultValue: `Ca bệnh ${hardDeleteTarget?.caseCode} cùng toàn bộ ảnh lát cắt và báo cáo PDF liên quan sẽ bị xóa vĩnh viễn khỏi thiết bị. Thao tác này KHÔNG thể hoàn tác. Bạn có chắc chắn muốn xóa?`,
+        })}
+        confirmLabel={t('trash.hard_delete_btn', 'Xóa vĩnh viễn')}
+        cancelLabel={t('common.cancel', 'Hủy')}
+        onConfirm={async () => {
+          if (!hardDeleteTarget) return;
+          try {
+            await CaseRepository.hardDeleteCase(ownerId, hardDeleteTarget.id);
+            setHardDeleteTarget(null);
+          } catch (err) {
+            console.warn('[DoctorCasesScreen] Lỗi xóa vĩnh viễn ca:', err);
+          }
+        }}
+        onCancel={() => setHardDeleteTarget(null)}
+      />
 
       {/* Dialog xác nhận khôi phục ca bệnh từ thùng rác (Chính sách 4A) */}
       <Dialog

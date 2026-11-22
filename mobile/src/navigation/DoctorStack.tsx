@@ -7,6 +7,7 @@ import {
   CaseDetailScreen,
   AIImageResultScreen,
   ExportPdfScreen,
+  TrashScreen,
 } from '../features/doctor/screens';
 
 export type DoctorStackParamList = {
@@ -16,6 +17,7 @@ export type DoctorStackParamList = {
   CaseDetail: { caseId: string };
   AIImageResult: { caseId: string; imageIndex?: number };
   ExportPdf: { caseId: string };
+  Trash: undefined;
 };
 
 const Stack = createNativeStackNavigator<DoctorStackParamList>();
@@ -105,6 +107,15 @@ export const DoctorStack: React.FC = () => {
       <Stack.Screen name="ExportPdf">
         {({ navigation, route }) => (
           <ExportPdfScreen caseId={route.params.caseId} onBack={() => navigation.goBack()} />
+        )}
+      </Stack.Screen>
+
+      <Stack.Screen name="Trash">
+        {({ navigation }) => (
+          <TrashScreen
+            onBack={() => navigation.goBack()}
+            onNavigateToCaseDetail={(caseId) => navigation.navigate('CaseDetail', { caseId })}
+          />
         )}
       </Stack.Screen>
     </Stack.Navigator>

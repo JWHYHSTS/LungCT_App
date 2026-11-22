@@ -91,6 +91,7 @@ export const DoctorTabs: React.FC = () => {
           return (
             <DoctorCasesScreen
               onNavigateToCaseDetail={(caseId) => parentNav?.navigate('CaseDetail', { caseId })}
+              onNavigateToTrash={() => parentNav?.navigate('Trash')}
             />
           );
         }}

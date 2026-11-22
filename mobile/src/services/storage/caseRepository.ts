@@ -23,6 +23,7 @@ import {
   completeCase as completeMockCase,
   trashCase as trashMockCase,
   restoreCase as restoreMockCase,
+  hardDeleteCase as hardDeleteMockCase,
   removeMockCaseImage,
   createMockCaseForPatient,
   MockPatient,
@@ -444,6 +445,55 @@ export class CaseRepository {
     const mockSuccess = restoreMockCase(caseId);
     notifyCaseListeners();
     return mockSuccess;
+  }
+
+  /**
+   * Xóa vĩnh viễn ca bệnh (Hard Delete):
+   * Xóa hồ sơ, giải phóng toàn bộ file vật lý (ảnh CT, báo cáo PDF) và bản ghi AI liên quan.
+   */
+  public static async hardDeleteCase(ownerId: string, caseId: string): Promise<boolean> {
+    await this.ensureReady(ownerId);
+
+    let storageSuccess = false;
+    try {
+      storageSuccess = await localStorageService.hardDeleteCase(ownerId, caseId);
+    } catch (err) {
+      console.warn('[CaseRepository] Lỗi xóa vĩnh viễn ca trong storage:', err);
+    }
+
+    const mockSuccess = hardDeleteMockCase(caseId);
+    notifyCaseListeners();
+    return storageSuccess || mockSuccess;
+  }
+
+  /**
+   * Dọn sạch toàn bộ thùng rác (Empty Trash):
+   * Xóa vĩnh viễn tất cả ca bệnh đang ở trạng thái TRASHED.
+   */
+  public static async emptyTrash(ownerId: string): Promise<{ casesCount: number }> {
+    await this.ensureReady(ownerId);
+    const trashedCases = await localStorageService.getCases(ownerId, undefined, true);
+    const targets = trashedCases.filter((c) => c.status === 'TRASHED');
+
+    let deletedCount = 0;
+    for (const c of targets) {
+      try {
+        const ok = await localStorageService.hardDeleteCase(ownerId, c.caseId);
+        if (ok) {
+          deletedCount += 1;
+        }
+      } catch (err) {
+        console.warn(`[CaseRepository] Lỗi dọn thùng rác ca ${c.caseId}:`, err);
+      }
+      try {
+        hardDeleteMockCase(c.caseId);
+      } catch {
+        // ignore
+      }
+    }
+
+    notifyCaseListeners();
+    return { casesCount: deletedCount };
   }
 
   /**

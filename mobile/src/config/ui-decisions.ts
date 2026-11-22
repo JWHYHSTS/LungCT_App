@@ -99,6 +99,7 @@ export const CASE_FILTER_DECISION = {
   status: 'PROPOSAL',
   chips: [
     { key: 'all', label: 'Tất cả' },
+    { key: 'malignant', label: 'Nguy cơ ác tính' },
     { key: 'draft', label: 'Nháp' },
     { key: 'completed', label: 'Hoàn tất' },
     { key: 'partial', label: 'Một phần' },

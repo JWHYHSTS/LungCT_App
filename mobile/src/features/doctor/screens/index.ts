@@ -8,3 +8,4 @@ export * from './PatientDetailScreen';
 export * from './CaseDetailScreen';
 export * from './AIImageResultScreen';
 export * from './ExportPdfScreen';
+export * from './TrashScreen';

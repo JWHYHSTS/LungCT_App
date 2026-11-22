@@ -87,6 +87,7 @@ export interface ILocalStorageAdapter {
   completeCase(ownerId: string, caseId: string): Promise<CaseEntity>;
   trashCase(ownerId: string, caseId: string): Promise<boolean>;
   restoreCase(ownerId: string, caseId: string): Promise<boolean>;
+  hardDeleteCase(ownerId: string, caseId: string): Promise<boolean>;
 
   // === ẢNH CT & KẾT QUẢ AI ===
   getImagesByCaseId(ownerId: string, caseId: string): Promise<CTImageEntity[]>;

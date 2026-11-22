@@ -774,5 +774,80 @@ describe('Local Encrypted Storage Persistence & Security Tests', () => {
       expect(listAfterDelete).toHaveLength(1);
       expect(listAfterDelete[0].id).toBe('pdf-02');
     });
+
+    it('xóa vĩnh viễn ca bệnh (hardDeleteCase) dọn dẹp sạch sẽ hồ sơ, ảnh, kết quả AI và báo cáo PDF', async () => {
+      const p = await storage.createPatient(DOC_A, {
+        patientCode: 'BN-HARD-DEL',
+        fullName: 'Bệnh Nhân Xóa Vĩnh Viễn',
+        dateOfBirth: '10/10/1980',
+        sex: 'MALE',
+      });
+
+      const c = await storage.createCase(DOC_A, {
+        patientId: p.patientId,
+        scanDate: '2026-11-20',
+        clinicalNote: 'Ca bệnh kiểm thử xóa vĩnh viễn',
+      });
+
+      const img = await storage.saveCTImage(DOC_A, {
+        caseId: c.caseId,
+        ownerId: DOC_A,
+        imageVersion: 1,
+        orderIndex: 1,
+        source: 'LIBRARY',
+        mimeType: 'image/jpeg',
+        width: 512,
+        height: 512,
+        byteSize: 10240,
+        sha256: 'test_sha256',
+        localFileRef: 'file:///data/user/0/com.anonymous.mobile/files/dicom_cases/test.jpg',
+        state: 'ACTIVE',
+      });
+
+      await storage.savePredictionResult(DOC_A, {
+        imageId: img.imageId,
+        imageVersion: 1,
+        classificationStatus: 'PASS',
+        scores: [0.9, 0.05, 0.05],
+        label: 'BENIGN',
+        explanationStatus: 'UNAVAILABLE',
+        modelVersion: 'v1',
+        preprocessingVersion: 'v1',
+        executionSource: 'LOCAL',
+        mode: 'REAL',
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        durationMs: 120,
+        state: 'CURRENT',
+      });
+
+      await storage.saveExportedPdf(DOC_A, {
+        id: 'pdf-hard-del',
+        caseId: c.caseId,
+        ownerId: DOC_A,
+        fileName: 'BaoCao_Hard_Del.pdf',
+        fileUri: 'file:///data/user/0/com.anonymous.mobile/files/dicom_reports/test.pdf',
+        createdAt: '20/11/2026',
+        fileSize: '500 KB',
+        language: 'vi',
+        hasGradCam: false,
+      });
+
+      // Kiểm tra dữ liệu trước khi xóa
+      expect(await storage.getCaseById(DOC_A, c.caseId)).not.toBeNull();
+      expect(await storage.getImagesByCaseId(DOC_A, c.caseId)).toHaveLength(1);
+      expect(await storage.getExportedPdfsByCaseId(DOC_A, c.caseId)).toHaveLength(1);
+
+      // Thực thi hardDeleteCase
+      const deleted = await storage.hardDeleteCase(DOC_A, c.caseId);
+      expect(deleted).toBe(true);
+
+      // Kiểm tra dữ liệu sau khi xóa
+      expect(await storage.getCaseById(DOC_A, c.caseId)).toBeNull();
+      expect(await storage.getImagesByCaseId(DOC_A, c.caseId)).toHaveLength(0);
+      expect(await storage.getExportedPdfsByCaseId(DOC_A, c.caseId)).toHaveLength(0);
+      const allPreds = await storage.getAllPredictionsForOwner(DOC_A);
+      expect(allPreds.find((p) => p.imageId === img.imageId)).toBeUndefined();
+    });
   });
 });

@@ -645,6 +645,66 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
   }
 
   /**
+   * Xóa vĩnh viễn ca bệnh (Hard Delete):
+   * - Xóa ca bệnh khỏi bảng cases
+   * - Xóa các file ảnh CT vật lý và bản ghi tương ứng trong bảng images
+   * - Xóa các bản ghi suy luận AI trong bảng predictions
+   * - Xóa các file PDF vật lý và bản ghi tương ứng trong bảng reports
+   */
+  public async hardDeleteCase(ownerId: string, caseId: string): Promise<boolean> {
+    const keys = this.getKeys(ownerId);
+    const cases = await this.readEncryptedTable<CaseEntity>(ownerId, keys.cases);
+    const targetIndex = cases.findIndex((item) => item.caseId === caseId);
+    if (targetIndex === -1) return false;
+
+    // 1. Lấy danh sách ảnh CT của ca bệnh và xóa file vật lý
+    const images = await this.readEncryptedTable<CTImageEntity>(ownerId, keys.images);
+    const imagesToDelete = images.filter((img) => img.caseId === caseId);
+    const remainingImages = images.filter((img) => img.caseId !== caseId);
+    const deletedImageIds = new Set(imagesToDelete.map((img) => img.imageId));
+
+    for (const img of imagesToDelete) {
+      if (img.localFileRef) {
+        try {
+          await deletePhysicalFile(img.localFileRef);
+        } catch (err) {
+          console.warn(`[localStorageService] Lỗi xóa file ảnh ${img.localFileRef}:`, err);
+        }
+      }
+    }
+
+    // 2. Lấy danh sách kết quả AI của các ảnh bị xóa và loại bỏ
+    const preds = await this.readEncryptedTable<AIPredictionResultEntity>(ownerId, keys.predictions);
+    const remainingPreds = preds.filter((p) => !deletedImageIds.has(p.imageId));
+
+    // 3. Lấy danh sách báo cáo PDF đã xuất cho ca này và xóa file vật lý
+    const reports = await this.readEncryptedTable<ExportedPdfEntity>(ownerId, keys.reports);
+    const reportsToDelete = reports.filter((r) => r.caseId === caseId);
+    const remainingReports = reports.filter((r) => r.caseId !== caseId);
+
+    for (const r of reportsToDelete) {
+      if (r.fileUri) {
+        try {
+          await deletePhysicalFile(r.fileUri);
+        } catch (err) {
+          console.warn(`[localStorageService] Lỗi xóa file PDF ${r.fileUri}:`, err);
+        }
+      }
+    }
+
+    // 4. Xóa ca bệnh khỏi danh sách
+    cases.splice(targetIndex, 1);
+
+    // 5. Ghi lại các bảng đã cập nhật
+    await this.writeEncryptedTable(ownerId, keys.cases, cases);
+    await this.writeEncryptedTable(ownerId, keys.images, remainingImages);
+    await this.writeEncryptedTable(ownerId, keys.predictions, remainingPreds);
+    await this.writeEncryptedTable(ownerId, keys.reports, remainingReports);
+
+    return true;
+  }
+
+  /**
    * CHÍNH SÁCH 4A: Khôi phục ca bệnh từ Thùng rác về trạng thái hoạt động ban đầu
    */
   public async restoreCase(ownerId: string, caseId: string): Promise<boolean> {
@@ -808,6 +868,14 @@ export class EncryptedLocalStorageService implements ILocalStorageAdapter {
   ): Promise<void> {
     const keys = this.getKeys(ownerId);
     const all = await this.readEncryptedTable<ExportedPdfEntity>(ownerId, keys.reports);
+    const target = all.find((r) => r.id === pdfId);
+    if (target && target.fileUri) {
+      try {
+        await deletePhysicalFile(target.fileUri);
+      } catch (err) {
+        console.warn(`[localStorageService] Lỗi xóa file PDF ${target.fileUri}:`, err);
+      }
+    }
     const filtered = all.filter((r) => r.id !== pdfId);
     await this.writeEncryptedTable(ownerId, keys.reports, filtered);
   }

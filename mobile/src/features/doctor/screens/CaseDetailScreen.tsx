@@ -371,6 +371,22 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
           />
         )}
 
+        {/* Banner thông báo hồ sơ ca bệnh đã hoàn tất - Khóa theo BR-CASE-02 */}
+        {isCompleted && !isTrashed && (
+          <Banner
+            type="info"
+            title={t(
+              'doctor_detail.case_completed_read_only_banner_title',
+              'Hồ sơ ca bệnh đã hoàn tất',
+            )}
+            body={t(
+              'doctor_detail.case_completed_read_only_banner',
+              'Ca bệnh đã hoàn tất và được khóa theo quy tắc y tế BR-CASE-02 (Chế độ chỉ đọc). Không thể thêm, xóa ảnh lát cắt hoặc thay đổi nhận xét.',
+            )}
+            style={{ marginBottom: spacing.md }}
+          />
+        )}
+
         {/* Thẻ thông tin đầu ca */}
         <View
           style={[
@@ -518,39 +534,50 @@ export const CaseDetailScreen: React.FC<CaseDetailScreenProps> = ({
           placeholder={t('doctor_detail.case_notes_placeholder')}
           multiline
           numberOfLines={4}
-          editable={!isTrashed}
-          helper={t('doctor_detail.case_notes_helper')}
+          editable={!isCompleted && !isTrashed}
+          helper={
+            isCompleted
+              ? t(
+                  'doctor_detail.case_notes_locked_helper',
+                  'Hồ sơ đã hoàn tất — nhận xét được khóa cố định theo quy tắc BR-CASE-02.',
+                )
+              : t('doctor_detail.case_notes_helper')
+          }
           style={{ marginBottom: spacing.sm }}
         />
 
-        <Button
-          label={t('doctor_detail.case_save_notes_btn')}
-          variant="tertiary"
-          size="M"
-          disabled={isTrashed}
-          onPress={handleSaveNotes}
-          style={{ alignSelf: 'flex-start', marginBottom: spacing.lg }}
-        />
-
-        {/* Nút Hoàn tất ca bệnh */}
-        <View style={{ marginBottom: spacing.xl }}>
+        {!isCompleted && !isTrashed && (
           <Button
-            label={t('doctor_detail.case_complete_btn')}
-            variant="primary"
-            size="L"
-            disabled={!canComplete}
-            onPress={() => setShowCompleteConfirmModal(true)}
+            label={t('doctor_detail.case_save_notes_btn')}
+            variant="tertiary"
+            size="M"
+            disabled={isCompleted || isTrashed}
+            onPress={handleSaveNotes}
+            style={{ alignSelf: 'flex-start', marginBottom: spacing.lg }}
           />
-          {completeDisabledReason ? (
-            <AppText
-              variant="caption"
-              color={colors.text.secondary}
-              style={{ marginTop: spacing.xxs, textAlign: 'center' }}
-            >
-              {completeDisabledReason}
-            </AppText>
-          ) : null}
-        </View>
+        )}
+
+        {/* Nút Hoàn tất ca bệnh (chỉ hiển thị khi ca còn ở trạng thái Nháp) */}
+        {!isCompleted && !isTrashed && (
+          <View style={{ marginBottom: spacing.xl }}>
+            <Button
+              label={t('doctor_detail.case_complete_btn')}
+              variant="primary"
+              size="L"
+              disabled={!canComplete}
+              onPress={() => setShowCompleteConfirmModal(true)}
+            />
+            {completeDisabledReason ? (
+              <AppText
+                variant="caption"
+                color={colors.text.secondary}
+                style={{ marginTop: spacing.xxs, textAlign: 'center' }}
+              >
+                {completeDisabledReason}
+              </AppText>
+            ) : null}
+          </View>
+        )}
       </ScrollView>
 
       {/* BottomSheet nạp ảnh CT */}
