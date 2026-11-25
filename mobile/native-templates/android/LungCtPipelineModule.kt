@@ -40,7 +40,21 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
   private var ortEnv: OrtEnvironment? = null
   private var ortSession: OrtSession? = null
   private var tfliteInterpreter: Interpreter? = null
+  private var tailInterpreter: Interpreter? = null
+  private var w1Data: FloatArray? = null
+  private var w0Data: FloatArray? = null
   private var isInitialized = false
+
+  // Direct buffers cho mô hình đa đầu ra và Grad-CAM tail
+  private var outA0Buf: FloatBuffer? = null
+  private var outActivationsBuf: FloatBuffer? = null
+  private var outCnnTokBuf: FloatBuffer? = null
+  private var outVitTokBuf: FloatBuffer? = null
+  private var outScoresBuf: FloatBuffer? = null
+
+  private var tailVitBuf: FloatBuffer? = null
+  private var tailCnnBuf: FloatBuffer? = null
+  private var tailOutBuf: FloatBuffer? = null
 
   private var pickerPromise: Promise? = null
   private val PICK_IMAGE_REQUEST_CODE = 41285
@@ -163,9 +177,41 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
   }
 
   companion object {
-    const val CURRENT_MODEL_RUN_ID = "20261122T082142_409115Z"
+    const val CURRENT_MODEL_RUN_ID = "20261122T082142_409115Z_GRADCAM"
     const val EXPECTED_FUSION_SHA256 = "cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9"
-    const val EXPECTED_FUSION_BYTES = 110010252L
+    const val EXPECTED_FUSION_BYTES = 110005844L
+    const val EXPECTED_TAIL_BYTES = 9206972L
+    const val EXPECTED_WEIGHTS_BYTES = 4718592L
+
+    // Bảng tra cứu màu Jet 256 phần tử chuẩn xác 100% từ Matplotlib Jet Colormap (định dạng ARGB)
+    val JET_LUT = intArrayOf(
+      -16777089, -16777084, -16777080, -16777075, -16777071, -16777066, -16777062, -16777057, -16777053, -16777048,
+      -16777044, -16777039, -16777034, -16777030, -16777025, -16777021, -16777016, -16777012, -16777007, -16777003,
+      -16776998, -16776994, -16776989, -16776984, -16776980, -16776975, -16776971, -16776966, -16776962, -16776961,
+      -16776961, -16776961, -16776961, -16775937, -16774913, -16773889, -16772865, -16771841, -16770817, -16769793,
+      -16768769, -16767745, -16766721, -16765697, -16764673, -16763649, -16762625, -16761601, -16760577, -16759553,
+      -16758529, -16757505, -16756481, -16755457, -16754433, -16753409, -16752385, -16751361, -16750337, -16749313,
+      -16748289, -16747265, -16746241, -16745217, -16744193, -16743169, -16742145, -16741121, -16740097, -16739073,
+      -16738049, -16737025, -16736001, -16734977, -16733953, -16732929, -16731905, -16730881, -16729857, -16728833,
+      -16727809, -16726785, -16725761, -16724737, -16723713, -16722689, -16721665, -16720642, -16719622, -16718601,
+      -16586508, -16388879, -16191251, -15928086, -15730457, -15532828, -15335455, -15138851, -14876710, -14680105,
+      -14483500, -14286896, -14024755, -13828150, -13631545, -13434941, -13172800, -12976195, -12779590, -12582985,
+      -12386381, -12124240, -11927635, -11731030, -11534426, -11272285, -11075680, -10879075, -10682470, -10485866,
+      -10223725, -10027120, -9830515, -9633911, -9371770, -9175165, -8978560, -8781955, -8585351, -8323210,
+      -8126605, -7930000, -7733396, -7471255, -7274650, -7078045, -6881441, -6619300, -6422695, -6226090,
+      -6029485, -5832881, -5570740, -5374135, -5177530, -4980926, -4718785, -4522180, -4325575, -4128970,
+      -3932366, -3670225, -3473620, -3277015, -3080411, -2818270, -2621665, -2425060, -2228456, -2031851,
+      -1769710, -1573105, -1376500, -1179896, -918523, -722942, -527360, -331776, -70400, -5888,
+      -6912, -7680, -8704, -9728, -10496, -11520, -12544, -13568, -14336, -15360,
+      -16384, -17152, -18176, -19200, -20224, -20992, -22016, -23040, -23808, -24832,
+      -25856, -26624, -27648, -28672, -29696, -30464, -31488, -32512, -33280, -34304,
+      -35328, -36096, -37120, -38144, -39168, -39936, -40960, -41984, -42752, -43776,
+      -44800, -45824, -46592, -47616, -48640, -49408, -50432, -51456, -52224, -53248,
+      -54272, -55296, -56064, -57088, -58112, -58880, -59904, -126464, -389376, -718080,
+      -981248, -1309952, -1572864, -1900544, -2228224, -2490368, -2818048, -3080192, -3407872, -3670016,
+      -3997696, -4259840, -4587520, -4849664, -5177344, -5505024, -5767168, -6094848, -6356992, -6684672,
+      -6946816, -7274496, -7536640, -7864320, -8126464, -8454144
+    )
 
     /**
      * Thuật toán lấy mẫu Nearest Neighbour Resampling tổng quát khớp 100% với Pillow:
@@ -193,7 +239,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
 
   @Synchronized
   private fun ensureInitialized() {
-    if (isInitialized && ortSession != null && tfliteInterpreter != null) return
+    if (isInitialized && ortSession != null && tfliteInterpreter != null && tailInterpreter != null && w1Data != null && w0Data != null) return
 
     val modelsDir = File(reactContext.filesDir, "models")
     if (!modelsDir.exists()) modelsDir.mkdirs()
@@ -201,6 +247,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     val vitOnnxFile = File(modelsDir, "vit_cls.onnx")
     val vitDataFile = File(modelsDir, "vit_cls.onnx.data")
     val fusionFile = File(modelsDir, "fusion_model.tflite")
+    val tailFile = File(modelsDir, "gradcam_tail.tflite")
+    val weightsFile = File(modelsDir, "gradcam_weights.bin")
     val versionMarkerFile = File(modelsDir, "model_version.txt")
 
     // Kiểm tra tính đồng bộ của bộ mô hình (Cache Invalidation theo run_id & byte size)
@@ -208,20 +256,33 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       try { versionMarkerFile.readText().trim() } catch (e: Exception) { "" }
     } else ""
 
-    val needsFusionUpdate = !fusionFile.exists() ||
-                            fusionFile.length() != EXPECTED_FUSION_BYTES ||
-                            cachedVersion != CURRENT_MODEL_RUN_ID
+    val needsUpdate = !fusionFile.exists() ||
+                      fusionFile.length() != EXPECTED_FUSION_BYTES ||
+                      !tailFile.exists() ||
+                      tailFile.length() != EXPECTED_TAIL_BYTES ||
+                      !weightsFile.exists() ||
+                      weightsFile.length() != EXPECTED_WEIGHTS_BYTES ||
+                      cachedVersion != CURRENT_MODEL_RUN_ID
 
-    if (needsFusionUpdate) {
+    if (needsUpdate) {
       android.util.Log.i("LungCtPipeline", "[MODEL_CACHE] Phát hiện phiên bản mô hình mới hoặc cache cũ ('$cachedVersion' != '$CURRENT_MODEL_RUN_ID'). Đang đồng bộ từ APK assets...")
       try {
         reactContext.assets.open("models/fusion_model.tflite").use { input ->
           FileOutputStream(fusionFile).use { output -> input.copyTo(output) }
         }
+        reactContext.assets.open("models/gradcam_tail.tflite").use { input ->
+          FileOutputStream(tailFile).use { output -> input.copyTo(output) }
+        }
+        reactContext.assets.open("models/gradcam_weights.bin").use { input ->
+          FileOutputStream(weightsFile).use { output -> input.copyTo(output) }
+        }
         versionMarkerFile.writeText(CURRENT_MODEL_RUN_ID)
-        android.util.Log.i("LungCtPipeline", "[MODEL_CACHE] Đã cập nhật fusion_model.tflite thành công (${fusionFile.length()} bytes, run_id=$CURRENT_MODEL_RUN_ID)")
+        android.util.Log.i(
+          "LungCtPipeline",
+          "[MODEL_CACHE] Đã cập nhật toàn bộ bundle mô hình on-device thành công: fusion=${fusionFile.length()}B, tail=${tailFile.length()}B, weights=${weightsFile.length()}B, run_id=$CURRENT_MODEL_RUN_ID"
+        )
       } catch (e: Exception) {
-        android.util.Log.e("LungCtPipeline", "[MODEL_CACHE] Lỗi cập nhật fusion_model.tflite từ assets: ${e.message}", e)
+        android.util.Log.e("LungCtPipeline", "[MODEL_CACHE] Lỗi cập nhật bundle mô hình từ assets: ${e.message}", e)
       }
     }
 
@@ -246,9 +307,17 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     }
 
     // Đóng interpreter cũ nếu nạp lại model mới
-    if (tfliteInterpreter != null && needsFusionUpdate) {
-      try { tfliteInterpreter?.close() } catch (e: Exception) {}
-      tfliteInterpreter = null
+    if (needsUpdate) {
+      if (tfliteInterpreter != null) {
+        try { tfliteInterpreter?.close() } catch (e: Exception) {}
+        tfliteInterpreter = null
+      }
+      if (tailInterpreter != null) {
+        try { tailInterpreter?.close() } catch (e: Exception) {}
+        tailInterpreter = null
+      }
+      w1Data = null
+      w0Data = null
     }
 
     // Khởi tạo OrtSession
@@ -260,7 +329,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       ortSession = ortEnv!!.createSession(vitOnnxFile.absolutePath, sessionOptions)
     }
 
-    // Khởi tạo TFLite Interpreter từ memory-mapped ByteBuffer
+    // Khởi tạo Fusion TFLite Interpreter từ memory-mapped ByteBuffer
     if (tfliteInterpreter == null) {
       FileInputStream(fusionFile).use { fileInputStream ->
         val fileChannel = fileInputStream.channel
@@ -274,9 +343,56 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       }
     }
 
+    // Khởi tạo Grad-CAM Tail Interpreter từ memory-mapped ByteBuffer với batch=256
+    if (tailInterpreter == null) {
+      FileInputStream(tailFile).use { fileInputStream ->
+        val fileChannel = fileInputStream.channel
+        val tailModelBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0L, fileChannel.size())
+        val tailOptions = Interpreter.Options().apply {
+          setNumThreads(4)
+        }
+        val interp = Interpreter(tailModelBuffer, tailOptions)
+        interp.resizeInput(0, intArrayOf(256, 256))
+        interp.resizeInput(1, intArrayOf(256, 256))
+        interp.allocateTensors()
+        tailInterpreter = interp
+      }
+    }
+
+    // Nạp ma trận trọng số W1 (512x256) và W0 (2048x512) từ gradcam_weights.bin
+    if (w1Data == null || w0Data == null) {
+      FileInputStream(weightsFile).use { fileInputStream ->
+        val fileChannel = fileInputStream.channel
+        val byteBuf = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0L, fileChannel.size())
+        byteBuf.order(ByteOrder.LITTLE_ENDIAN)
+        val floatBuf = byteBuf.asFloatBuffer()
+
+        val w1 = FloatArray(512 * 256)
+        floatBuf.get(w1)
+        w1Data = w1
+
+        val w0 = FloatArray(2048 * 512)
+        floatBuf.get(w0)
+        w0Data = w0
+      }
+    }
+
+    // Cấp phát các Direct FloatBuffers dùng chung cho suy luận đa đầu ra và Grad-CAM
+    if (outA0Buf == null) {
+      outA0Buf = ByteBuffer.allocateDirect(1 * 512 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+      outActivationsBuf = ByteBuffer.allocateDirect(1 * 16 * 16 * 2048 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+      outCnnTokBuf = ByteBuffer.allocateDirect(1 * 256 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+      outVitTokBuf = ByteBuffer.allocateDirect(1 * 256 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+      outScoresBuf = ByteBuffer.allocateDirect(1 * 3 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+
+      tailVitBuf = ByteBuffer.allocateDirect(256 * 256 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+      tailCnnBuf = ByteBuffer.allocateDirect(256 * 256 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+      tailOutBuf = ByteBuffer.allocateDirect(256 * 3 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+    }
+
     android.util.Log.i(
       "LungCtPipeline",
-      "[MODEL_LOADED] Sẵn sàng suy luận on-device: run_id=$CURRENT_MODEL_RUN_ID, fusion_size=${fusionFile.length()} bytes, vit_size=${vitOnnxFile.length()} bytes"
+      "[MODEL_LOADED] Sẵn sàng suy luận on-device & Grad-CAM: run_id=$CURRENT_MODEL_RUN_ID, fusion_size=${fusionFile.length()} bytes, tail_size=${tailFile.length()} bytes, weights_size=${weightsFile.length()} bytes"
     )
 
     isInitialized = true
@@ -535,26 +651,35 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       val outputValue = vitResult.get(0).value as Array<FloatArray>
       val clsToken = outputValue[0] // 768 floats (1D FloatArray)
 
-      // 5. Chạy Fusion TFLite với inputs: [clsToken (1, 768), cnnBuffer (1, 512, 512, 3)]
-      val fusionStart = System.currentTimeMillis()
-      
-      // Thứ tự inputs của Fusion TFLite:
+      // 5. Chạy Fusion TFLite đa đầu ra:
+      // Inputs:
       // Input 0: serving_default_vit_features_input:0 [1, 768] Float32
       // Input 1: serving_default_image_input:0 [1, 512, 512, 3] Float32
       val clsInput = Array(1) { clsToken }
       val inputs = arrayOf<Any>(clsInput, cnnBuffer)
-      
-      val outputsMap = HashMap<Int, Any>()
-      val outputScores = Array(1) { FloatArray(3) }
-      outputsMap[0] = outputScores
 
+      val outA0 = outA0Buf!!.apply { rewind() }
+      val outActivations = outActivationsBuf!!.apply { rewind() }
+      val outCnnTok = outCnnTokBuf!!.apply { rewind() }
+      val outVitTok = outVitTokBuf!!.apply { rewind() }
+      val outScores = outScoresBuf!!.apply { rewind() }
+
+      val outputsMap = HashMap<Int, Any>()
+      outputsMap[0] = outA0
+      outputsMap[1] = outActivations
+      outputsMap[2] = outCnnTok
+      outputsMap[3] = outVitTok
+      outputsMap[4] = outScores
+
+      val fusionStart = System.currentTimeMillis()
       tfliteInterpreter!!.runForMultipleInputsOutputs(inputs, outputsMap)
       val fusionDuration = System.currentTimeMillis() - fusionStart
 
-      val scores = outputScores[0]
-      val benignScore = scores[0].toDouble()
-      val malignantScore = scores[1].toDouble()
-      val normalScore = scores[2].toDouble()
+      outScores.rewind()
+      val benignScore = outScores.get(0).toDouble()
+      val malignantScore = outScores.get(1).toDouble()
+      val normalScore = outScores.get(2).toDouble()
+      val scores = doubleArrayOf(benignScore, malignantScore, normalScore)
 
       // Tìm lớp dự đoán cao nhất
       var maxIdx = 0
@@ -570,13 +695,207 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         1 -> "Malignant"
         else -> "Normal"
       }
+
+      // 6. Tính toán giải thích Grad-CAM On-Device thuần túy (conv5_block3_out)
+      val gradcamStart = System.currentTimeMillis()
+      var gradcamAvailable = false
+      var gradcamStatus = "UNAVAILABLE"
+      var gradcamUri: String? = null
+      var gradcamNotice = ""
+
+      try {
+        val w1 = w1Data
+        val w0 = w0Data
+        val tailInterp = tailInterpreter
+        val vBatch = tailVitBuf
+        val cBatch = tailCnnBuf
+        val tOut = tailOutBuf
+
+        if (w1 != null && w0 != null && tailInterp != null && vBatch != null && cBatch != null && tOut != null) {
+          val vitTok = FloatArray(256)
+          outVitTok.rewind()
+          outVitTok.get(vitTok)
+
+          val cnnTok = FloatArray(256)
+          outCnnTok.rewind()
+          outCnnTok.get(cnnTok)
+
+          val a0 = FloatArray(512)
+          outA0.rewind()
+          outA0.get(a0)
+
+          val eps = 1e-3f
+
+          // Chuẩn bị vBatch (256 hàng sao chép vitTok)
+          vBatch.rewind()
+          for (r in 0 until 256) {
+            vBatch.put(vitTok)
+          }
+          vBatch.rewind()
+
+          val tailInputs = arrayOf<Any>(vBatch, cBatch)
+          val tailOutputsMap = HashMap<Int, Any>()
+          tailOutputsMap[0] = tOut
+
+          // 6.1. Positive perturbation (cnnTok[c] + eps)
+          cBatch.rewind()
+          for (r in 0 until 256) {
+            for (c in 0 until 256) {
+              val base = cnnTok[c]
+              cBatch.put(if (c == r) base + eps else base)
+            }
+          }
+          cBatch.rewind()
+          tOut.rewind()
+
+          tailInterp.runForMultipleInputsOutputs(tailInputs, tailOutputsMap)
+
+          val sPos = FloatArray(256)
+          tOut.rewind()
+          for (r in 0 until 256) {
+            sPos[r] = tOut.get(r * 3 + maxIdx)
+          }
+
+          // 6.2. Negative perturbation (cnnTok[c] - eps)
+          cBatch.rewind()
+          for (r in 0 until 256) {
+            for (c in 0 until 256) {
+              val base = cnnTok[c]
+              cBatch.put(if (c == r) base - eps else base)
+            }
+          }
+          cBatch.rewind()
+          vBatch.rewind()
+          tOut.rewind()
+
+          tailInterp.runForMultipleInputsOutputs(tailInputs, tailOutputsMap)
+
+          val sNeg = FloatArray(256)
+          tOut.rewind()
+          for (r in 0 until 256) {
+            sNeg[r] = tOut.get(r * 3 + maxIdx)
+          }
+
+          // 6.3. Đạo hàm sai phân trung tâm v_grad (d score_c / d cnn_tok)
+          val vGrad = FloatArray(256)
+          for (j in 0 until 256) {
+            vGrad[j] = (sPos[j] - sNeg[j]) / (2.0f * eps)
+          }
+
+          // 6.4. Lan truyền ngược qua W1 (512x256) với đạo hàm ReLU cnn_tok > 0
+          val d1 = FloatArray(512)
+          for (i in 0 until 512) {
+            var sum = 0.0f
+            val rowOff = i * 256
+            for (j in 0 until 256) {
+              if (cnnTok[j] > 0.0f) {
+                sum += vGrad[j] * w1[rowOff + j]
+              }
+            }
+            d1[i] = sum
+          }
+
+          // 6.5. Lan truyền ngược qua W0 (2048x512) với đạo hàm ReLU a0 > 0
+          val w = FloatArray(2048)
+          for (k in 0 until 2048) {
+            var sum = 0.0f
+            val rowOff = k * 512
+            for (i in 0 until 512) {
+              if (a0[i] > 0.0f) {
+                sum += d1[i] * w0[rowOff + i]
+              }
+            }
+            w[k] = sum
+          }
+
+          // 6.6. Trọng số kết hợp tuyến tính với Activations conv5_block3_out (16x16x2048)
+          val cam16 = FloatArray(16 * 16)
+          var maxCam = 0.0f
+          outActivations.rewind()
+          for (pos in 0 until 256) {
+            val cellOff = pos * 2048
+            var sum = 0.0f
+            for (k in 0 until 2048) {
+              sum += w[k] * outActivations.get(cellOff + k)
+            }
+            val relu = if (sum > 0.0f) sum else 0.0f
+            cam16[pos] = relu
+            if (relu > maxCam) maxCam = relu
+          }
+
+          // 6.7. Xử lý bão hòa Softmax (ZERO_CAM)
+          if (maxCam <= 1e-12f) {
+            gradcamAvailable = false
+            gradcamStatus = "ZERO_CAM"
+            gradcamNotice = "Bản đồ nhiệt bằng 0 do gradient bão hòa (độ tin cậy tiệm cận tuyệt đối)"
+          } else {
+            // 6.8. Bilinear Interpolation lên kích thước (origW, origH) và phủ bảng màu Jet chuẩn
+            val targetW = origW
+            val targetH = origH
+            val camPixels = IntArray(targetW * targetH)
+
+            val scaleX = 15.0f / (targetW - 1).coerceAtLeast(1)
+            val scaleY = 15.0f / (targetH - 1).coerceAtLeast(1)
+
+            for (y in 0 until targetH) {
+              val gy = y * scaleY
+              val y0 = gy.toInt().coerceIn(0, 15)
+              val y1 = (y0 + 1).coerceIn(0, 15)
+              val dy = gy - y0
+              val rowOffset = y * targetW
+
+              for (x in 0 until targetW) {
+                val gx = x * scaleX
+                val x0 = gx.toInt().coerceIn(0, 15)
+                val x1 = (x0 + 1).coerceIn(0, 15)
+                val dx = gx - x0
+
+                val c00 = cam16[y0 * 16 + x0]
+                val c01 = cam16[y0 * 16 + x1]
+                val c10 = cam16[y1 * 16 + x0]
+                val c11 = cam16[y1 * 16 + x1]
+
+                val interp = (1.0f - dx) * (1.0f - dy) * c00 +
+                             dx * (1.0f - dy) * c01 +
+                             (1.0f - dx) * dy * c10 +
+                             dx * dy * c11
+
+                val norm = (interp / maxCam).coerceIn(0.0f, 1.0f)
+                val lutIdx = (norm * 255.0f).toInt().coerceIn(0, 255)
+                camPixels[rowOffset + x] = JET_LUT[lutIdx]
+              }
+            }
+
+            // Lưu Bitmap bản đồ nhiệt vào thư mục cache
+            val camDir = File(reactContext.cacheDir, "gradcam_cache").apply { if (!exists()) mkdirs() }
+            val camFile = File(camDir, "cam_${System.currentTimeMillis()}.png")
+            val camBitmap = Bitmap.createBitmap(camPixels, targetW, targetH, Bitmap.Config.ARGB_8888)
+            FileOutputStream(camFile).use { fos ->
+              camBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+            }
+            camBitmap.recycle()
+
+            gradcamAvailable = true
+            gradcamStatus = "PASS"
+            gradcamUri = Uri.fromFile(camFile).toString()
+            gradcamNotice = "Grad-CAM On-Device Native (conv5_block3_out, Jet Colormap)"
+          }
+        }
+      } catch (camErr: Throwable) {
+        android.util.Log.e("LungCtPipeline", "Lỗi tính Grad-CAM", camErr)
+        gradcamAvailable = false
+        gradcamStatus = "FAIL"
+        gradcamNotice = "Lỗi khi sinh bản đồ nhiệt Grad-CAM: ${camErr.message}"
+      }
+      val gradcamDuration = System.currentTimeMillis() - gradcamStart
+
       val totalDuration = System.currentTimeMillis() - totalStart
 
       android.util.Log.i(
         "LungCtPipeline",
         "[INFERENCE_RUN] model=$CURRENT_MODEL_RUN_ID, source=$sourceDesc, origSize=${origW}x${origH}, pred=$predictedLabel, " +
         "Benign=${"%.6f".format(benignScore)}, Malignant=${"%.6f".format(malignantScore)}, Normal=${"%.6f".format(normalScore)}, " +
-        "vitLatency=${vitDuration}ms, fusionLatency=${fusionDuration}ms, total=${totalDuration}ms"
+        "vitLatency=${vitDuration}ms, fusionLatency=${fusionDuration}ms, gradcamLatency=${gradcamDuration}ms, total=${totalDuration}ms, gradcamStatus=$gradcamStatus"
       )
 
       // Trả kết quả WritableMap về React Native
@@ -596,13 +915,18 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
           putDouble("prepCnnMs", prepCnnDuration.toDouble())
           putDouble("vitInferenceMs", vitDuration.toDouble())
           putDouble("fusionInferenceMs", fusionDuration.toDouble())
-          putDouble("totalInferenceMs", (vitDuration + fusionDuration).toDouble())
+          putDouble("gradcamMs", gradcamDuration.toDouble())
+          putDouble("totalInferenceMs", (vitDuration + fusionDuration + gradcamDuration).toDouble())
           putDouble("totalOverallMs", totalDuration.toDouble())
         }
         putMap("latency", latencyMap)
 
-        putBoolean("gradcamAvailable", false)
-        putString("gradcamNotice", "Grad-CAM chưa được kiểm chứng trên mobile (MSG-11)")
+        putBoolean("gradcamAvailable", gradcamAvailable)
+        putString("gradcamStatus", gradcamStatus)
+        if (gradcamUri != null) {
+          putString("gradcamUri", gradcamUri)
+        }
+        putString("gradcamNotice", gradcamNotice)
         putBoolean("isMock", false)
         putString("verifiedSource", "on_device_fp32")
         putString("modelVersion", CURRENT_MODEL_RUN_ID)
