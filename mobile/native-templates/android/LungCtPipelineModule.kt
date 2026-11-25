@@ -768,7 +768,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         }
       }
       val contourFile = File(camDir, "lung_contour_${timestamp}.png")
-      val contourBmp = Bitmap.createBitmap(contourPixels, w, h, Bitmap.Config.ARGB_8888)
+      val contourBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+      contourBmp.setPixels(contourPixels, 0, w, 0, 0, w, h)
       FileOutputStream(contourFile).use { fos ->
         contourBmp.compress(Bitmap.CompressFormat.PNG, 100, fos)
       }
@@ -814,7 +815,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         }
       }
 
-      val suspBmp = Bitmap.createBitmap(suspPixels, w, h, Bitmap.Config.ARGB_8888)
+      val suspBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+      suspBmp.setPixels(suspPixels, 0, w, 0, 0, w, h)
       val suspCanvas = Canvas(suspBmp)
       val boxPaint = Paint().apply {
         style = Paint.Style.STROKE
@@ -847,7 +849,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     for (i in 0 until n) {
       p1Pixels[i] = if (lungContourDilated[i]) 0xFF00C800.toInt() else origPixels[i]
     }
-    val p1Bmp = Bitmap.createBitmap(p1Pixels, w, h, Bitmap.Config.ARGB_8888)
+    val p1Bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    p1Bmp.setPixels(p1Pixels, 0, w, 0, 0, w, h)
 
     val p2Pixels = IntArray(n)
     for (i in 0 until n) {
@@ -868,7 +871,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       val b = (0.6f * oB + 0.4f * jB).toInt().coerceIn(0, 255)
       p2Pixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
     }
-    val p2Bmp = Bitmap.createBitmap(p2Pixels, w, h, Bitmap.Config.ARGB_8888)
+    val p2Bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    p2Bmp.setPixels(p2Pixels, 0, w, 0, 0, w, h)
 
     val p3Pixels = IntArray(n)
     for (i in 0 until n) {
@@ -887,7 +891,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         p3Pixels[i] = origPixels[i]
       }
     }
-    val p3Bmp = Bitmap.createBitmap(p3Pixels, w, h, Bitmap.Config.ARGB_8888)
+    val p3Bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    p3Bmp.setPixels(p3Pixels, 0, w, 0, 0, w, h)
     val p3Canvas = Canvas(p3Bmp)
     if (vungList.isNotEmpty()) {
       val boxPaint = Paint().apply {
