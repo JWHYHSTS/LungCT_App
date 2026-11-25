@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import {
@@ -570,9 +570,6 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     ...(currentSuspiciousOverlayUri || currentSuspiciousCount > 0
       ? [{ key: 'boxes', label: 'Vùng nghi ngờ' }]
       : []),
-    ...(currentTriPanelUri
-      ? [{ key: 'tripanel', label: '3 Khung Colab' }]
-      : []),
   ];
 
   return (
@@ -639,61 +636,33 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         </View>
 
         {/* Khung hiển thị ảnh cắt lớp CT */}
-        {viewMode === 'tripanel' && currentTriPanelUri ? (
-          <View style={[styles.canvasWrapper, { padding: 0, overflow: 'hidden' }]}>
-            <View style={{ backgroundColor: '#000', borderRadius: radius.md, overflow: 'hidden', width: '100%', alignItems: 'center' }}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={true}
-                contentContainerStyle={{ alignItems: 'center' }}
-              >
-                <Image
-                  source={{ uri: currentTriPanelUri }}
-                  style={{ width: 680, height: 230 }}
-                  resizeMode="contain"
-                />
-              </ScrollView>
-              <View style={{ width: '100%', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: 'rgba(0,0,0,0.75)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <AppText variant="caption" color="#fff" style={{ fontWeight: '600' }}>
-                  [Gốc + Viền phổi] | [Grad-CAM thô] | [Vùng sau lọc]
-                </AppText>
-                {currentLungHotRatio != null && (
-                  <AppText variant="caption" color={SUSPICIOUS_COLOR_HOT_PERCENT} style={{ fontWeight: 'bold' }}>
-                    {`Vùng nóng phổi: ${(currentLungHotRatio * 100).toFixed(0)}%`}
-                  </AppText>
-                )}
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.canvasWrapper}>
-            <CTImageView
-              key={`${selectedImageUri || activeImage.uri || activeImage.id}_${currentGradcamUri || ''}_${viewMode}`}
-              imageSource={
-                selectedImageUri
-                  ? { uri: selectedImageUri }
-                  : activeImage.uri
-                    ? { uri: activeImage.uri }
+        <View style={styles.canvasWrapper}>
+          <CTImageView
+            key={`${selectedImageUri || activeImage.uri || activeImage.id}_${currentGradcamUri || ''}_${viewMode}`}
+            imageSource={
+              selectedImageUri
+                ? { uri: selectedImageUri }
+                : activeImage.uri
+                  ? { uri: activeImage.uri }
+                  : undefined
+            }
+            heatmapSource={currentGradcamUri ? { uri: currentGradcamUri } : undefined}
+            showHeatmap={showHeatmapLayer}
+            heatmapOpacity={camOpacity / 100}
+            secondaryOverlaySource={viewMode === 'boxes' && currentLungMaskUri ? { uri: currentLungMaskUri } : undefined}
+            overlaySource={viewMode === 'boxes' && currentSuspiciousOverlayUri ? { uri: currentSuspiciousOverlayUri } : undefined}
+            size={340}
+            watermarkText={
+              onDeviceResult
+                ? t('doctor_detail.ai_watermark_real', 'ON-DEVICE AI THỰC')
+                : selectedImageUri || activeImage.uri
+                  ? t('doctor_detail.ai_watermark_device_file', 'ẢNH TỪ THIẾT BỊ')
+                  : activeImage.mockWatermark
+                    ? t('doctor_detail.ai_watermark_mock', 'ẢNH GIẢ LẬP')
                     : undefined
-              }
-              heatmapSource={currentGradcamUri ? { uri: currentGradcamUri } : undefined}
-              showHeatmap={showHeatmapLayer}
-              heatmapOpacity={camOpacity / 100}
-              secondaryOverlaySource={viewMode === 'boxes' && currentLungMaskUri ? { uri: currentLungMaskUri } : undefined}
-              overlaySource={viewMode === 'boxes' && currentSuspiciousOverlayUri ? { uri: currentSuspiciousOverlayUri } : undefined}
-              size={340}
-              watermarkText={
-                onDeviceResult
-                  ? t('doctor_detail.ai_watermark_real', 'ON-DEVICE AI THỰC')
-                  : selectedImageUri || activeImage.uri
-                    ? t('doctor_detail.ai_watermark_device_file', 'ẢNH TỪ THIẾT BỊ')
-                    : activeImage.mockWatermark
-                      ? t('doctor_detail.ai_watermark_mock', 'ẢNH GIẢ LẬP')
-                      : undefined
-              }
-            />
-          </View>
-        )}
+            }
+          />
+        </View>
 
         {/* Cảnh báo trạng thái FAIL hoặc ZERO_CAM hoặc Chưa phân tích hoặc Thiếu CAM */}
         {isFail && (
@@ -767,8 +736,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           </View>
         )}
 
-        {/* Chuyển đổi Ảnh gốc / Grad-CAM / Vùng nghi ngờ / 3 Khung Colab */}
-        {!isFail && (hasCam || currentTriPanelUri || currentSuspiciousCount > 0) && (
+        {/* Chuyển đổi Ảnh gốc / Grad-CAM / Vùng nghi ngờ */}
+        {!isFail && (hasCam || currentSuspiciousCount > 0) && (
           <View style={{ marginVertical: spacing.sm }}>
             <Segmented
               items={segmentedItems}

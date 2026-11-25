@@ -716,9 +716,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     return Pair(true, "Vẽ vùng nghi ngờ trong phổi.")
   }
 
-  private fun renderOverlaysAndTriPanel(
-    origPixels: IntArray,
-    camNorm: FloatArray,
+  private fun renderOverlays(
     lungMask: BooleanArray?,
     maskVung: BooleanArray,
     vungList: List<SuspiciousRegionData>,
@@ -727,7 +725,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     h: Int,
     camDir: File,
     timestamp: Long
-  ): Triple<String?, String?, String?> {
+  ): Pair<String?, String?> {
     val n = w * h
 
     val quad = when (predictedLabel) {
@@ -741,7 +739,6 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     val classB = quad.b
 
     var lungContourUri: String? = null
-    val lungContourDilated = BooleanArray(n)
     if (lungMask != null) {
       val lungEdge = BooleanArray(n)
       for (y in 0 until h) {
@@ -758,12 +755,11 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       }
       val elip3 = getEllipseOffsets(3)
       val dilated = binaryDilate(lungEdge, w, h, elip3)
-      System.arraycopy(dilated, 0, lungContourDilated, 0, n)
 
       val contourPixels = IntArray(n)
       val greenColor = 0xFF00C800.toInt()
       for (i in 0 until n) {
-        if (lungContourDilated[i]) {
+        if (dilated[i]) {
           contourPixels[i] = greenColor
         }
       }
@@ -778,7 +774,6 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     }
 
     var suspiciousOverlayUri: String? = null
-    val vungContourDilated = BooleanArray(n)
     var hasSuspiciousPixels = false
     for (i in 0 until n) {
       if (maskVung[i]) {
@@ -803,12 +798,11 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       }
       val elip3 = getEllipseOffsets(3)
       val dilated = binaryDilate(vungEdge, w, h, elip3)
-      System.arraycopy(dilated, 0, vungContourDilated, 0, n)
 
       val suspPixels = IntArray(n)
       val tintColor = Color.argb(89, classR, classG, classB)
       for (i in 0 until n) {
-        if (vungContourDilated[i]) {
+        if (dilated[i]) {
           suspPixels[i] = classColor
         } else if (maskVung[i]) {
           suspPixels[i] = tintColor
@@ -845,95 +839,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       suspiciousOverlayUri = Uri.fromFile(suspFile).toString()
     }
 
-    val p1Pixels = IntArray(n)
-    for (i in 0 until n) {
-      p1Pixels[i] = if (lungContourDilated[i]) 0xFF00C800.toInt() else origPixels[i]
-    }
-    val p1Bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-    p1Bmp.setPixels(p1Pixels, 0, w, 0, 0, w, h)
-
-    val p2Pixels = IntArray(n)
-    for (i in 0 until n) {
-      val orig = origPixels[i]
-      val oR = (orig shr 16) and 0xFF
-      val oG = (orig shr 8) and 0xFF
-      val oB = orig and 0xFF
-
-      val norm = camNorm[i].coerceIn(0.0f, 1.0f)
-      val lutIdx = (norm * 255.0f).toInt().coerceIn(0, 255)
-      val jet = JET_LUT[lutIdx]
-      val jR = (jet shr 16) and 0xFF
-      val jG = (jet shr 8) and 0xFF
-      val jB = jet and 0xFF
-
-      val r = (0.6f * oR + 0.4f * jR).toInt().coerceIn(0, 255)
-      val g = (0.6f * oG + 0.4f * jG).toInt().coerceIn(0, 255)
-      val b = (0.6f * oB + 0.4f * jB).toInt().coerceIn(0, 255)
-      p2Pixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
-    }
-    val p2Bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-    p2Bmp.setPixels(p2Pixels, 0, w, 0, 0, w, h)
-
-    val p3Pixels = IntArray(n)
-    for (i in 0 until n) {
-      if (vungContourDilated[i]) {
-        p3Pixels[i] = classColor
-      } else if (maskVung[i]) {
-        val orig = origPixels[i]
-        val oR = (orig shr 16) and 0xFF
-        val oG = (orig shr 8) and 0xFF
-        val oB = orig and 0xFF
-        val r = (0.35f * classR + 0.65f * oR).toInt().coerceIn(0, 255)
-        val g = (0.35f * classG + 0.65f * oG).toInt().coerceIn(0, 255)
-        val b = (0.35f * classB + 0.65f * oB).toInt().coerceIn(0, 255)
-        p3Pixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
-      } else {
-        p3Pixels[i] = origPixels[i]
-      }
-    }
-    val p3Bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-    p3Bmp.setPixels(p3Pixels, 0, w, 0, 0, w, h)
-    val p3Canvas = Canvas(p3Bmp)
-    if (vungList.isNotEmpty()) {
-      val boxPaint = Paint().apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 2.0f
-        color = classColor
-        isAntiAlias = true
-      }
-      val textPaint = Paint().apply {
-        color = classColor
-        textSize = 18.0f
-        isFakeBoldText = true
-        isAntiAlias = true
-      }
-      for (v in vungList) {
-        p3Canvas.drawRect(v.x.toFloat(), v.y.toFloat(), (v.x + v.w).toFloat(), (v.y + v.h).toFloat(), boxPaint)
-        val textY = maxOf(18.0f, v.y.toFloat() - 4.0f)
-        p3Canvas.drawText("${v.id}", v.x.toFloat() + 2.0f, textY, textPaint)
-      }
-    }
-
-    val triWidth = 3 * w + 12
-    val triBmp = Bitmap.createBitmap(triWidth, h, Bitmap.Config.ARGB_8888)
-    val triCanvas = Canvas(triBmp)
-    triCanvas.drawColor(Color.WHITE)
-    triCanvas.drawBitmap(p1Bmp, 0f, 0f, null)
-    triCanvas.drawBitmap(p2Bmp, (w + 6).toFloat(), 0f, null)
-    triCanvas.drawBitmap(p3Bmp, (2 * w + 12).toFloat(), 0f, null)
-
-    p1Bmp.recycle()
-    p2Bmp.recycle()
-    p3Bmp.recycle()
-
-    val triFile = File(camDir, "tri_panel_${timestamp}.png")
-    FileOutputStream(triFile).use { fos ->
-      triBmp.compress(Bitmap.CompressFormat.PNG, 100, fos)
-    }
-    triBmp.recycle()
-    val triPanelUri = Uri.fromFile(triFile).toString()
-
-    return Triple(lungContourUri, suspiciousOverlayUri, triPanelUri)
+    return Pair(lungContourUri, suspiciousOverlayUri)
   }
 
   @Synchronized
@@ -1637,10 +1543,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
             }
           }
 
-          // 6.9. Render ảnh viền phổi, ảnh lớp phủ vùng nghi ngờ, và ảnh 3 khung Colab
-          val (contourUri, overlayUri, panelUri) = renderOverlaysAndTriPanel(
-            origPixels,
-            camNorm,
+          // 6.9. Render ảnh viền phổi và ảnh lớp phủ vùng nghi ngờ
+          val (contourUri, overlayUri) = renderOverlays(
             lungMask,
             maskVung,
             finalVungList,
@@ -1652,7 +1556,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
           )
           lungMaskUri = contourUri
           suspiciousOverlayUri = overlayUri
-          triPanelUri = panelUri
+          triPanelUri = null
         }
       } catch (camErr: Throwable) {
         android.util.Log.e("LungCtPipeline", "Lỗi tính Grad-CAM", camErr)
