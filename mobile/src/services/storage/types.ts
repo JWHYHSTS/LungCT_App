@@ -110,6 +110,13 @@ export interface AIPredictionResultEntity {
   camRef?: string;
   targetLayer?: string; // mặc định conv5_block3_out
   targetClass?: AIClassLabel;
+  triPanelUri?: string;
+  suspiciousOverlayUri?: string;
+  lungMaskUri?: string;
+  suspiciousRegionsJson?: string;
+  suspiciousCount?: number;
+  lungHotRatio?: number;
+  decisionReason?: string;
   modelVersion: string;
   preprocessingVersion: string;
   executionSource: ExecutionSource;

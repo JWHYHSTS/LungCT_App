@@ -100,6 +100,15 @@ export function entityToMockCase(
         hasGradCam: Boolean(pred && (pred.explanationStatus === 'PASS' || pred.camRef)),
         gradcamUri: pred?.camRef,
         gradcamStatus: pred?.explanationStatus,
+        lungMaskUri: pred?.lungMaskUri,
+        suspiciousOverlayUri: pred?.suspiciousOverlayUri,
+        triPanelUri: pred?.triPanelUri,
+        suspiciousCount: pred?.suspiciousCount,
+        lungHotRatio: pred?.lungHotRatio,
+        decisionReason: pred?.decisionReason,
+        suspiciousRegions: pred?.suspiciousRegionsJson ? (() => {
+          try { return JSON.parse(pred.suspiciousRegionsJson!); } catch { return undefined; }
+        })() : undefined,
         mockWatermark: undefined,
       };
     });
@@ -394,6 +403,13 @@ export class CaseRepository {
       mode?: 'REAL' | 'MOCK';
       gradcamUri?: string;
       gradcamStatus?: 'PENDING' | 'PASS' | 'ZERO_CAM' | 'UNAVAILABLE' | 'FAIL';
+      lungMaskUri?: string;
+      suspiciousOverlayUri?: string;
+      triPanelUri?: string;
+      suspiciousRegions?: any[];
+      suspiciousCount?: number;
+      lungHotRatio?: number;
+      decisionReason?: string;
     },
   ): Promise<AIPredictionResultEntity> {
     await this.ensureReady(ownerId);
@@ -409,6 +425,13 @@ export class CaseRepository {
       explanationStatus,
       camRef: result.gradcamUri,
       targetLayer: 'conv5_block3_out',
+      lungMaskUri: result.lungMaskUri,
+      suspiciousOverlayUri: result.suspiciousOverlayUri,
+      triPanelUri: result.triPanelUri,
+      suspiciousRegionsJson: result.suspiciousRegions ? JSON.stringify(result.suspiciousRegions) : undefined,
+      suspiciousCount: result.suspiciousCount,
+      lungHotRatio: result.lungHotRatio,
+      decisionReason: result.decisionReason,
       modelVersion: result.modelVersion || 'Adaptive_ViT_FP32_v1',
       preprocessingVersion: 'Nearest_Float32_v1',
       executionSource: 'LOCAL',

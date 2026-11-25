@@ -106,6 +106,16 @@ export async function runNativePipelineFromBase64(
       verifiedSource: 'on_device_fp32',
       modelVersion: res.modelVersion || '20261122T082142_409115Z_GRADCAM',
       modelSha256: res.modelSha256 || 'cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9',
+      lungMaskStatus: res.lungMaskStatus || undefined,
+      lungHotRatio: typeof res.lungHotRatio === 'number' ? res.lungHotRatio : undefined,
+      lungCamRatio: typeof res.lungCamRatio === 'number' ? res.lungCamRatio : undefined,
+      drawSuspicious: Boolean(res.drawSuspicious),
+      decisionReason: res.decisionReason || undefined,
+      suspiciousCount: typeof res.suspiciousCount === 'number' ? res.suspiciousCount : 0,
+      lungMaskUri: res.lungMaskUri || undefined,
+      suspiciousOverlayUri: res.suspiciousOverlayUri || undefined,
+      triPanelUri: res.triPanelUri || undefined,
+      suspiciousRegions: Array.isArray(res.suspiciousRegions) ? res.suspiciousRegions : [],
     };
   } finally {
     isPipelineBusy = false;
@@ -158,6 +168,16 @@ export async function runNativePipelineFromFilePath(
       verifiedSource: 'on_device_fp32',
       modelVersion: res.modelVersion || '20261122T082142_409115Z_GRADCAM',
       modelSha256: res.modelSha256 || 'cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9',
+      lungMaskStatus: res.lungMaskStatus || undefined,
+      lungHotRatio: typeof res.lungHotRatio === 'number' ? res.lungHotRatio : undefined,
+      lungCamRatio: typeof res.lungCamRatio === 'number' ? res.lungCamRatio : undefined,
+      drawSuspicious: Boolean(res.drawSuspicious),
+      decisionReason: res.decisionReason || undefined,
+      suspiciousCount: typeof res.suspiciousCount === 'number' ? res.suspiciousCount : 0,
+      lungMaskUri: res.lungMaskUri || undefined,
+      suspiciousOverlayUri: res.suspiciousOverlayUri || undefined,
+      triPanelUri: res.triPanelUri || undefined,
+      suspiciousRegions: Array.isArray(res.suspiciousRegions) ? res.suspiciousRegions : [],
     };
   } finally {
     isPipelineBusy = false;
