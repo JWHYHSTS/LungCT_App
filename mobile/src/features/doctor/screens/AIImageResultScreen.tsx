@@ -837,7 +837,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs }}>
               <AppText variant="titleS" style={{ color: colors.text.primary }}>
-                Vùng nghi ngờ đã khoanh (Colab)
+                Vùng nghi ngờ đã khoanh
               </AppText>
               <View
                 style={{
