@@ -4,6 +4,10 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.net.Uri
 import android.util.Base64
 import android.content.pm.PackageManager
@@ -236,6 +240,696 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
   }
 
   override fun getName(): String = "LungCtPipelineModule"
+
+  data class SuspiciousRegionData(
+    val id: Int,
+    val x: Int,
+    val y: Int,
+    val w: Int,
+    val h: Int,
+    val areaPx: Int,
+    val areaRatio: Float,
+    val camMax: Float,
+    val camMean: Float
+  )
+
+  private class CompStat(
+    val id: Int,
+    var area: Int = 0,
+    var minX: Int = Int.MAX_VALUE,
+    var minY: Int = Int.MAX_VALUE,
+    var maxX: Int = Int.MIN_VALUE,
+    var maxY: Int = Int.MIN_VALUE
+  )
+
+  private data class ColorQuad(
+    val color: Int,
+    val r: Int,
+    val g: Int,
+    val b: Int
+  )
+
+  private fun getEllipseOffsets(kInput: Int): List<Pair<Int, Int>> {
+    val k = maxOf(3, if (kInput % 2 == 0) kInput + 1 else kInput)
+    val rx = k / 2.0
+    val ry = k / 2.0
+    val rx2 = rx * rx
+    val ry2 = ry * ry
+    val offsets = ArrayList<Pair<Int, Int>>()
+    val half = k / 2
+    for (dy in -half..half) {
+      val dy2 = dy * dy
+      for (dx in -half..half) {
+        val dx2 = dx * dx
+        if ((dx2 / rx2) + (dy2 / ry2) <= 1.05) {
+          offsets.add(Pair(dx, dy))
+        }
+      }
+    }
+    return offsets
+  }
+
+  private fun binaryDilate(src: BooleanArray, w: Int, h: Int, offsets: List<Pair<Int, Int>>): BooleanArray {
+    val dst = BooleanArray(w * h)
+    for (y in 0 until h) {
+      val rowOff = y * w
+      for (x in 0 until w) {
+        if (src[rowOff + x]) {
+          for (off in offsets) {
+            val nx = x + off.first
+            val ny = y + off.second
+            if (nx in 0 until w && ny in 0 until h) {
+              dst[ny * w + nx] = true
+            }
+          }
+        }
+      }
+    }
+    return dst
+  }
+
+  private fun binaryErode(src: BooleanArray, w: Int, h: Int, offsets: List<Pair<Int, Int>>): BooleanArray {
+    val dst = BooleanArray(w * h)
+    for (y in 0 until h) {
+      val rowOff = y * w
+      for (x in 0 until w) {
+        if (!src[rowOff + x]) continue
+        var all = true
+        for (off in offsets) {
+          val nx = x + off.first
+          val ny = y + off.second
+          if (nx !in 0 until w || ny !in 0 until h || !src[ny * w + nx]) {
+            all = false
+            break
+          }
+        }
+        dst[rowOff + x] = all
+      }
+    }
+    return dst
+  }
+
+  private fun binaryOpen(src: BooleanArray, w: Int, h: Int, offsets: List<Pair<Int, Int>>): BooleanArray {
+    return binaryDilate(binaryErode(src, w, h, offsets), w, h, offsets)
+  }
+
+  private fun binaryClose(src: BooleanArray, w: Int, h: Int, offsets: List<Pair<Int, Int>>): BooleanArray {
+    return binaryErode(binaryDilate(src, w, h, offsets), w, h, offsets)
+  }
+
+  private fun connectedComponentsWithStats(
+    mask: BooleanArray,
+    w: Int,
+    h: Int
+  ): Pair<IntArray, List<CompStat>> {
+    val n = w * h
+    val labels = IntArray(n)
+    val stats = ArrayList<CompStat>()
+    stats.add(CompStat(0, 0, 0, 0, 0, 0))
+
+    val queue = IntArray(n)
+    var currentLabel = 0
+
+    for (idx in 0 until n) {
+      if (!mask[idx] || labels[idx] != 0) continue
+
+      currentLabel++
+      var head = 0
+      var tail = 0
+      queue[tail++] = idx
+      labels[idx] = currentLabel
+
+      val y0 = idx / w
+      val x0 = idx % w
+      val stat = CompStat(currentLabel, 0, x0, y0, x0, y0)
+
+      while (head < tail) {
+        val cur = queue[head++]
+        val cy = cur / w
+        val cx = cur % w
+        stat.area++
+        if (cx < stat.minX) stat.minX = cx
+        if (cx > stat.maxX) stat.maxX = cx
+        if (cy < stat.minY) stat.minY = cy
+        if (cy > stat.maxY) stat.maxY = cy
+
+        for (dy in -1..1) {
+          val ny = cy + dy
+          if (ny !in 0 until h) continue
+          val rowOff = ny * w
+          for (dx in -1..1) {
+            if (dx == 0 && dy == 0) continue
+            val nx = cx + dx
+            if (nx !in 0 until w) continue
+            val nIdx = rowOff + nx
+            if (mask[nIdx] && labels[nIdx] == 0) {
+              labels[nIdx] = currentLabel
+              queue[tail++] = nIdx
+            }
+          }
+        }
+      }
+      stats.add(stat)
+    }
+
+    return Pair(labels, stats)
+  }
+
+  private fun fillHoles(mask: BooleanArray, w: Int, h: Int): BooleanArray {
+    val n = w * h
+    val isOutside = BooleanArray(n)
+    val queue = IntArray(n)
+    var head = 0
+    var tail = 0
+
+    for (x in 0 until w) {
+      if (!mask[x] && !isOutside[x]) {
+        isOutside[x] = true
+        queue[tail++] = x
+      }
+      val bIdx = (h - 1) * w + x
+      if (!mask[bIdx] && !isOutside[bIdx]) {
+        isOutside[bIdx] = true
+        queue[tail++] = bIdx
+      }
+    }
+    for (y in 0 until h) {
+      val lIdx = y * w
+      if (!mask[lIdx] && !isOutside[lIdx]) {
+        isOutside[lIdx] = true
+        queue[tail++] = lIdx
+      }
+      val rIdx = y * w + (w - 1)
+      if (!mask[rIdx] && !isOutside[rIdx]) {
+        isOutside[rIdx] = true
+        queue[tail++] = rIdx
+      }
+    }
+
+    while (head < tail) {
+      val cur = queue[head++]
+      val cy = cur / w
+      val cx = cur % w
+
+      if (cx > 0) {
+        val nIdx = cur - 1
+        if (!mask[nIdx] && !isOutside[nIdx]) {
+          isOutside[nIdx] = true
+          queue[tail++] = nIdx
+        }
+      }
+      if (cx < w - 1) {
+        val nIdx = cur + 1
+        if (!mask[nIdx] && !isOutside[nIdx]) {
+          isOutside[nIdx] = true
+          queue[tail++] = nIdx
+        }
+      }
+      if (cy > 0) {
+        val nIdx = cur - w
+        if (!mask[nIdx] && !isOutside[nIdx]) {
+          isOutside[nIdx] = true
+          queue[tail++] = nIdx
+        }
+      }
+      if (cy < h - 1) {
+        val nIdx = cur + w
+        if (!mask[nIdx] && !isOutside[nIdx]) {
+          isOutside[nIdx] = true
+          queue[tail++] = nIdx
+        }
+      }
+    }
+
+    val filled = BooleanArray(n)
+    for (i in 0 until n) {
+      filled[i] = !isOutside[i]
+    }
+    return filled
+  }
+
+  private fun taoMaskPhoi(origPixels: IntArray, w: Int, h: Int): Pair<BooleanArray?, String> {
+    val n = w * h
+    val gray = IntArray(n)
+    for (i in 0 until n) {
+      val p = origPixels[i]
+      val r = (p shr 16) and 0xFF
+      val g = (p shr 8) and 0xFF
+      val b = p and 0xFF
+      gray[i] = (0.299 * r + 0.587 * g + 0.114 * b).toInt().coerceIn(0, 255)
+    }
+
+    val blurH = IntArray(n)
+    for (y in 0 until h) {
+      val row = y * w
+      for (x in 0 until w) {
+        val x0 = (x - 2).coerceIn(0, w - 1)
+        val x1 = (x - 1).coerceIn(0, w - 1)
+        val x2 = x
+        val x3 = (x + 1).coerceIn(0, w - 1)
+        val x4 = (x + 2).coerceIn(0, w - 1)
+        val sum = gray[row + x0] + 4 * gray[row + x1] + 6 * gray[row + x2] + 4 * gray[row + x3] + gray[row + x4]
+        blurH[row + x] = sum / 16
+      }
+    }
+    val blur = IntArray(n)
+    for (y in 0 until h) {
+      val y0 = (y - 2).coerceIn(0, h - 1) * w
+      val y1 = (y - 1).coerceIn(0, h - 1) * w
+      val y2 = y * w
+      val y3 = (y + 1).coerceIn(0, h - 1) * w
+      val y4 = (y + 2).coerceIn(0, h - 1) * w
+      for (x in 0 until w) {
+        val sum = blurH[y0 + x] + 4 * blurH[y1 + x] + 6 * blurH[y2 + x] + 4 * blurH[y3 + x] + blurH[y4 + x]
+        blur[y2 + x] = sum / 16
+      }
+    }
+
+    val hist = IntArray(256)
+    for (i in 0 until n) {
+      hist[blur[i]]++
+    }
+    var totalSum = 0L
+    for (t in 0..255) totalSum += t * hist[t].toLong()
+
+    var weightB = 0L
+    var sumB = 0L
+    var maxVar = 0.0
+    var otsuThreshold = 128
+
+    for (t in 0..255) {
+      weightB += hist[t]
+      if (weightB == 0L) continue
+      val weightF = n - weightB
+      if (weightF == 0L) break
+
+      sumB += t * hist[t].toLong()
+      val meanB = sumB.toDouble() / weightB
+      val meanF = (totalSum - sumB).toDouble() / weightF
+      val varBetween = weightB.toDouble() * weightF.toDouble() * (meanB - meanF) * (meanB - meanF)
+      if (varBetween > maxVar) {
+        maxVar = varBetween
+        otsuThreshold = t
+      }
+    }
+
+    val sang = BooleanArray(n)
+    for (i in 0 until n) {
+      sang[i] = blur[i] >= otsuThreshold
+    }
+
+    val elip3 = getEllipseOffsets(3)
+    val sangOpen = binaryOpen(sang, w, h, elip3)
+
+    val (nhanSang, statsSang) = connectedComponentsWithStats(sangOpen, w, h)
+    if (statsSang.size < 2) {
+      return Pair(null, "KHONG_THAY_THAN_NGUOI")
+    }
+    var thanId = 1
+    var maxThanArea = statsSang[1].area
+    for (i in 2 until statsSang.size) {
+      if (statsSang[i].area > maxThanArea) {
+        maxThanArea = statsSang[i].area
+        thanId = i
+      }
+    }
+
+    val than = BooleanArray(n)
+    for (i in 0 until n) {
+      than[i] = nhanSang[i] == thanId
+    }
+
+    val thanDay = fillHoles(than, w, h)
+
+    val toi = BooleanArray(n)
+    for (i in 0 until n) {
+      toi[i] = thanDay[i] && !sang[i]
+    }
+
+    val elip5 = getEllipseOffsets(5)
+    val toiOpen = binaryOpen(toi, w, h, elip5)
+
+    val (nhanToi, statsToi) = connectedComponentsWithStats(toiOpen, w, h)
+    val minLungArea = (0.005f * w * h).toInt()
+    val ungVien = ArrayList<CompStat>()
+    for (i in 1 until statsToi.size) {
+      if (statsToi[i].area >= minLungArea) {
+        ungVien.add(statsToi[i])
+      }
+    }
+    ungVien.sortByDescending { it.area }
+    if (ungVien.isEmpty()) {
+      return Pair(null, "KHONG_THAY_PHOI")
+    }
+
+    val topLungs = ungVien.take(2).map { it.id }.toSet()
+    val phoi = BooleanArray(n)
+    for (i in 0 until n) {
+      phoi[i] = topLungs.contains(nhanToi[i])
+    }
+
+    val kVal = Math.round(minOf(w, h) * 0.03f).toInt()
+    val elipK = getEllipseOffsets(kVal)
+    val phoiClose = binaryClose(phoi, w, h, elipK)
+    val phoiDay = fillHoles(phoiClose, w, h)
+    val phoiDayDilated = binaryDilate(phoiDay, w, h, elipK)
+
+    var lungCount = 0
+    for (i in 0 until n) {
+      if (phoiDayDilated[i]) lungCount++
+    }
+    val lungRatio = lungCount.toFloat() / n
+    if (lungRatio < 0.03f) {
+      return Pair(null, "MASK_QUA_NHO")
+    }
+
+    return Pair(phoiDayDilated, "OK")
+  }
+
+  private fun timVungNghiNgo(
+    cam: FloatArray,
+    mask: BooleanArray,
+    w: Int,
+    h: Int,
+    kVal: Int
+  ): Pair<List<SuspiciousRegionData>, BooleanArray> {
+    val n = w * h
+    val elipK = getEllipseOffsets(kVal)
+    val loi = binaryErode(mask, w, h, elipK)
+
+    val nong = BooleanArray(n)
+    for (i in 0 until n) {
+      nong[i] = (cam[i] >= 0.50f) && mask[i]
+    }
+
+    val (nhanNong, statsNong) = connectedComponentsWithStats(nong, w, h)
+    val minArea = (0.002f * w * h).toInt()
+
+    class UngVien(val camMax: Float, val id: Int, val area: Int, val stat: CompStat)
+    val ungVienList = ArrayList<UngVien>()
+
+    for (i in 1 until statsNong.size) {
+      val st = statsNong[i]
+      if (st.area < minArea) continue
+
+      var overlapLoi = 0
+      var cMax = 0.0f
+      for (idx in 0 until n) {
+        if (nhanNong[idx] == i) {
+          if (loi[idx]) overlapLoi++
+          if (cam[idx] > cMax) cMax = cam[idx]
+        }
+      }
+
+      val ratioInCore = overlapLoi.toFloat() / st.area
+      if (ratioInCore < 0.60f) continue
+
+      ungVienList.add(UngVien(cMax, i, st.area, st))
+    }
+
+    ungVienList.sortByDescending { it.camMax }
+
+    val filteredList = ArrayList<UngVien>()
+    if (ungVienList.isNotEmpty()) {
+      val manhNhat = ungVienList[0].camMax
+      val thresholdSecondary = 0.75f * manhNhat
+      for (u in ungVienList) {
+        if (u.camMax >= thresholdSecondary) {
+          filteredList.add(u)
+        }
+      }
+    }
+
+    val selected = filteredList.take(3)
+    val maskVung = BooleanArray(n)
+    val vungList = ArrayList<SuspiciousRegionData>()
+
+    for ((index, u) in selected.withIndex()) {
+      var sumCam = 0.0f
+      for (idx in 0 until n) {
+        if (nhanNong[idx] == u.id) {
+          maskVung[idx] = true
+          sumCam += cam[idx]
+        }
+      }
+      val bw = u.stat.maxX - u.stat.minX + 1
+      val bh = u.stat.maxY - u.stat.minY + 1
+      val camMean = sumCam / u.area
+
+      vungList.add(
+        SuspiciousRegionData(
+          id = index + 1,
+          x = u.stat.minX,
+          y = u.stat.minY,
+          w = bw,
+          h = bh,
+          areaPx = u.area,
+          areaRatio = u.area.toFloat() / n,
+          camMax = u.camMax,
+          camMean = camMean
+        )
+      )
+    }
+
+    return Pair(vungList, maskVung)
+  }
+
+  private fun quyetDinhVe(
+    nhan: String,
+    diem: Float,
+    trangThaiMask: String,
+    tongCam: Float
+  ): Pair<Boolean, String> {
+    if (nhan == "Normal") {
+      return Pair(false, "Dự đoán Normal: không vẽ vùng nghi ngờ.")
+    }
+    if (diem < 0.80f) {
+      val pct = (diem * 100).toInt()
+      return Pair(false, "Độ tin cậy ${pct}% thấp hơn ngưỡng 80%: chỉ hiển thị kết quả phân loại.")
+    }
+    if (tongCam <= 1e-12f) {
+      return Pair(false, "Grad-CAM bằng 0: không có vùng để vẽ.")
+    }
+    if (trangThaiMask != "OK") {
+      return Pair(false, "Không tách được vùng phổi ($trangThaiMask): không vẽ.")
+    }
+    return Pair(true, "Vẽ vùng nghi ngờ trong phổi.")
+  }
+
+  private fun renderOverlaysAndTriPanel(
+    origPixels: IntArray,
+    camNorm: FloatArray,
+    lungMask: BooleanArray?,
+    maskVung: BooleanArray,
+    vungList: List<SuspiciousRegionData>,
+    predictedLabel: String,
+    w: Int,
+    h: Int,
+    camDir: File,
+    timestamp: Long
+  ): Triple<String?, String?, String?> {
+    val n = w * h
+
+    val quad = when (predictedLabel) {
+      "Malignant" -> ColorQuad(0xFFE61919.toInt(), 230, 25, 25)
+      "Benign" -> ColorQuad(0xFFFF8C00.toInt(), 255, 140, 0)
+      else -> ColorQuad(0xFFE61919.toInt(), 230, 25, 25)
+    }
+    val classColor = quad.color
+    val classR = quad.r
+    val classG = quad.g
+    val classB = quad.b
+
+    var lungContourUri: String? = null
+    val lungContourDilated = BooleanArray(n)
+    if (lungMask != null) {
+      val lungEdge = BooleanArray(n)
+      for (y in 0 until h) {
+        val row = y * w
+        for (x in 0 until w) {
+          if (lungMask[row + x]) {
+            if (x == 0 || x == w - 1 || y == 0 || y == h - 1 ||
+                !lungMask[row + x - 1] || !lungMask[row + x + 1] ||
+                !lungMask[(y - 1) * w + x] || !lungMask[(y + 1) * w + x]) {
+              lungEdge[row + x] = true
+            }
+          }
+        }
+      }
+      val elip3 = getEllipseOffsets(3)
+      val dilated = binaryDilate(lungEdge, w, h, elip3)
+      System.arraycopy(dilated, 0, lungContourDilated, 0, n)
+
+      val contourPixels = IntArray(n)
+      val greenColor = 0xFF00C800.toInt()
+      for (i in 0 until n) {
+        if (lungContourDilated[i]) {
+          contourPixels[i] = greenColor
+        }
+      }
+      val contourFile = File(camDir, "lung_contour_${timestamp}.png")
+      val contourBmp = Bitmap.createBitmap(contourPixels, w, h, Bitmap.Config.ARGB_8888)
+      FileOutputStream(contourFile).use { fos ->
+        contourBmp.compress(Bitmap.CompressFormat.PNG, 100, fos)
+      }
+      contourBmp.recycle()
+      lungContourUri = Uri.fromFile(contourFile).toString()
+    }
+
+    var suspiciousOverlayUri: String? = null
+    val vungContourDilated = BooleanArray(n)
+    var hasSuspiciousPixels = false
+    for (i in 0 until n) {
+      if (maskVung[i]) {
+        hasSuspiciousPixels = true
+        break
+      }
+    }
+
+    if (hasSuspiciousPixels) {
+      val vungEdge = BooleanArray(n)
+      for (y in 0 until h) {
+        val row = y * w
+        for (x in 0 until w) {
+          if (maskVung[row + x]) {
+            if (x == 0 || x == w - 1 || y == 0 || y == h - 1 ||
+                !maskVung[row + x - 1] || !maskVung[row + x + 1] ||
+                !maskVung[(y - 1) * w + x] || !maskVung[(y + 1) * w + x]) {
+              vungEdge[row + x] = true
+            }
+          }
+        }
+      }
+      val elip3 = getEllipseOffsets(3)
+      val dilated = binaryDilate(vungEdge, w, h, elip3)
+      System.arraycopy(dilated, 0, vungContourDilated, 0, n)
+
+      val suspPixels = IntArray(n)
+      val tintColor = Color.argb(89, classR, classG, classB)
+      for (i in 0 until n) {
+        if (vungContourDilated[i]) {
+          suspPixels[i] = classColor
+        } else if (maskVung[i]) {
+          suspPixels[i] = tintColor
+        }
+      }
+
+      val suspBmp = Bitmap.createBitmap(suspPixels, w, h, Bitmap.Config.ARGB_8888)
+      val suspCanvas = Canvas(suspBmp)
+      val boxPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2.0f
+        color = classColor
+        isAntiAlias = true
+      }
+      val textPaint = Paint().apply {
+        color = classColor
+        textSize = 18.0f
+        isFakeBoldText = true
+        isAntiAlias = true
+      }
+
+      for (v in vungList) {
+        suspCanvas.drawRect(v.x.toFloat(), v.y.toFloat(), (v.x + v.w).toFloat(), (v.y + v.h).toFloat(), boxPaint)
+        val textY = maxOf(18.0f, v.y.toFloat() - 4.0f)
+        suspCanvas.drawText("${v.id}", v.x.toFloat() + 2.0f, textY, textPaint)
+      }
+
+      val suspFile = File(camDir, "suspicious_overlay_${timestamp}.png")
+      FileOutputStream(suspFile).use { fos ->
+        suspBmp.compress(Bitmap.CompressFormat.PNG, 100, fos)
+      }
+      suspBmp.recycle()
+      suspiciousOverlayUri = Uri.fromFile(suspFile).toString()
+    }
+
+    val p1Pixels = IntArray(n)
+    for (i in 0 until n) {
+      p1Pixels[i] = if (lungContourDilated[i]) 0xFF00C800.toInt() else origPixels[i]
+    }
+    val p1Bmp = Bitmap.createBitmap(p1Pixels, w, h, Bitmap.Config.ARGB_8888)
+
+    val p2Pixels = IntArray(n)
+    for (i in 0 until n) {
+      val orig = origPixels[i]
+      val oR = (orig shr 16) and 0xFF
+      val oG = (orig shr 8) and 0xFF
+      val oB = orig and 0xFF
+
+      val norm = camNorm[i].coerceIn(0.0f, 1.0f)
+      val lutIdx = (norm * 255.0f).toInt().coerceIn(0, 255)
+      val jet = JET_LUT[lutIdx]
+      val jR = (jet shr 16) and 0xFF
+      val jG = (jet shr 8) and 0xFF
+      val jB = jet and 0xFF
+
+      val r = (0.6f * oR + 0.4f * jR).toInt().coerceIn(0, 255)
+      val g = (0.6f * oG + 0.4f * jG).toInt().coerceIn(0, 255)
+      val b = (0.6f * oB + 0.4f * jB).toInt().coerceIn(0, 255)
+      p2Pixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+    }
+    val p2Bmp = Bitmap.createBitmap(p2Pixels, w, h, Bitmap.Config.ARGB_8888)
+
+    val p3Pixels = IntArray(n)
+    for (i in 0 until n) {
+      if (vungContourDilated[i]) {
+        p3Pixels[i] = classColor
+      } else if (maskVung[i]) {
+        val orig = origPixels[i]
+        val oR = (orig shr 16) and 0xFF
+        val oG = (orig shr 8) and 0xFF
+        val oB = orig and 0xFF
+        val r = (0.35f * classR + 0.65f * oR).toInt().coerceIn(0, 255)
+        val g = (0.35f * classG + 0.65f * oG).toInt().coerceIn(0, 255)
+        val b = (0.35f * classB + 0.65f * oB).toInt().coerceIn(0, 255)
+        p3Pixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+      } else {
+        p3Pixels[i] = origPixels[i]
+      }
+    }
+    val p3Bmp = Bitmap.createBitmap(p3Pixels, w, h, Bitmap.Config.ARGB_8888)
+    val p3Canvas = Canvas(p3Bmp)
+    if (vungList.isNotEmpty()) {
+      val boxPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2.0f
+        color = classColor
+        isAntiAlias = true
+      }
+      val textPaint = Paint().apply {
+        color = classColor
+        textSize = 18.0f
+        isFakeBoldText = true
+        isAntiAlias = true
+      }
+      for (v in vungList) {
+        p3Canvas.drawRect(v.x.toFloat(), v.y.toFloat(), (v.x + v.w).toFloat(), (v.y + v.h).toFloat(), boxPaint)
+        val textY = maxOf(18.0f, v.y.toFloat() - 4.0f)
+        p3Canvas.drawText("${v.id}", v.x.toFloat() + 2.0f, textY, textPaint)
+      }
+    }
+
+    val triWidth = 3 * w + 12
+    val triBmp = Bitmap.createBitmap(triWidth, h, Bitmap.Config.ARGB_8888)
+    val triCanvas = Canvas(triBmp)
+    triCanvas.drawColor(Color.WHITE)
+    triCanvas.drawBitmap(p1Bmp, 0f, 0f, null)
+    triCanvas.drawBitmap(p2Bmp, (w + 6).toFloat(), 0f, null)
+    triCanvas.drawBitmap(p3Bmp, (2 * w + 12).toFloat(), 0f, null)
+
+    p1Bmp.recycle()
+    p2Bmp.recycle()
+    p3Bmp.recycle()
+
+    val triFile = File(camDir, "tri_panel_${timestamp}.png")
+    FileOutputStream(triFile).use { fos ->
+      triBmp.compress(Bitmap.CompressFormat.PNG, 100, fos)
+    }
+    triBmp.recycle()
+    val triPanelUri = Uri.fromFile(triFile).toString()
+
+    return Triple(lungContourUri, suspiciousOverlayUri, triPanelUri)
+  }
 
   @Synchronized
   private fun ensureInitialized() {
@@ -703,6 +1397,17 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
       var gradcamUri: String? = null
       var gradcamNotice = ""
 
+      var lungMaskStatus = "UNCHECKED"
+      var lungHotRatio = 0.0
+      var lungCamRatio = 0.0
+      var drawSuspicious = false
+      var decisionReason = ""
+      var suspiciousCount = 0
+      var lungMaskUri: String? = null
+      var suspiciousOverlayUri: String? = null
+      var triPanelUri: String? = null
+      var finalVungList: List<SuspiciousRegionData> = emptyList()
+
       try {
         val w1 = w1Data
         val w0 = w0Data
@@ -823,20 +1528,17 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
             if (relu > maxCam) maxCam = relu
           }
 
-          // 6.7. Xử lý bão hòa Softmax (ZERO_CAM)
-          if (maxCam <= 1e-12f) {
-            gradcamAvailable = false
-            gradcamStatus = "ZERO_CAM"
-            gradcamNotice = "Bản đồ nhiệt bằng 0 do gradient bão hòa (độ tin cậy tiệm cận tuyệt đối)"
-          } else {
-            // 6.8. Bilinear Interpolation lên kích thước (origW, origH) và phủ bảng màu Jet chuẩn
-            val targetW = origW
-            val targetH = origH
-            val camPixels = IntArray(targetW * targetH)
+          val targetW = origW
+          val targetH = origH
+          val nTarget = targetW * targetH
+          val camNorm = FloatArray(nTarget)
+          val camPixels = IntArray(nTarget)
 
-            val scaleX = 15.0f / (targetW - 1).coerceAtLeast(1)
-            val scaleY = 15.0f / (targetH - 1).coerceAtLeast(1)
+          var tongCam = 0.0f
+          val scaleX = 15.0f / (targetW - 1).coerceAtLeast(1)
+          val scaleY = 15.0f / (targetH - 1).coerceAtLeast(1)
 
+          if (maxCam > 1e-12f) {
             for (y in 0 until targetH) {
               val gy = y * scaleY
               val y0 = gy.toInt().coerceIn(0, 15)
@@ -861,14 +1563,24 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
                              dx * dy * c11
 
                 val norm = (interp / maxCam).coerceIn(0.0f, 1.0f)
+                camNorm[rowOffset + x] = norm
+                tongCam += norm
                 val lutIdx = (norm * 255.0f).toInt().coerceIn(0, 255)
                 camPixels[rowOffset + x] = JET_LUT[lutIdx]
               }
             }
+          }
 
-            // Lưu Bitmap bản đồ nhiệt vào thư mục cache
-            val camDir = File(reactContext.cacheDir, "gradcam_cache").apply { if (!exists()) mkdirs() }
-            val camFile = File(camDir, "cam_${System.currentTimeMillis()}.png")
+          // 6.7. Xử lý bão hòa Softmax (ZERO_CAM) và lưu Bitmap bản đồ nhiệt
+          val camDir = File(reactContext.cacheDir, "gradcam_cache").apply { if (!exists()) mkdirs() }
+          val renderTimestamp = System.currentTimeMillis()
+
+          if (maxCam <= 1e-12f) {
+            gradcamAvailable = false
+            gradcamStatus = "ZERO_CAM"
+            gradcamNotice = "Bản đồ nhiệt bằng 0 do gradient bão hòa (độ tin cậy tiệm cận tuyệt đối)"
+          } else {
+            val camFile = File(camDir, "cam_${renderTimestamp}.png")
             val camBitmap = Bitmap.createBitmap(camPixels, targetW, targetH, Bitmap.Config.ARGB_8888)
             FileOutputStream(camFile).use { fos ->
               camBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
@@ -880,6 +1592,62 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
             gradcamUri = Uri.fromFile(camFile).toString()
             gradcamNotice = "Grad-CAM On-Device Native (conv5_block3_out, Jet Colormap)"
           }
+
+          // 6.8. Phân đoạn phổi & Đánh tô vùng nghi ngờ Colab (Mục 24.2 & Mục 28)
+          val (lungMask, maskStatus) = taoMaskPhoi(origPixels, targetW, targetH)
+          lungMaskStatus = maskStatus
+
+          var camInLung = 0.0f
+          var hotInLung = 0
+          var hotCount = 0
+
+          for (i in 0 until nTarget) {
+            val v = camNorm[i]
+            val isHot = v >= 0.50f
+            if (isHot) hotCount++
+            if (lungMask != null && lungMask[i]) {
+              camInLung += v
+              if (isHot) hotInLung++
+            }
+          }
+
+          lungCamRatio = if (tongCam > 0f && lungMask != null) (camInLung / tongCam).toDouble() else 0.0
+          lungHotRatio = if (hotCount > 0 && lungMask != null) (hotInLung.toDouble() / hotCount.toDouble()) else 0.0
+
+          val (shouldDraw, decisionReasonText) = quyetDinhVe(predictedLabel, maxScore.toFloat(), maskStatus, tongCam)
+          drawSuspicious = shouldDraw
+          decisionReason = decisionReasonText
+          var maskVung = BooleanArray(nTarget)
+
+          val kVal = Math.round(minOf(targetW, targetH) * 0.03f).toInt()
+          if (drawSuspicious && lungMask != null) {
+            val (vList, mVung) = timVungNghiNgo(camNorm, lungMask, targetW, targetH, kVal)
+            if (vList.isEmpty()) {
+              drawSuspicious = false
+              decisionReason = "Vùng chú ý của mô hình không nằm trong phổi: không vẽ để tránh khoanh sai chỗ."
+            } else {
+              finalVungList = vList
+              suspiciousCount = vList.size
+              maskVung = mVung
+            }
+          }
+
+          // 6.9. Render ảnh viền phổi, ảnh lớp phủ vùng nghi ngờ, và ảnh 3 khung Colab
+          val (contourUri, overlayUri, panelUri) = renderOverlaysAndTriPanel(
+            origPixels,
+            camNorm,
+            lungMask,
+            maskVung,
+            finalVungList,
+            predictedLabel,
+            targetW,
+            targetH,
+            camDir,
+            renderTimestamp
+          )
+          lungMaskUri = contourUri
+          suspiciousOverlayUri = overlayUri
+          triPanelUri = panelUri
         }
       } catch (camErr: Throwable) {
         android.util.Log.e("LungCtPipeline", "Lỗi tính Grad-CAM", camErr)
@@ -895,7 +1663,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         "LungCtPipeline",
         "[INFERENCE_RUN] model=$CURRENT_MODEL_RUN_ID, source=$sourceDesc, origSize=${origW}x${origH}, pred=$predictedLabel, " +
         "Benign=${"%.6f".format(benignScore)}, Malignant=${"%.6f".format(malignantScore)}, Normal=${"%.6f".format(normalScore)}, " +
-        "vitLatency=${vitDuration}ms, fusionLatency=${fusionDuration}ms, gradcamLatency=${gradcamDuration}ms, total=${totalDuration}ms, gradcamStatus=$gradcamStatus"
+        "vitLatency=${vitDuration}ms, fusionLatency=${fusionDuration}ms, gradcamLatency=${gradcamDuration}ms, total=${totalDuration}ms, gradcamStatus=$gradcamStatus, suspiciousCount=$suspiciousCount"
       )
 
       // Trả kết quả WritableMap về React Native
@@ -927,6 +1695,34 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
           putString("gradcamUri", gradcamUri)
         }
         putString("gradcamNotice", gradcamNotice)
+
+        putString("lungMaskStatus", lungMaskStatus)
+        putDouble("lungHotRatio", lungHotRatio)
+        putDouble("lungCamRatio", lungCamRatio)
+        putBoolean("drawSuspicious", drawSuspicious)
+        putString("decisionReason", decisionReason)
+        putInt("suspiciousCount", suspiciousCount)
+        if (lungMaskUri != null) putString("lungMaskUri", lungMaskUri)
+        if (suspiciousOverlayUri != null) putString("suspiciousOverlayUri", suspiciousOverlayUri)
+        if (triPanelUri != null) putString("triPanelUri", triPanelUri)
+
+        val regionsArray = Arguments.createArray()
+        for (v in finalVungList) {
+          val rMap = Arguments.createMap().apply {
+            putInt("id", v.id)
+            putInt("x", v.x)
+            putInt("y", v.y)
+            putInt("w", v.w)
+            putInt("h", v.h)
+            putInt("areaPx", v.areaPx)
+            putDouble("areaRatio", v.areaRatio.toDouble())
+            putDouble("camMax", v.camMax.toDouble())
+            putDouble("camMean", v.camMean.toDouble())
+          }
+          regionsArray.pushMap(rMap)
+        }
+        putArray("suspiciousRegions", regionsArray)
+
         putBoolean("isMock", false)
         putString("verifiedSource", "on_device_fp32")
         putString("modelVersion", CURRENT_MODEL_RUN_ID)
