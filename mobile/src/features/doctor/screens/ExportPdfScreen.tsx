@@ -198,7 +198,7 @@ export const ExportPdfScreen: React.FC<ExportPdfScreenProps> = ({ caseId, onBack
         label: `Lát cắt CT #${img.sliceNumber}`,
         imageUri: img.uri || img.filePath,
         hasGradCam: img.hasGradCam,
-        gradCamUri: undefined,
+        gradCamUri: img.gradcamUri || undefined,
       })),
       language: lang,
       includeGradCam: attachGradCam,

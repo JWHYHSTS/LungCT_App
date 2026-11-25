@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
@@ -92,6 +92,43 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
 
   const images = currentCase?.images ?? [];
 
+  const [localImages, setLocalImages] = useState<MockCTImage[]>(currentCase?.images ?? []);
+  const [analyzedResults, setAnalyzedResults] = useState<Record<string, PipelinePredictionResult>>({});
+
+  useEffect(() => {
+    if (currentCase?.images && currentCase.images.length > 0) {
+      setLocalImages(currentCase.images);
+    }
+  }, [currentCase?.images]);
+
+  const applyResultToLocalImages = (targetId: string, result: PipelinePredictionResult) => {
+    setAnalyzedResults((prev) => ({ ...prev, [targetId]: result }));
+    setLocalImages((prev) =>
+      prev.map((img) =>
+        img.id === targetId
+          ? {
+              ...img,
+              status: result.gradcamAvailable
+                ? 'pass'
+                : result.gradcamStatus === 'ZERO_CAM'
+                  ? 'pass'
+                  : 'passNoCam',
+              hasGradCam: result.gradcamAvailable,
+              gradcamUri: result.gradcamUri,
+              gradcamStatus: result.gradcamStatus,
+              scores: {
+                benign: result.probabilities.Benign,
+                malignant: result.probabilities.Malignant,
+                normal: result.probabilities.Normal,
+              },
+              aiClass: (result.predictedClass.charAt(0).toUpperCase() +
+                result.predictedClass.slice(1).toLowerCase()) as any,
+            }
+          : img,
+      ),
+    );
+  };
+
   const [currentIndex, setCurrentIndex] = useState<number>(initialImageIndex);
   const [viewMode, setViewMode] = useState<string>('cam'); // 'orig' | 'cam'
   const [camOpacity, setCamOpacity] = useState<number>(40);
@@ -137,6 +174,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
 
       const result = await runNativePipelineFromFilePath(picked.uri);
       setOnDeviceResult(result);
+      applyResultToLocalImages(activeImage.id, result);
 
       // Lưu kết quả dự đoán vào CaseRepository
       try {
@@ -157,6 +195,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           durationMs: result.latency.totalInferenceMs,
           modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
           mode: 'REAL',
+          gradcamUri: result.gradcamUri,
+          gradcamStatus: result.gradcamStatus,
         });
       } catch (saveErr) {
         console.warn('[AIImageResultScreen] Lỗi lưu kết quả AI tệp picked:', saveErr);
@@ -199,6 +239,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     try {
       const result = await runNativePipelineFromFilePath(file.path);
       setOnDeviceResult(result);
+      applyResultToLocalImages(activeImage.id, result);
 
       // Lưu kết quả dự đoán vào CaseRepository
       try {
@@ -219,6 +260,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           durationMs: result.latency.totalInferenceMs,
           modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
           mode: 'REAL',
+          gradcamUri: result.gradcamUri,
+          gradcamStatus: result.gradcamStatus,
         });
       } catch (saveErr) {
         console.warn('[AIImageResultScreen] Lỗi lưu kết quả AI tệp select:', saveErr);
@@ -280,23 +323,43 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
       let targetPath: string | undefined = activeImage.filePath || activeImage.uri;
       let targetName: string = activeImage.originalFileName || `Lát cắt #${activeImage.sliceNumber}`;
 
-      if (!targetPath) {
-        // Tìm tệp ảnh CT tương ứng từ danh sách tệp thiết bị sẵn có
-        const files = await getAvailableTestImages();
-        let targetFile: AvailableTestImage | undefined = files[0];
-        if (activeIndex === 2 && files.length >= 2) {
-          targetFile = files[1];
-        } else if (activeIndex >= 3 && files.length >= 3) {
-          targetFile = files[2];
-        }
+      const files = await getAvailableTestImages();
+      let needsFallback =
+        !targetPath ||
+        (!targetPath.startsWith('/') && !targetPath.startsWith('file://')) ||
+        targetPath.startsWith('mock://') ||
+        targetPath.startsWith('http');
 
-        if (!targetFile) {
-          throw new Error(
-            'Chưa tìm thấy tệp ảnh CT mẫu trên thiết bị (/sdcard/Download hoặc thư mục app). Vui lòng dùng nút "Chọn ảnh từ thiết bị để chạy AI" bên dưới.',
+      if (needsFallback && files.length > 0) {
+        // 1. Khớp chính xác tên tệp gốc nếu có
+        let matched = files.find(
+          (f) =>
+            activeImage.originalFileName &&
+            f.name.toLowerCase().includes(activeImage.originalFileName.toLowerCase()),
+        );
+        // 2. Khớp số lát cắt (ví dụ lát cắt 36 khớp với Malignant case 36)
+        if (!matched) {
+          matched = files.find(
+            (f) =>
+              f.name.includes(`_${activeImage.sliceNumber}.`) ||
+              f.name.includes(`(${activeImage.sliceNumber})`),
           );
         }
-        targetPath = targetFile.path;
-        targetName = targetFile.name;
+        // 3. Fallback xoay vòng qua danh sách tệp kiểm thử
+        if (!matched) {
+          matched = files[(activeIndex - 1) % files.length];
+        }
+
+        if (matched) {
+          targetPath = matched.path;
+          targetName = matched.name;
+        }
+      }
+
+      if (!targetPath) {
+        throw new Error(
+          'Chưa tìm thấy tệp ảnh CT mẫu trên thiết bị (/sdcard/Download hoặc thư mục app). Vui lòng dùng nút "Chọn ảnh từ thiết bị để chạy AI" bên dưới.',
+        );
       }
 
       setSelectedFileLabel(targetName);
@@ -311,6 +374,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
       const finishRunTimestamp = Date.now();
       const totalFlowDurationMs = Math.max(0, finishRunTimestamp - startRunTimestamp);
       setOnDeviceResult(result);
+      applyResultToLocalImages(activeImage.id, result);
 
       // Lưu kết quả dự đoán vào kho lưu trữ mã hóa cục bộ
       try {
@@ -331,6 +395,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           durationMs: totalFlowDurationMs,
           modelVersion: 'Adaptive-AACNN-ViT-FP32-v1',
           mode: 'REAL',
+          gradcamUri: result.gradcamUri,
+          gradcamStatus: result.gradcamStatus,
         });
       } catch (saveErr) {
         console.warn('[AIImageResultScreen] Lỗi ghi kết quả AI vào kho lưu trữ:', saveErr);
@@ -387,7 +453,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
   };
 
   // Xử lý khi không tìm thấy ca bệnh hoặc ca không có ảnh
-  if (!currentCase || images.length === 0) {
+  if (!currentCase || localImages.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
         <TopBar
@@ -412,30 +478,49 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
   }
 
   // Lấy ảnh đang chọn (đảm bảo index nằm trong giới hạn)
-  const activeIndex = Math.max(1, Math.min(images.length, currentIndex));
-  const activeImage: MockCTImage = images[activeIndex - 1] || images[0];
+  const activeIndex = Math.max(1, Math.min(localImages.length, currentIndex));
+  const activeImage: MockCTImage = localImages[activeIndex - 1] || localImages[0];
 
   const handlePrev = () => {
     if (activeIndex > 1) {
-      setOnDeviceResult(null);
+      const nextIdx = activeIndex - 1;
+      const targetImg = localImages[nextIdx - 1];
       setSelectedFileLabel(null);
       setSelectedImageUri(null);
-      setCurrentIndex(activeIndex - 1);
+      setOnDeviceResult(targetImg ? analyzedResults[targetImg.id] || null : null);
+      setCurrentIndex(nextIdx);
     }
   };
 
   const handleNext = () => {
-    if (activeIndex < images.length) {
-      setOnDeviceResult(null);
+    if (activeIndex < localImages.length) {
+      const nextIdx = activeIndex + 1;
+      const targetImg = localImages[nextIdx - 1];
       setSelectedFileLabel(null);
       setSelectedImageUri(null);
-      setCurrentIndex(activeIndex + 1);
+      setOnDeviceResult(targetImg ? analyzedResults[targetImg.id] || null : null);
+      setCurrentIndex(nextIdx);
     }
   };
 
   const isFail = activeImage.status === 'fail';
-  const isNoCam = activeImage.status === 'passNoCam';
-  const showHeatmapLayer = viewMode === 'cam' && activeImage.hasGradCam && !isFail;
+  const hasCam = onDeviceResult
+    ? onDeviceResult.gradcamAvailable
+    : Boolean(activeImage.hasGradCam || activeImage.gradcamUri);
+  const currentGradcamUri = onDeviceResult?.gradcamUri || activeImage.gradcamUri;
+  const isZeroCam =
+    onDeviceResult?.gradcamStatus === 'ZERO_CAM' || activeImage.gradcamStatus === 'ZERO_CAM';
+  const isPending =
+    !onDeviceResult && (!activeImage.scores || activeImage.status === 'pending');
+  const isNoCam =
+    !isPending &&
+    !isFail &&
+    !hasCam &&
+    !isZeroCam &&
+    (activeImage.status === 'passNoCam' ||
+      onDeviceResult?.gradcamStatus === 'UNAVAILABLE' ||
+      onDeviceResult?.gradcamStatus === 'FAIL');
+  const showHeatmapLayer = viewMode === 'cam' && hasCam && !isFail;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
@@ -479,9 +564,9 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
                 ? t('doctor_detail.ai_file_prefix', { name: selectedFileLabel, defaultValue: `Tệp: ${selectedFileLabel}` })
                 : t('doctor_detail.ai_slice_info', {
                     current: activeIndex,
-                    total: images.length,
+                    total: localImages.length,
                     slice: activeImage.sliceNumber,
-                    defaultValue: `Ảnh ${activeIndex}/${images.length} · Lát cắt #${activeImage.sliceNumber}`,
+                    defaultValue: `Ảnh ${activeIndex}/${localImages.length} · Lát cắt #${activeImage.sliceNumber}`,
                   })}
             </AppText>
             <AppText variant="caption" color={colors.text.secondary}>
@@ -494,7 +579,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           </View>
           <IconButton
             name="chevron-right"
-            disabled={activeIndex >= images.length}
+            disabled={activeIndex >= localImages.length}
             accessibilityLabel={t('doctor_detail.ai_next_image', 'Ảnh kế tiếp')}
             onPress={handleNext}
           />
@@ -503,7 +588,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         {/* Khung hiển thị ảnh cắt lớp CT */}
         <View style={styles.canvasWrapper}>
           <CTImageView
-            key={selectedImageUri || activeImage.uri || activeImage.id}
+            key={`${selectedImageUri || activeImage.uri || activeImage.id}_${currentGradcamUri || ''}_${viewMode}`}
             imageSource={
               selectedImageUri
                 ? { uri: selectedImageUri }
@@ -511,7 +596,8 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
                   ? { uri: activeImage.uri }
                   : undefined
             }
-            showHeatmap={selectedImageUri || activeImage.uri ? false : showHeatmapLayer}
+            heatmapSource={currentGradcamUri ? { uri: currentGradcamUri } : undefined}
+            showHeatmap={showHeatmapLayer}
             heatmapOpacity={camOpacity / 100}
             size={340}
             watermarkText={
@@ -526,7 +612,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           />
         </View>
 
-        {/* Cảnh báo trạng thái FAIL hoặc Thiếu CAM */}
+        {/* Cảnh báo trạng thái FAIL hoặc ZERO_CAM hoặc Chưa phân tích hoặc Thiếu CAM */}
         {isFail && (
           <View style={{ marginVertical: spacing.sm }}>
             <Banner
@@ -543,21 +629,45 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           </View>
         )}
 
-        {isNoCam && !isFail && (
+        {isZeroCam && !isFail && (
+          <View style={{ marginVertical: spacing.sm }}>
+            <Banner
+              title="Độ tin cậy tuyệt đối (ZERO_CAM)"
+              body="Bản đồ nhiệt bằng 0 do gradient hàm Softmax bão hòa (mô hình dự đoán với độ tin cậy tiệm cận 100%, tuân thủ đúng nguyên lý toán học Grad-CAM)."
+              type="info"
+            />
+          </View>
+        )}
+
+        {isPending && !isFail && (
+          <View style={{ marginVertical: spacing.sm }}>
+            <Banner
+              title="Chưa phân tích AI On-Device"
+              body="Lát cắt này chưa được chạy chẩn đoán AI trên thiết bị. Nhấn nút 'Chạy phân tích AI Lát Cắt Này (FP32)' bên dưới để nhận diện và trích xuất bản đồ nhiệt Grad-CAM."
+              type="info"
+            />
+          </View>
+        )}
+
+        {isNoCam && !isFail && !isZeroCam && (
           <View style={{ marginVertical: spacing.sm }}>
             <Banner
               title={t('doctor_detail.ai_banner_nocam_title', 'Không có bản đồ Grad-CAM')}
-              body={t(
-                'doctor_detail.ai_banner_nocam_body',
-                'Lát cắt này không có bản đồ nhiệt do độ tin cậy thấp hoặc chưa được tính toán.',
-              )}
+              body={
+                activeImage.status === 'passNoCam' && !onDeviceResult
+                  ? 'Lát cắt này được phân tích trước khi cập nhật tính năng Grad-CAM on-device. Vui lòng bấm nút phân tích bên dưới để tạo bản đồ nhiệt.'
+                  : t(
+                      'doctor_detail.ai_banner_nocam_body',
+                      'Lát cắt này không có bản đồ nhiệt do độ tin cậy thấp hoặc chưa được tính toán.',
+                    )
+              }
               type="warning"
             />
           </View>
         )}
 
         {/* Chú giải thang màu nhiệt (HeatmapLegend) */}
-        {!selectedImageUri && viewMode === 'cam' && !isFail && activeImage.hasGradCam && (
+        {viewMode === 'cam' && !isFail && hasCam && (
           <View
             style={[
               styles.legendCard,
@@ -575,7 +685,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         )}
 
         {/* Chuyển đổi Ảnh gốc / Grad-CAM */}
-        {!selectedImageUri && !isFail && activeImage.hasGradCam && (
+        {!isFail && hasCam && (
           <View style={{ marginVertical: spacing.sm }}>
             <Segmented
               items={[
@@ -589,7 +699,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         )}
 
         {/* Slider điều chỉnh độ phủ Grad-CAM */}
-        {!selectedImageUri && viewMode === 'cam' && !isFail && activeImage.hasGradCam && (
+        {viewMode === 'cam' && !isFail && hasCam && (
           <View
             style={[
               styles.sliderCard,
@@ -718,13 +828,18 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
             </AppText>
             <AppText variant="bodyM" style={styles.metaValue}>
               {onDeviceResult
-                ? t(
-                    'doctor_detail.ai_gradcam_offline_unavailable',
-                    'Không khả dụng ngoại tuyến (MSG-11)',
-                  )
-                : activeImage.hasGradCam
+                ? onDeviceResult.gradcamAvailable
+                  ? 'Đạt (On-Device Native Jet)'
+                  : onDeviceResult.gradcamStatus === 'ZERO_CAM'
+                    ? 'Bão hòa (ZERO_CAM)'
+                    : t('doctor_detail.khong_kha_dung', 'Không khả dụng')
+                : hasCam
                   ? t('doctor_detail.at', 'Đạt')
-                  : t('doctor_detail.khong_kha_dung', 'Không khả dụng')}
+                  : isZeroCam
+                    ? 'Bão hòa (ZERO_CAM)'
+                    : isPending
+                      ? 'Chưa phân tích'
+                      : t('doctor_detail.khong_kha_dung', 'Không khả dụng')}
             </AppText>
           </View>
           {onDeviceResult && (
@@ -733,7 +848,7 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
                 {t('doctor_detail.ai_inference_time', 'Thời gian suy luận')}
               </AppText>
               <AppText variant="bodyM" style={styles.metaValue}>
-                {`${onDeviceResult.latency.totalInferenceMs} ms (ViT: ${onDeviceResult.latency.vitInferenceMs}ms, Fusion: ${onDeviceResult.latency.fusionInferenceMs}ms)`}
+                {`${onDeviceResult.latency.totalInferenceMs} ms (ViT: ${onDeviceResult.latency.vitInferenceMs}ms, Fusion: ${onDeviceResult.latency.fusionInferenceMs}ms${onDeviceResult.latency.gradcamMs != null ? `, CAM: ${onDeviceResult.latency.gradcamMs}ms` : ''})`}
               </AppText>
             </View>
           )}

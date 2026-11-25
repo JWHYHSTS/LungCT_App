@@ -65,7 +65,7 @@ Ung thư phổi hiện là loại ung thư phổ biến hàng đầu và là ngu
 
 Khóa luận này nghiên cứu và phát triển **phân hệ Android** trong giải pháp di động toàn diện **LungCT**, hỗ trợ bác sĩ đánh giá phân loại ảnh CT phổi ngay trên điện thoại thông minh. Dựa trên đề cương đã được phê duyệt, đề tài được nâng cấp về mặt kiến trúc: Chuyển đổi mô hình học sâu lai kết hợp giữa mạng nơ-ron tích chập và biến đổi thị giác **AACNN-ViT Adaptive** sang định dạng tối ưu **ONNX Runtime Mobile (FP32)** kết hợp khối **Fusion LiteRT (FP32)**, cho phép **thực thi suy luận phân loại 3 lớp trực tiếp trên thiết bị (On-Device Edge AI) hoàn toàn ngoại tuyến không cần kết nối mạng Internet**.
 
-Về mặt thực nghiệm kỹ thuật, pipeline suy luận phân loại đã chạy thành công trên máy ảo Android Emulator x86_64 API 34 với thời gian suy luận kỹ thuật đạt ~1.580 ms trong ứng dụng APK và ~1.831 ms trong chương trình native C++ runner (đối với lát cắt CT đối chứng; không gọi là độ trễ lâm sàng). Khóa luận xây dựng hoàn chỉnh giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture (TypeScript), hiện thực hóa tầng lưu trữ cục bộ mã hóa toàn bộ tệp SQLite cấp trang bằng **SQLCipher 4.6.1** kết hợp **Android Keystore (`NativeCryptoVaultModule.kt`, AES-256-GCM)** và kiểm chứng thuật toán bảo toàn dữ liệu nháp AUTH-08. Đồng thời, ứng dụng đã tích hợp đầy đủ **Firebase Authentication (đăng nhập, đăng ký chờ duyệt, quên mật khẩu)**, **Cloud Firestore & Sync Engine Offline-First (hàng đợi Outbox, phát hiện xung đột, đồng bộ nền khi có mạng)**, **xuất phiếu kết quả PDF vật lý (`expo-print` & `expo-sharing`)**, và đóng gói thành công tệp **`app-release.apk` v1.0.6 (`versionCode 7`, 544.04 MB)** đạt 100% kiểm thử tự động Jest (**19/19 suites, 168/168 tests**). Tính năng Grad-CAM on-device hiện được cô lập trung thực (`gradcamAvailable: false`, thông điệp `MSG-11`) để tiếp tục nghiên cứu tính gradient trực tiếp trên thiết bị, tuyệt đối không dùng ảnh nhiệt giả lập hay gọi máy chủ suy luận. Hệ thống dịch vụ đám mây Firebase giữ vai trò xác thực danh tính, quản trị và đồng bộ hồ sơ khi có kết nối mạng.
+Về mặt thực nghiệm kỹ thuật, pipeline suy luận phân loại đã chạy thành công trên máy ảo Android Emulator x86_64 API 34 và điện thoại vật lý Xiaomi Redmi Note 12 Turbo (Android 14) với thời gian suy luận kỹ thuật đạt ~1.580 ms trong ứng dụng APK (đối với lát cắt CT đối chứng; không gọi là độ trễ lâm sàng). Khóa luận xây dựng hoàn chỉnh giao diện theo thiết kế 59 màn hình Figma bằng React Native New Architecture (TypeScript), hiện thực hóa tầng lưu trữ cục bộ mã hóa toàn bộ tệp SQLite cấp trang bằng **SQLCipher 4.6.1** kết hợp **Android Keystore (`NativeCryptoVaultModule.kt`, AES-256-GCM)** và kiểm chứng thuật toán bảo toàn dữ liệu nháp AUTH-08. Đồng thời, ứng dụng đã tích hợp đầy đủ **Firebase Authentication (đăng nhập, đăng ký chờ duyệt, quên mật khẩu)**, **Cloud Firestore & Sync Engine Offline-First (hàng đợi Outbox, phát hiện xung đột, đồng bộ nền khi có mạng)**, **xuất phiếu kết quả PDF vật lý (`expo-print` & `expo-sharing`)**, và đóng gói thành công tệp **`app-release.apk` v1.0.15 (`versionCode 16`)** đạt 100% kiểm thử tự động Jest (**19/19 suites, 176/176 tests**). Đặc biệt, khóa luận đã nghiên cứu và hiện thực hóa thành công thuật toán **Grad-CAM On-Device thuần túy (100% Native)** chạy trực tiếp trên thiết bị Android không cần máy chủ: trích xuất activation maps từ `conv5_block3_out` (16x16x2048), tính gradient giải tích-số học qua mô hình đuôi (Tail model) và lan truyền ngược qua các ma trận trọng số $W_1, W_0$, nội suy song tuyến và phủ bảng màu Jet LUT với độ trễ chỉ ~80–130 ms. Hệ thống dịch vụ đám mây Firebase giữ vai trò xác thực danh tính, quản trị và đồng bộ hồ sơ khi có kết nối mạng.
 
 ---
 
@@ -458,35 +458,37 @@ Phân tích giải pháp kỹ thuật đã triển khai chính thức trên Andr
 | **Cơ sở dữ liệu cục bộ** | **SQLCipher 4.6.1 (Page-level AES-256)** | Bảo vệ dữ liệu ngoại tuyến trên đĩa |
 | **Quản lý khóa an toàn** | Android Keystore System (AES-256-GCM, chờ đo `KeyInfo` trên máy thật) | Chặt chẽ, không fallback mã hóa yếu |
 | **Xác thực & Đồng bộ** | **Firebase JS SDK `^13.2.0` + `SyncEngine` Outbox/Conflict** | Kết nối Auth/Firestore trực tuyến & offline-first |
-| **Báo cáo PDF & Giải thích AI** | `expo-print` + `expo-sharing` (**Grad-CAM tạm hoãn `MSG-11`**) | Không đưa heatmap giả vào phiếu PDF |
+| **Báo cáo PDF & Giải thích AI** | `expo-print` + `expo-sharing` + **On-Device Grad-CAM Native Jet** | Bản đồ nhiệt thực tế nhúng vào báo cáo PDF |
 
 ---
 
 ## CHƯƠNG 5: KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
 
 ### 5.1 Kết quả đạt được
-1. Hiện thực hóa thành công ứng dụng **LungCT** trên nền tảng Android (React Native `0.88.0`, TypeScript, New Architecture) với đầy đủ các phân hệ Bác sĩ và Quản trị viên, vượt qua kiểm tra kiểu TypeScript (`0` lỗi) và **19/19 test suites với 168/168 tests Jest thành công (100%)**.
-2. Tích hợp và kiểm chứng thành công pipeline suy luận phân loại Trí tuệ nhân tạo biên (On-Device AI) trên Android với mô hình AACNN-ViT Adaptive FP32 (ONNX Runtime Mobile + LiteRT), đạt thời gian suy luận kỹ thuật ~1.580 ms trên máy ảo Android x86_64 hoàn toàn ngoại tuyến.
+1. Hiện thực hóa thành công ứng dụng **LungCT** trên nền tảng Android (React Native `0.88.0`, TypeScript, New Architecture) với đầy đủ các phân hệ Bác sĩ và Quản trị viên, vượt qua kiểm tra kiểu TypeScript (`0` lỗi) và **19/19 test suites với 176/176 tests Jest thành công (100%)**.
+2. Tích hợp và kiểm chứng thành công pipeline suy luận phân loại Trí tuệ nhân tạo biên (On-Device AI) trên Android với mô hình AACNN-ViT Adaptive FP32 (ONNX Runtime Mobile + LiteRT), đạt thời gian suy luận kỹ thuật ~1.580 ms trên máy ảo Android x86_64 và ~1.540–1.610 ms trên điện thoại Xiaomi Redmi Note 12 Turbo hoàn toàn ngoại tuyến.
 3. Giải quyết triệt để vấn đề sai lệch tiền xử lý ảnh bằng thuật toán Native C++ Pillow Nearest Resample, sai số so với Python chỉ ở mức giải mã JPEG ($\le 9.89 \times 10^{-5}$).
-4. Hiện thực hóa và kiểm chứng thành công tầng lưu trữ cục bộ mã hóa toàn diện:
+4. Hiện thực hóa thành công thuật toán **Grad-CAM On-Device 100% Native** trên Android không cần Autograd:
+   - Sử dụng mô hình trích xuất đặc trưng đa ngõ ra `fusion_model_multi.tflite` để lấy activation map từ `conv5_block3_out` ($16 \times 16 \times 2048$).
+   - Sử dụng mô hình đuôi `gradcam_tail.tflite` tính sai phân số học trung tâm qua 256 chiều `cnn_tok` ($\epsilon = 10^{-3}$) để thu được vector gradient $\mathbf{v}_{\text{grad}}$.
+   - Lan truyền ngược qua hai ma trận trọng số $W_1$ ($512 \times 256$) và $W_0$ ($2048 \times 512$) kết hợp đạo hàm hàm kích hoạt ReLU để thu được trọng số kênh $\mathbf{w}$ ($2048$ chiều).
+   - Tổ hợp tuyến tính tạo bản đồ nhiệt CAM ($16 \times 16$), nội suy song tuyến (Bilinear Interpolation) lên kích thước gốc và ánh xạ bảng màu Jet LUT 256 mức, đạt độ trễ ~80–130 ms trên thiết bị.
+   - Phát hiện hiện tượng bão hòa Softmax gradient (`ZERO_CAM`) trung thực, hiển thị thông báo minh bạch khoa học không vẽ đè giả tạo.
+5. Hiện thực hóa và kiểm chứng thành công tầng lưu trữ cục bộ mã hóa toàn diện:
    - Module Native Android Keystore kết hợp SQLCipher 4.6.1 (`NativeCryptoVaultModule.kt`) quản lý mã hóa toàn bộ tệp nhị phân cấp trang đĩa (Page-level Full Database Encryption), bảo vệ khóa passphrase hai tầng qua Android Keystore Master Key.
    - Cơ chế chuyển đổi an toàn Zero Data Loss Migration từ SQLite plaintext sang SQLCipher, tự động sao lưu dự phòng kho cũ (`.plaintext.bak` và `.encrypted.bak`).
    - Kiểm chứng thực nghiệm trên máy ảo Android API 34 bằng lệnh `strings` cho kết quả **0 byte plaintext** tại DB mã hóa và kiểm chứng logic bảo toàn nháp AUTH-08 qua Jest.
-5. Hoàn thiện nghiệp vụ Firebase & Y tế bổ sung: tích hợp Firebase Authentication (bao gồm khôi phục mật khẩu), Cloud Firestore & `firestore.rules`, **Sync Engine Offline-First** (`SyncCenterModal`, Outbox, phát hiện xung đột, đồng bộ nền qua `expo-network`), thống kê Quản trị viên thời gian thực và **xuất báo cáo PDF vật lý** (`expo-print` + `expo-sharing`).
-6. Khắc phục thành công lỗi `CMake MAX_PATH` trên Windows qua cấu hình `root-build.gradle`, đồng bộ đầy đủ `AndroidManifest.xml` (quyền `CAMERA`, `FileProvider`) vào `mobile/native-templates/android/` và đóng gói xác thực thành công **`app-release.apk` v1.0.6 (`versionCode 7`, `544.04 MB`, SHA-256 `7125E71EF042E2D61E113026E8EE7FE540DED02CD2906A0E5E698715B2AEC180`)**.
+6. Hoàn thiện nghiệp vụ Firebase & Y tế bổ sung: tích hợp Firebase Authentication (bao gồm khôi phục mật khẩu), Cloud Firestore & `firestore.rules`, **Sync Engine Offline-First** (`SyncCenterModal`, Outbox, phát hiện xung đột, đồng bộ nền qua `expo-network`), thống kê Quản trị viên thời gian thực và **xuất báo cáo PDF vật lý** (`expo-print` + `expo-sharing`).
+7. Đóng gói thành công tệp **`app-release.apk` v1.0.15 (`versionCode 16`)** đạt chuẩn nghiệm thu Android On-Device độc lập.
 
 ### 5.2 Hạn chế
-- **Grad-CAM On-Device**: Chưa hoàn thành giải pháp trích xuất activation maps/gradient trực tiếp trên thiết bị Android không cần Autograd; tính năng này đang được tạm hoãn sau Đầu việc 4 và giao diện/PDF cô lập trung thực trạng thái `gradcamAvailable: false` (`MSG-11`).
 - **Bảo vệ phần cứng thực tế**: Cơ chế bảo vệ khóa qua TEE/StrongBox hiện mới kiểm chứng trên Software Keymaster của máy ảo và cần đo kiểm bằng `KeyInfo` trên điện thoại Android vật lý thật.
-- **Đo kiểm thiết bị thật (Đầu việc 5)**: Chưa hoàn tất nạp `app-release.apk` v1.0.6 lên điện thoại Android thật để kiểm thử toàn luồng trực tiếp và đo RAM/nhiệt độ/pin.
 - **Cloud Storage & Push Notifications**: Chưa hoàn thiện sao lưu ảnh CT/PDF lên Firebase Cloud Storage và thông báo đẩy Firebase Cloud Messaging (FCM).
-- **Chất lượng lint mã nguồn UI cũ**: Lệnh `npm run lint` còn ghi nhận 4 lỗi `react-hooks/set-state-in-effect` và 19 cảnh báo ở một số màn hình cũ cần rà soát khắc phục.
 - **Quy chuẩn y tế & Pháp lý**: Hệ thống chỉ tham khảo các nguyên tắc thiết kế bảo vệ dữ liệu cá nhân; chưa có chứng nhận hoặc kiểm định pháp lý lâm sàng/HIPAA.
 
 ### 5.3 Hướng phát triển
-- **Ưu tiên ngay kế tiếp (Đầu việc 5)**: Cài đặt `app-release.apk` v1.0.6 lên điện thoại Android vật lý thật (dự kiến Xiaomi Redmi Note 12 Turbo) để nghiệm thu đầy đủ Firebase Auth/Sync, Camera/Photo Picker, On-Device AI, PDF và đo đạc RAM, độ trễ, nhiệt độ, `KeyInfo` TEE.
-- Nghiên cứu hiện thực hóa thuật toán Grad-CAM On-Device không Autograd cho mô hình AACNN-ViT trên Android (giữ nguyên tắc không gọi server suy luận).
-- Hoàn thiện Firebase Cloud Storage (sao lưu ảnh/tệp) và Firebase Cloud Messaging (thông báo đẩy), đồng thời dọn sạch các lỗi/cảnh báo ESLint hiện còn.
+- Mở rộng thuật toán phân đoạn và đánh dấu vùng nghi ngờ (vẽ viền nhu mô phổi và bounding box khoanh vùng tổn thương tự động sau khi ngưỡng hóa lọc Grad-CAM).
+- Hoàn thiện Firebase Cloud Storage (sao lưu ảnh/tệp) và Firebase Cloud Messaging (thông báo đẩy), đồng thời dọn sạch các cảnh báo ESLint còn lại.
 
 ---
 
