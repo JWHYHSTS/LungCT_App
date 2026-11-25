@@ -1,0 +1,191 @@
+{
+  "run_id": "20261122T082142_409115Z",
+  "keras_model": "D:\\TAILIEUDAIHOC\\HK7\\KLTN\\Code_App\\lungct-thesis\\ai\\models\\extracted\\20261122T082142_409115Z\\fusion\\model.keras",
+  "tflite_model": "D:\\TAILIEUDAIHOC\\HK7\\KLTN\\Code_App\\lungct-thesis\\ai\\conversion\\fusion_model_20261122T082142_409115Z.tflite",
+  "max_error_overall": 2.6226043701171875e-06,
+  "all_matched": true,
+  "criteria": "max_error < 1e-4 and 100% label match",
+  "status": "PASS",
+  "cases": [
+    {
+      "case_id": 1,
+      "desc": "Zeros input",
+      "keras_scores": [
+        0.9946318864822388,
+        8.753511065151542e-05,
+        0.005280546378344297
+      ],
+      "keras_label": "Benign",
+      "tflite_scores": [
+        0.9946320056915283,
+        8.753328438615426e-05,
+        0.005280494224280119
+      ],
+      "tflite_label": "Benign",
+      "max_abs_error": 1.1920928955078125e-07,
+      "matched": true
+    },
+    {
+      "case_id": 2,
+      "desc": "Ones input",
+      "keras_scores": [
+        0.9819721579551697,
+        0.0002120715653290972,
+        0.01781569980084896
+      ],
+      "keras_label": "Benign",
+      "tflite_scores": [
+        0.9819721579551697,
+        0.00021207377722021192,
+        0.017815690487623215
+      ],
+      "tflite_label": "Benign",
+      "max_abs_error": 9.313225746154785e-09,
+      "matched": true
+    },
+    {
+      "case_id": 3,
+      "desc": "Reference inputs constant (cnn=0.1490, vit=-0.7020)",
+      "keras_scores": [
+        0.9957038760185242,
+        2.9372351491474546e-05,
+        0.004266805946826935
+      ],
+      "keras_label": "Benign",
+      "tflite_scores": [
+        0.995701253414154,
+        2.9390963391051628e-05,
+        0.004269327037036419
+      ],
+      "tflite_label": "Benign",
+      "max_abs_error": 2.6226043701171875e-06,
+      "matched": true
+    },
+    {
+      "case_id": 4,
+      "desc": "Simulated CT distribution case 4",
+      "keras_scores": [
+        0.29907336831092834,
+        0.18370026350021362,
+        0.5172263383865356
+      ],
+      "keras_label": "Normal",
+      "tflite_scores": [
+        0.2990729510784149,
+        0.18370018899440765,
+        0.5172268748283386
+      ],
+      "tflite_label": "Normal",
+      "max_abs_error": 5.364418029785156e-07,
+      "matched": true
+    },
+    {
+      "case_id": 5,
+      "desc": "Simulated CT distribution case 5",
+      "keras_scores": [
+        0.016832418739795685,
+        0.000724819372408092,
+        0.9824427366256714
+      ],
+      "keras_label": "Normal",
+      "tflite_scores": [
+        0.01683248206973076,
+        0.000724823446944356,
+        0.9824426174163818
+      ],
+      "tflite_label": "Normal",
+      "max_abs_error": 1.1920928955078125e-07,
+      "matched": true
+    },
+    {
+      "case_id": 6,
+      "desc": "Simulated CT distribution case 6",
+      "keras_scores": [
+        4.2354468376970544e-08,
+        1.6782529144165892e-08,
+        1.0
+      ],
+      "keras_label": "Normal",
+      "tflite_scores": [
+        4.235438311184225e-08,
+        1.6782527367809053e-08,
+        1.0
+      ],
+      "tflite_label": "Normal",
+      "max_abs_error": 8.526512829121202e-14,
+      "matched": true
+    },
+    {
+      "case_id": 7,
+      "desc": "Simulated CT distribution case 7",
+      "keras_scores": [
+        0.7461284399032593,
+        0.16878190636634827,
+        0.08508962392807007
+      ],
+      "keras_label": "Benign",
+      "tflite_scores": [
+        0.7461277842521667,
+        0.16878251731395721,
+        0.08508970588445663
+      ],
+      "tflite_label": "Benign",
+      "max_abs_error": 6.556510925292969e-07,
+      "matched": true
+    },
+    {
+      "case_id": 8,
+      "desc": "Simulated CT distribution case 8",
+      "keras_scores": [
+        1.5496063497266732e-05,
+        1.7312687532466953e-06,
+        0.9999827146530151
+      ],
+      "keras_label": "Normal",
+      "tflite_scores": [
+        1.5496136256842874e-05,
+        1.7312802356173052e-06,
+        0.9999827146530151
+      ],
+      "tflite_label": "Normal",
+      "max_abs_error": 7.275957614183426e-11,
+      "matched": true
+    },
+    {
+      "case_id": 9,
+      "desc": "Simulated CT distribution case 9",
+      "keras_scores": [
+        0.5685468316078186,
+        0.1173020452260971,
+        0.31415116786956787
+      ],
+      "keras_label": "Benign",
+      "tflite_scores": [
+        0.5685470700263977,
+        0.11730201542377472,
+        0.31415098905563354
+      ],
+      "tflite_label": "Benign",
+      "max_abs_error": 2.384185791015625e-07,
+      "matched": true
+    },
+    {
+      "case_id": 10,
+      "desc": "Simulated CT distribution case 10",
+      "keras_scores": [
+        0.22557497024536133,
+        0.03883582726120949,
+        0.7355892062187195
+      ],
+      "keras_label": "Normal",
+      "tflite_scores": [
+        0.22557540237903595,
+        0.038835737854242325,
+        0.7355889081954956
+      ],
+      "tflite_label": "Normal",
+      "max_abs_error": 4.3213367462158203e-07,
+      "matched": true
+    }
+  ]
+}

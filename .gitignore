@@ -59,6 +59,8 @@ google-services.json
 GoogleService-Info.plist
 
 # AI Cache & Temporary checkpoints (trừ thư mục định nghĩa source/extracted/manifests)
+LungCT_GGDrive_Download/
+/ai/models/extracted/20261122T082142_409115Z/
 ai/**/__pycache__/
 ai/**/*.tmp
 *.ipynb_checkpoints/

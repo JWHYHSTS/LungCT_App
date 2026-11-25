@@ -163,6 +163,10 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
   }
 
   companion object {
+    const val CURRENT_MODEL_RUN_ID = "20261122T082142_409115Z"
+    const val EXPECTED_FUSION_SHA256 = "cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9"
+    const val EXPECTED_FUSION_BYTES = 110010252L
+
     /**
      * Thuật toán lấy mẫu Nearest Neighbour Resampling tổng quát khớp 100% với Pillow:
      * C source Pillow (Geometry.c):
@@ -197,15 +201,38 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
     val vitOnnxFile = File(modelsDir, "vit_cls.onnx")
     val vitDataFile = File(modelsDir, "vit_cls.onnx.data")
     val fusionFile = File(modelsDir, "fusion_model.tflite")
+    val versionMarkerFile = File(modelsDir, "model_version.txt")
 
-    // 1. Nạp ViT ONNX + data
+    // Kiểm tra tính đồng bộ của bộ mô hình (Cache Invalidation theo run_id & byte size)
+    val cachedVersion = if (versionMarkerFile.exists()) {
+      try { versionMarkerFile.readText().trim() } catch (e: Exception) { "" }
+    } else ""
+
+    val needsFusionUpdate = !fusionFile.exists() ||
+                            fusionFile.length() != EXPECTED_FUSION_BYTES ||
+                            cachedVersion != CURRENT_MODEL_RUN_ID
+
+    if (needsFusionUpdate) {
+      android.util.Log.i("LungCtPipeline", "[MODEL_CACHE] Phát hiện phiên bản mô hình mới hoặc cache cũ ('$cachedVersion' != '$CURRENT_MODEL_RUN_ID'). Đang đồng bộ từ APK assets...")
+      try {
+        reactContext.assets.open("models/fusion_model.tflite").use { input ->
+          FileOutputStream(fusionFile).use { output -> input.copyTo(output) }
+        }
+        versionMarkerFile.writeText(CURRENT_MODEL_RUN_ID)
+        android.util.Log.i("LungCtPipeline", "[MODEL_CACHE] Đã cập nhật fusion_model.tflite thành công (${fusionFile.length()} bytes, run_id=$CURRENT_MODEL_RUN_ID)")
+      } catch (e: Exception) {
+        android.util.Log.e("LungCtPipeline", "[MODEL_CACHE] Lỗi cập nhật fusion_model.tflite từ assets: ${e.message}", e)
+      }
+    }
+
+    // 1. Nạp ViT ONNX + data nếu chưa có
     if (!vitOnnxFile.exists() || vitOnnxFile.length() == 0L) {
       try {
         reactContext.assets.open("models/vit_cls.onnx").use { input ->
           FileOutputStream(vitOnnxFile).use { output -> input.copyTo(output) }
         }
       } catch (e: Exception) {
-        // Assets có thể không tồn tại nếu đã được nạp trước đó vào filesDir
+        android.util.Log.w("LungCtPipeline", "Không thể copy vit_cls.onnx từ assets: ${e.message}")
       }
     }
     if (!vitDataFile.exists() || vitDataFile.length() == 0L) {
@@ -214,39 +241,43 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
           FileOutputStream(vitDataFile).use { output -> input.copyTo(output) }
         }
       } catch (e: Exception) {
-        // Assets có thể không tồn tại nếu đã được nạp trước đó vào filesDir
+        android.util.Log.w("LungCtPipeline", "Không thể copy vit_cls.onnx.data từ assets: ${e.message}")
       }
     }
 
-    // 2. Nạp Fusion TFLite
-    if (!fusionFile.exists() || fusionFile.length() == 0L) {
-      try {
-        reactContext.assets.open("models/fusion_model.tflite").use { input ->
-          FileOutputStream(fusionFile).use { output -> input.copyTo(output) }
-        }
-      } catch (e: Exception) {
-        // Assets có thể không tồn tại nếu đã được nạp trước đó vào filesDir
-      }
+    // Đóng interpreter cũ nếu nạp lại model mới
+    if (tfliteInterpreter != null && needsFusionUpdate) {
+      try { tfliteInterpreter?.close() } catch (e: Exception) {}
+      tfliteInterpreter = null
     }
 
     // Khởi tạo OrtSession
     if (ortEnv == null) {
       ortEnv = OrtEnvironment.getEnvironment()
     }
-    val sessionOptions = OrtSession.SessionOptions()
-    ortSession = ortEnv!!.createSession(vitOnnxFile.absolutePath, sessionOptions)
+    if (ortSession == null) {
+      val sessionOptions = OrtSession.SessionOptions()
+      ortSession = ortEnv!!.createSession(vitOnnxFile.absolutePath, sessionOptions)
+    }
 
     // Khởi tạo TFLite Interpreter từ memory-mapped ByteBuffer
-    FileInputStream(fusionFile).use { fileInputStream ->
-      val fileChannel = fileInputStream.channel
-      val startOffset = 0L
-      val declaredLength = fileChannel.size()
-      val tfliteModelBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
-      val tfliteOptions = Interpreter.Options().apply {
-        setNumThreads(4)
+    if (tfliteInterpreter == null) {
+      FileInputStream(fusionFile).use { fileInputStream ->
+        val fileChannel = fileInputStream.channel
+        val startOffset = 0L
+        val declaredLength = fileChannel.size()
+        val tfliteModelBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+        val tfliteOptions = Interpreter.Options().apply {
+          setNumThreads(4)
+        }
+        tfliteInterpreter = Interpreter(tfliteModelBuffer, tfliteOptions)
       }
-      tfliteInterpreter = Interpreter(tfliteModelBuffer, tfliteOptions)
     }
+
+    android.util.Log.i(
+      "LungCtPipeline",
+      "[MODEL_LOADED] Sẵn sàng suy luận on-device: run_id=$CURRENT_MODEL_RUN_ID, fusion_size=${fusionFile.length()} bytes, vit_size=${vitOnnxFile.length()} bytes"
+    )
 
     isInitialized = true
   }
@@ -543,7 +574,7 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
 
       android.util.Log.i(
         "LungCtPipeline",
-        "[INFERENCE_RUN] source=$sourceDesc, origSize=${origW}x${origH}, pred=$predictedLabel, " +
+        "[INFERENCE_RUN] model=$CURRENT_MODEL_RUN_ID, source=$sourceDesc, origSize=${origW}x${origH}, pred=$predictedLabel, " +
         "Benign=${"%.6f".format(benignScore)}, Malignant=${"%.6f".format(malignantScore)}, Normal=${"%.6f".format(normalScore)}, " +
         "vitLatency=${vitDuration}ms, fusionLatency=${fusionDuration}ms, total=${totalDuration}ms"
       )
@@ -574,6 +605,8 @@ class LungCtPipelineModule(private val reactContext: ReactApplicationContext) :
         putString("gradcamNotice", "Grad-CAM chưa được kiểm chứng trên mobile (MSG-11)")
         putBoolean("isMock", false)
         putString("verifiedSource", "on_device_fp32")
+        putString("modelVersion", CURRENT_MODEL_RUN_ID)
+        putString("modelSha256", EXPECTED_FUSION_SHA256)
         putString("imageSource", sourceDesc)
         putInt("imageWidth", origW)
         putInt("imageHeight", origH)

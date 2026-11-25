@@ -1,0 +1,56 @@
+[
+  {
+    "image": "Bengin case (114).jpg",
+    "true_label": "Benign",
+    "keras_pred": "Benign",
+    "keras_scores": [
+      0.9838129281997681,
+      2.7289912395644933e-05,
+      0.016159700229763985
+    ],
+    "tflite_pred": "Benign",
+    "tflite_scores": [
+      0.9838129281997681,
+      2.7289939680485986e-05,
+      0.01615970768034458
+    ],
+    "max_abs_error": 7.450580596923828e-09,
+    "label_match": true
+  },
+  {
+    "image": "Malignant case (1).jpg",
+    "true_label": "Malignant",
+    "keras_pred": "Malignant",
+    "keras_scores": [
+      2.4632423878401255e-10,
+      1.0,
+      4.884082721590133e-11
+    ],
+    "tflite_pred": "Malignant",
+    "tflite_scores": [
+      2.4632562656279333e-10,
+      1.0,
+      4.884100762714283e-11
+    ],
+    "max_abs_error": 1.3877787807814457e-15,
+    "label_match": true
+  },
+  {
+    "image": "Normal case (1).jpg",
+    "true_label": "Normal",
+    "keras_pred": "Normal",
+    "keras_scores": [
+      0.00033603401971049607,
+      2.2972342776483856e-05,
+      0.999640941619873
+    ],
+    "tflite_pred": "Normal",
+    "tflite_scores": [
+      0.0003360320988576859,
+      2.2972233637119643e-05,
+      0.999640941619873
+    ],
+    "max_abs_error": 1.9208528101444244e-09,
+    "label_match": true
+  }
+]

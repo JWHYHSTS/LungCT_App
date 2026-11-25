@@ -27,6 +27,8 @@ export interface PipelinePredictionResult {
   gradcamNotice: string;
   isMock: false;
   verifiedSource: 'on_device_fp32';
+  modelVersion?: string;
+  modelSha256?: string;
 }
 
 export const GRADCAM_UNAVAILABLE_NOTICE =
