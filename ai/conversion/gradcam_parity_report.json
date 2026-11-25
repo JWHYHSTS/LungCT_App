@@ -1,0 +1,26 @@
+[
+  {
+    "label": "Benign",
+    "score": 0.9838129281997681,
+    "status_ref": "PASS",
+    "status_fast": "PASS",
+    "max_diff": 0.0025550127029418945,
+    "pass": true
+  },
+  {
+    "label": "Malignant",
+    "score": 1.0,
+    "status_ref": "PASS",
+    "status_fast": "ZERO_CAM",
+    "max_diff": 1.0,
+    "pass": false
+  },
+  {
+    "label": "Normal",
+    "score": 0.999640941619873,
+    "status_ref": "PASS",
+    "status_fast": "PASS",
+    "max_diff": 0.0385192334651947,
+    "pass": true
+  }
+]
