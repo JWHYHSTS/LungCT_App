@@ -82,7 +82,9 @@ export function entityToMockCase(
         index: idx + 1,
         sliceNumber: 30 + (idx + 1),
         source: img.source === 'CAMERA' ? 'camera' : 'gallery',
-        status: pred ? (pred.explanationStatus === 'PASS' ? 'pass' : 'passNoCam') : 'pending',
+        status: pred
+          ? (pred.explanationStatus === 'PASS' || pred.camRef ? 'pass' : pred.explanationStatus === 'ZERO_CAM' ? 'pass' : 'passNoCam')
+          : 'pending',
         uri: uriStr,
         filePath: img.localFileRef,
         originalFileName: img.originalFileName,
@@ -95,7 +97,9 @@ export function entityToMockCase(
                 normal: pred.scores[2],
               }
             : undefined,
-        hasGradCam: pred ? pred.explanationStatus === 'PASS' : false,
+        hasGradCam: Boolean(pred && (pred.explanationStatus === 'PASS' || pred.camRef)),
+        gradcamUri: pred?.camRef,
+        gradcamStatus: pred?.explanationStatus,
         mockWatermark: undefined,
       };
     });
@@ -388,9 +392,13 @@ export class CaseRepository {
       durationMs: number;
       modelVersion?: string;
       mode?: 'REAL' | 'MOCK';
+      gradcamUri?: string;
+      gradcamStatus?: 'PENDING' | 'PASS' | 'ZERO_CAM' | 'UNAVAILABLE' | 'FAIL';
     },
   ): Promise<AIPredictionResultEntity> {
     await this.ensureReady(ownerId);
+
+    const explanationStatus = result.gradcamStatus || (result.gradcamUri ? 'PASS' : 'UNAVAILABLE');
 
     const saved = await localStorageService.savePredictionResult(ownerId, {
       imageId,
@@ -398,7 +406,9 @@ export class CaseRepository {
       classificationStatus: 'PASS',
       scores: result.scores,
       label: result.label,
-      explanationStatus: 'UNAVAILABLE', // On-device MSG-11
+      explanationStatus,
+      camRef: result.gradcamUri,
+      targetLayer: 'conv5_block3_out',
       modelVersion: result.modelVersion || 'Adaptive_ViT_FP32_v1',
       preprocessingVersion: 'Nearest_Float32_v1',
       executionSource: 'LOCAL',

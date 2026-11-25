@@ -94,15 +94,18 @@ export async function runNativePipelineFromBase64(
       latency: {
         vitInferenceMs: Math.round(res.latency.vitInferenceMs * 10) / 10,
         fusionInferenceMs: Math.round(res.latency.fusionInferenceMs * 10) / 10,
+        gradcamMs: res.latency.gradcamMs != null ? Math.round(res.latency.gradcamMs * 10) / 10 : undefined,
         totalInferenceMs: Math.round(res.latency.totalInferenceMs * 10) / 10,
         modelLoadMs: 0,
       },
-      gradcamAvailable: false,
-      gradcamNotice: GRADCAM_UNAVAILABLE_NOTICE,
+      gradcamAvailable: Boolean(res.gradcamAvailable),
+      gradcamStatus: res.gradcamStatus || (res.gradcamAvailable ? 'PASS' : 'UNAVAILABLE'),
+      gradcamUri: res.gradcamUri || undefined,
+      gradcamNotice: res.gradcamNotice || (res.gradcamAvailable ? 'Grad-CAM On-Device Native' : GRADCAM_UNAVAILABLE_NOTICE),
       isMock: false,
       verifiedSource: 'on_device_fp32',
-      modelVersion: '20261122T082142_409115Z',
-      modelSha256: 'cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9',
+      modelVersion: res.modelVersion || '20261122T082142_409115Z_GRADCAM',
+      modelSha256: res.modelSha256 || 'cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9',
     };
   } finally {
     isPipelineBusy = false;
@@ -143,15 +146,18 @@ export async function runNativePipelineFromFilePath(
       latency: {
         vitInferenceMs: Math.round(res.latency.vitInferenceMs * 10) / 10,
         fusionInferenceMs: Math.round(res.latency.fusionInferenceMs * 10) / 10,
+        gradcamMs: res.latency.gradcamMs != null ? Math.round(res.latency.gradcamMs * 10) / 10 : undefined,
         totalInferenceMs: Math.round(res.latency.totalInferenceMs * 10) / 10,
         modelLoadMs: 0,
       },
-      gradcamAvailable: false,
-      gradcamNotice: GRADCAM_UNAVAILABLE_NOTICE,
+      gradcamAvailable: Boolean(res.gradcamAvailable),
+      gradcamStatus: res.gradcamStatus || (res.gradcamAvailable ? 'PASS' : 'UNAVAILABLE'),
+      gradcamUri: res.gradcamUri || undefined,
+      gradcamNotice: res.gradcamNotice || (res.gradcamAvailable ? 'Grad-CAM On-Device Native' : GRADCAM_UNAVAILABLE_NOTICE),
       isMock: false,
       verifiedSource: 'on_device_fp32',
-      modelVersion: '20261122T082142_409115Z',
-      modelSha256: 'cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9',
+      modelVersion: res.modelVersion || '20261122T082142_409115Z_GRADCAM',
+      modelSha256: res.modelSha256 || 'cfdfc1ff4e42992475805531e505369214a7a1b7908bd9db41c00d3968fcaba9',
     };
   } finally {
     isPipelineBusy = false;

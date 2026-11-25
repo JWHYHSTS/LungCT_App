@@ -20,10 +20,13 @@ export interface PipelinePredictionResult {
   latency: {
     vitInferenceMs: number;
     fusionInferenceMs: number;
+    gradcamMs?: number;
     totalInferenceMs: number;
     modelLoadMs: number;
   };
-  gradcamAvailable: false;
+  gradcamAvailable: boolean;
+  gradcamStatus?: 'PENDING' | 'PASS' | 'ZERO_CAM' | 'UNAVAILABLE' | 'FAIL';
+  gradcamUri?: string;
   gradcamNotice: string;
   isMock: false;
   verifiedSource: 'on_device_fp32';
@@ -32,4 +35,4 @@ export interface PipelinePredictionResult {
 }
 
 export const GRADCAM_UNAVAILABLE_NOTICE =
-  'Grad-CAM chưa khả dụng ngoại tuyến: Kiến trúc Adaptive Fusion sử dụng Cross-Attention và Adaptive Gate phi tuyến tính, các runtime di động (TFLite, ONNX Runtime) chỉ hỗ trợ Forward-pass và không có Autograd để tính Gradient ngược.';
+  'Grad-CAM chưa khả dụng hoặc chưa được tính toán cho lát cắt này.';

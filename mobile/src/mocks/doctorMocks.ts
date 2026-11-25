@@ -45,6 +45,8 @@ export interface MockCTImage {
     normal: number;
   };
   hasGradCam: boolean;
+  gradcamUri?: string;
+  gradcamStatus?: 'PENDING' | 'PASS' | 'ZERO_CAM' | 'UNAVAILABLE' | 'FAIL';
   mockWatermark?: string;
   failReason?: string;
 }
