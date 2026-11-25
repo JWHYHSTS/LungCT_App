@@ -32,6 +32,10 @@ export interface CTImageViewProps {
   showHeatmap?: boolean;
   /** Độ phủ lớp Grad-CAM từ 0 đến 1, mặc định 0.4 (HEATMAP_DEFAULT_OPACITY) */
   heatmapOpacity?: number;
+  /** Nguồn ảnh lớp phủ vùng nghi ngờ (hộp đỏ/cam, tô mờ, số thứ tự) */
+  overlaySource?: ImageSourcePropType | { uri: string };
+  /** Nguồn ảnh lớp phủ phụ (viền phổi xanh lá) */
+  secondaryOverlaySource?: ImageSourcePropType | { uri: string };
   /** Kích thước vuông hiển thị (mặc định 340dp) */
   size?: number;
   /** Nhãn cảnh báo/thông tin (ví dụ: "ẢNH GIẢ LẬP") */
@@ -51,6 +55,8 @@ export const CTImageView: React.FC<CTImageViewProps> = ({
   heatmapSource,
   showHeatmap = false,
   heatmapOpacity = HEATMAP_DEFAULT_OPACITY,
+  overlaySource,
+  secondaryOverlaySource,
   size = 340,
   watermarkText,
   style,
@@ -173,6 +179,20 @@ export const CTImageView: React.FC<CTImageViewProps> = ({
               // Mô phỏng vùng sáng nhiệt Jet nếu không có file ảnh ngoài
               <View style={styles.mockHeatmapSpot} />
             )}
+          </View>
+        )}
+
+        {/* Lớp phủ phụ (viền phổi xanh lá) */}
+        {secondaryOverlaySource && (
+          <View style={styles.heatmapOverlay} pointerEvents="none">
+            <Image source={secondaryOverlaySource} style={styles.image} resizeMode="contain" />
+          </View>
+        )}
+
+        {/* Lớp phủ vùng nghi ngờ (tô mờ, viền, bounding box, số 1 2 3) */}
+        {overlaySource && (
+          <View style={styles.heatmapOverlay} pointerEvents="none">
+            <Image source={overlaySource} style={styles.image} resizeMode="contain" />
           </View>
         )}
       </Animated.View>

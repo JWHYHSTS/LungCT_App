@@ -30,3 +30,9 @@ export const MOCK_CT_SPINE_BG = '#E5E2D9';
 export const MOCK_CT_HEATMAP_SPOT_BG = '#E61A0D';
 export const MOCK_CT_HEATMAP_SPOT_GLOW = '#FFD900';
 export const MOCK_CT_TEXT_LIGHT = '#FAF8F2';
+
+/** Màu đánh dấu vùng nghi ngờ Colab (Mục 24 & 28) */
+export const SUSPICIOUS_COLOR_MALIGNANT = '#E61919';
+export const SUSPICIOUS_COLOR_BENIGN = '#FF8C00';
+export const SUSPICIOUS_COLOR_NORMAL = '#10B981';
+export const SUSPICIOUS_COLOR_HOT_PERCENT = '#4ADE80';

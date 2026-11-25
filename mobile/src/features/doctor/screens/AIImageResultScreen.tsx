@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../ui/theme';
 import {
@@ -27,6 +27,12 @@ import {
   type AvailableTestImage,
 } from '../../../services/ai/onDevicePipeline';
 import { PipelinePredictionResult } from '../../../services/ai/types';
+import {
+  SUSPICIOUS_COLOR_MALIGNANT,
+  SUSPICIOUS_COLOR_BENIGN,
+  SUSPICIOUS_COLOR_NORMAL,
+  SUSPICIOUS_COLOR_HOT_PERCENT,
+} from '../../../ui/theme/heatmap';
 import { CaseRepository, subscribeCaseRepository } from '../../../services/storage';
 import { useAuth } from '../../../features/auth';
 
@@ -116,6 +122,13 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
               hasGradCam: result.gradcamAvailable,
               gradcamUri: result.gradcamUri,
               gradcamStatus: result.gradcamStatus,
+              lungMaskUri: result.lungMaskUri,
+              suspiciousOverlayUri: result.suspiciousOverlayUri,
+              triPanelUri: result.triPanelUri,
+              suspiciousCount: result.suspiciousCount,
+              lungHotRatio: result.lungHotRatio,
+              decisionReason: result.decisionReason,
+              suspiciousRegions: result.suspiciousRegions,
               scores: {
                 benign: result.probabilities.Benign,
                 malignant: result.probabilities.Malignant,
@@ -197,6 +210,13 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           mode: 'REAL',
           gradcamUri: result.gradcamUri,
           gradcamStatus: result.gradcamStatus,
+          lungMaskUri: result.lungMaskUri,
+          suspiciousOverlayUri: result.suspiciousOverlayUri,
+          triPanelUri: result.triPanelUri,
+          suspiciousRegions: result.suspiciousRegions,
+          suspiciousCount: result.suspiciousCount,
+          lungHotRatio: result.lungHotRatio,
+          decisionReason: result.decisionReason,
         });
       } catch (saveErr) {
         console.warn('[AIImageResultScreen] Lỗi lưu kết quả AI tệp picked:', saveErr);
@@ -262,6 +282,13 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           mode: 'REAL',
           gradcamUri: result.gradcamUri,
           gradcamStatus: result.gradcamStatus,
+          lungMaskUri: result.lungMaskUri,
+          suspiciousOverlayUri: result.suspiciousOverlayUri,
+          triPanelUri: result.triPanelUri,
+          suspiciousRegions: result.suspiciousRegions,
+          suspiciousCount: result.suspiciousCount,
+          lungHotRatio: result.lungHotRatio,
+          decisionReason: result.decisionReason,
         });
       } catch (saveErr) {
         console.warn('[AIImageResultScreen] Lỗi lưu kết quả AI tệp select:', saveErr);
@@ -397,6 +424,13 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           mode: 'REAL',
           gradcamUri: result.gradcamUri,
           gradcamStatus: result.gradcamStatus,
+          lungMaskUri: result.lungMaskUri,
+          suspiciousOverlayUri: result.suspiciousOverlayUri,
+          triPanelUri: result.triPanelUri,
+          suspiciousRegions: result.suspiciousRegions,
+          suspiciousCount: result.suspiciousCount,
+          lungHotRatio: result.lungHotRatio,
+          decisionReason: result.decisionReason,
         });
       } catch (saveErr) {
         console.warn('[AIImageResultScreen] Lỗi ghi kết quả AI vào kho lưu trữ:', saveErr);
@@ -508,6 +542,14 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
     ? onDeviceResult.gradcamAvailable
     : Boolean(activeImage.hasGradCam || activeImage.gradcamUri);
   const currentGradcamUri = onDeviceResult?.gradcamUri || activeImage.gradcamUri;
+  const currentLungMaskUri = onDeviceResult?.lungMaskUri || activeImage.lungMaskUri;
+  const currentSuspiciousOverlayUri = onDeviceResult?.suspiciousOverlayUri || activeImage.suspiciousOverlayUri;
+  const currentTriPanelUri = onDeviceResult?.triPanelUri || activeImage.triPanelUri;
+  const currentSuspiciousRegions = onDeviceResult?.suspiciousRegions || activeImage.suspiciousRegions || [];
+  const currentSuspiciousCount = onDeviceResult?.suspiciousCount ?? activeImage.suspiciousCount ?? currentSuspiciousRegions.length;
+  const currentLungHotRatio = onDeviceResult?.lungHotRatio ?? activeImage.lungHotRatio;
+  const currentDecisionReason = onDeviceResult?.decisionReason || activeImage.decisionReason;
+
   const isZeroCam =
     onDeviceResult?.gradcamStatus === 'ZERO_CAM' || activeImage.gradcamStatus === 'ZERO_CAM';
   const isPending =
@@ -521,6 +563,17 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
       onDeviceResult?.gradcamStatus === 'UNAVAILABLE' ||
       onDeviceResult?.gradcamStatus === 'FAIL');
   const showHeatmapLayer = viewMode === 'cam' && hasCam && !isFail;
+
+  const segmentedItems = [
+    { key: 'orig', label: t('doctor_detail.ai_mode_orig', 'Ảnh gốc') },
+    { key: 'cam', label: t('doctor_detail.ai_mode_cam', 'Grad-CAM') },
+    ...(currentSuspiciousOverlayUri || currentSuspiciousCount > 0
+      ? [{ key: 'boxes', label: 'Vùng nghi ngờ' }]
+      : []),
+    ...(currentTriPanelUri
+      ? [{ key: 'tripanel', label: '3 Khung Colab' }]
+      : []),
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg.app }]}>
@@ -586,31 +639,61 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
         </View>
 
         {/* Khung hiển thị ảnh cắt lớp CT */}
-        <View style={styles.canvasWrapper}>
-          <CTImageView
-            key={`${selectedImageUri || activeImage.uri || activeImage.id}_${currentGradcamUri || ''}_${viewMode}`}
-            imageSource={
-              selectedImageUri
-                ? { uri: selectedImageUri }
-                : activeImage.uri
-                  ? { uri: activeImage.uri }
-                  : undefined
-            }
-            heatmapSource={currentGradcamUri ? { uri: currentGradcamUri } : undefined}
-            showHeatmap={showHeatmapLayer}
-            heatmapOpacity={camOpacity / 100}
-            size={340}
-            watermarkText={
-              onDeviceResult
-                ? t('doctor_detail.ai_watermark_real', 'ON-DEVICE AI THỰC')
-                : selectedImageUri || activeImage.uri
-                  ? t('doctor_detail.ai_watermark_device_file', 'ẢNH TỪ THIẾT BỊ')
-                  : activeImage.mockWatermark
-                    ? t('doctor_detail.ai_watermark_mock', 'ẢNH GIẢ LẬP')
+        {viewMode === 'tripanel' && currentTriPanelUri ? (
+          <View style={[styles.canvasWrapper, { padding: 0, overflow: 'hidden' }]}>
+            <View style={{ backgroundColor: '#000', borderRadius: radius.md, overflow: 'hidden', width: '100%', alignItems: 'center' }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={true}
+                contentContainerStyle={{ alignItems: 'center' }}
+              >
+                <Image
+                  source={{ uri: currentTriPanelUri }}
+                  style={{ width: 680, height: 230 }}
+                  resizeMode="contain"
+                />
+              </ScrollView>
+              <View style={{ width: '100%', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: 'rgba(0,0,0,0.75)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <AppText variant="caption" color="#fff" style={{ fontWeight: '600' }}>
+                  [Gốc + Viền phổi] | [Grad-CAM thô] | [Vùng sau lọc]
+                </AppText>
+                {currentLungHotRatio != null && (
+                  <AppText variant="caption" color={SUSPICIOUS_COLOR_HOT_PERCENT} style={{ fontWeight: 'bold' }}>
+                    {`Vùng nóng phổi: ${(currentLungHotRatio * 100).toFixed(0)}%`}
+                  </AppText>
+                )}
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.canvasWrapper}>
+            <CTImageView
+              key={`${selectedImageUri || activeImage.uri || activeImage.id}_${currentGradcamUri || ''}_${viewMode}`}
+              imageSource={
+                selectedImageUri
+                  ? { uri: selectedImageUri }
+                  : activeImage.uri
+                    ? { uri: activeImage.uri }
                     : undefined
-            }
-          />
-        </View>
+              }
+              heatmapSource={currentGradcamUri ? { uri: currentGradcamUri } : undefined}
+              showHeatmap={showHeatmapLayer}
+              heatmapOpacity={camOpacity / 100}
+              secondaryOverlaySource={viewMode === 'boxes' && currentLungMaskUri ? { uri: currentLungMaskUri } : undefined}
+              overlaySource={viewMode === 'boxes' && currentSuspiciousOverlayUri ? { uri: currentSuspiciousOverlayUri } : undefined}
+              size={340}
+              watermarkText={
+                onDeviceResult
+                  ? t('doctor_detail.ai_watermark_real', 'ON-DEVICE AI THỰC')
+                  : selectedImageUri || activeImage.uri
+                    ? t('doctor_detail.ai_watermark_device_file', 'ẢNH TỪ THIẾT BỊ')
+                    : activeImage.mockWatermark
+                      ? t('doctor_detail.ai_watermark_mock', 'ẢNH GIẢ LẬP')
+                      : undefined
+              }
+            />
+          </View>
+        )}
 
         {/* Cảnh báo trạng thái FAIL hoặc ZERO_CAM hoặc Chưa phân tích hoặc Thiếu CAM */}
         {isFail && (
@@ -684,17 +767,55 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
           </View>
         )}
 
-        {/* Chuyển đổi Ảnh gốc / Grad-CAM */}
-        {!isFail && hasCam && (
+        {/* Chuyển đổi Ảnh gốc / Grad-CAM / Vùng nghi ngờ / 3 Khung Colab */}
+        {!isFail && (hasCam || currentTriPanelUri || currentSuspiciousCount > 0) && (
           <View style={{ marginVertical: spacing.sm }}>
             <Segmented
-              items={[
-                { key: 'orig', label: t('doctor_detail.ai_mode_orig', 'Ảnh gốc') },
-                { key: 'cam', label: t('doctor_detail.ai_mode_cam', 'Grad-CAM') },
-              ]}
+              items={segmentedItems}
               selectedKey={viewMode}
               onSelect={setViewMode}
             />
+          </View>
+        )}
+
+        {/* Thông báo lý do vẽ / không vẽ vùng nghi ngờ */}
+        {currentDecisionReason && !isFail && !isPending && (
+          <View style={{ marginVertical: spacing.xs }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: currentSuspiciousCount > 0
+                  ? (activeImage.aiClass === 'Benign' ? 'rgba(255, 140, 0, 0.12)' : 'rgba(230, 25, 25, 0.12)')
+                  : 'rgba(16, 185, 129, 0.12)',
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                borderRadius: radius.md,
+                borderLeftWidth: 4,
+                borderLeftColor: currentSuspiciousCount > 0
+                  ? (activeImage.aiClass === 'Benign' ? SUSPICIOUS_COLOR_BENIGN : SUSPICIOUS_COLOR_MALIGNANT)
+                  : SUSPICIOUS_COLOR_NORMAL,
+              }}
+            >
+              <AppText variant="labelM" style={{ flex: 1, color: colors.text.primary, fontSize: 13 }}>
+                {currentDecisionReason}
+              </AppText>
+              {currentSuspiciousCount > 0 && (
+                <View
+                  style={{
+                    backgroundColor: activeImage.aiClass === 'Benign' ? SUSPICIOUS_COLOR_BENIGN : SUSPICIOUS_COLOR_MALIGNANT,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 10,
+                    marginLeft: spacing.xs,
+                  }}
+                >
+                  <AppText variant="caption" color={colors.text.inverse} style={{ fontWeight: 'bold' }}>
+                    {`${currentSuspiciousCount} vùng nghi ngờ`}
+                  </AppText>
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -728,6 +849,75 @@ export const AIImageResultScreen: React.FC<AIImageResultScreenProps> = ({
               step={5}
               accessibilityLabel={t('doctor_detail.ai_opacity_label', 'Độ phủ Grad-CAM')}
             />
+          </View>
+        )}
+
+        {/* Danh sách thẻ chi tiết các vùng nghi ngờ (Colab mục 24 & 28) */}
+        {currentSuspiciousRegions.length > 0 && !isFail && (
+          <View
+            style={[
+              styles.sliderCard,
+              {
+                backgroundColor: colors.bg.surface,
+                borderColor: colors.border.default,
+                borderRadius: radius.md,
+                padding: spacing.md,
+                marginVertical: spacing.xs,
+              },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs }}>
+              <AppText variant="titleS" style={{ color: colors.text.primary }}>
+                Vùng nghi ngờ đã khoanh (Colab)
+              </AppText>
+              <View
+                style={{
+                  backgroundColor: activeImage.aiClass === 'Benign' ? SUSPICIOUS_COLOR_BENIGN : SUSPICIOUS_COLOR_MALIGNANT,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 6,
+                }}
+              >
+                <AppText variant="caption" color={colors.text.inverse} style={{ fontWeight: 'bold' }}>
+                  {activeImage.aiClass === 'Benign' ? 'BENIGN (CAM)' : 'MALIGNANT (ĐỎ)'}
+                </AppText>
+              </View>
+            </View>
+
+            {currentSuspiciousRegions.map((region, idx) => (
+              <View
+                key={`region_${region.id || idx}`}
+                style={{
+                  paddingVertical: 8,
+                  borderTopWidth: idx > 0 ? 1 : 0,
+                  borderTopColor: colors.border.default,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <AppText
+                    variant="labelM"
+                    style={{
+                      color: activeImage.aiClass === 'Benign' ? SUSPICIOUS_COLOR_BENIGN : SUSPICIOUS_COLOR_MALIGNANT,
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {`Vùng #${region.id}: Khung [x=${region.x}, y=${region.y}, w=${region.w}, h=${region.h}]`}
+                  </AppText>
+                  <AppText variant="labelM" style={{ color: colors.text.link, fontWeight: '600' }}>
+                    {`CAM max: ${region.camMax.toFixed(2)}`}
+                  </AppText>
+                </View>
+                <AppText variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
+                  {`Diện tích: ${region.areaPx} px (${(region.areaRatio * 100).toFixed(2)}% lát cắt) · CAM TB: ${region.camMean.toFixed(2)}`}
+                </AppText>
+              </View>
+            ))}
+
+            <View style={{ marginTop: spacing.xs, paddingTop: spacing.xs, borderTopWidth: 1, borderTopColor: colors.border.default }}>
+              <AppText variant="caption" color={colors.text.secondary} style={{ fontStyle: 'italic', fontSize: 11 }}>
+                * Vùng đánh dấu là nơi mô hình chú ý nhiều nhất khi đưa ra dự đoán (Grad-CAM ≥ 50%), chỉ mang tính tham khảo; không phải vị trí khối u đã được bác sĩ xác nhận lâm sàng.
+              </AppText>
+            </View>
           </View>
         )}
 
